@@ -1,0 +1,21 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 2em);
+  grid-template-rows: repeat(4, 2em);
+  gap: 1px;
+
+  button {
+    border: none;
+  }
+}
+
+.char {
+  display: block;
+  width: 1em;
+}
+
+.output {
+  height: 2em;
+  display: flex;
+  align-items: center;
+}

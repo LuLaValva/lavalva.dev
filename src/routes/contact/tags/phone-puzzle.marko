@@ -1,0 +1,31 @@
+import { produce } from "immer"
+import styles from "../contact-styles.module.css"
+
+static const SIZE = 4;
+
+let/grid=Array.from({length:SIZE},()=>Array(SIZE).fill(false)) as boolean[][]
+
+div class=styles.grid
+  for|row, i| of=grid
+    for|cell, j| of=row
+      button 
+        ,onClick() {
+          grid = produce(grid, (grid) => {
+            for (let di = -1; di <= 1; di++) {
+              for (let dj = -1; dj <= 1; dj++) {
+                if (di === 0 && dj === 0) continue;
+                
+                const ni = i + di;
+                const nj = j + dj;
+                if (ni >= 0 && ni < SIZE && nj >= 0 && nj < SIZE) {
+                  grid[ni][nj] = !grid[ni][nj];
+                }
+              }
+            }
+          })
+        }
+        ,aria-label=`${i} ${j}`
+        ,aria-pressed=cell ? "true" : "false"
+        ,style={ "background-color": cell ? "slategray" : "gainsboro"}
+
+return=grid.reduce((acc, row, i) => acc | row.reduce((acc, cell, j) => acc | +cell << j, 0) << i * SIZE, 0)

@@ -5,7 +5,8 @@
   "type": "module",
   "dependencies": {
     "@marko/run-adapter-static": "^2.0.0",
-    "marko": "^6.0.21"
+    "immer": "^10.1.1",
+    "marko": "^6.0.31"
   },
   "devDependencies": {
     "@marko/run": "^0.7.4"

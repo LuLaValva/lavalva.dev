@@ -1,0 +1,20 @@
+import styles from "../contact-styles.module.css"
+
+export interface Input {
+  code: number;
+}
+
+const/code=input.code
+let/curr=input.code
+
+<script>
+  if (curr !== code) {
+    if (curr < code) {
+      curr++;
+    } else {
+      curr--;
+    }
+  }  
+</script>
+
+span class=styles.char -- ${String.fromCharCode(curr)}

@@ -1,0 +1,24 @@
+import styles from "./contact-styles.module.css"
+
+static const encryptedPhone = [142, 149, 243, 144, 98, 111, 152, 227, 145, 114, 190, 6,  18, 131];
+
+static function decrypt(hash: number, data: number[]) {
+  return data.map(digit => {
+    hash = (hash * 1103515245 + 12345) & 0xFFFFFFFF;
+    const decrypted = digit ^ ((hash >>> 16) & 0xFF);
+    return ((decrypted - 32) % 95) + 32;
+  });
+}
+
+h1 -- Contact
+p -- Here's my info, if you can find it
+
+h2 -- Phone Number
+
+phone-puzzle/hash
+
+const/digits=decrypt(hash, encryptedPhone)
+
+output class=styles.output
+  for|char| of=digits
+    char-wheel code=char
