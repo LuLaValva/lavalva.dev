@@ -1,0 +1,16 @@
+import styles from "./checklist.module.css"
+
+export interface Input {
+  item: Marko.AttrTag<{
+    checked?: boolean;
+    content: Marko.Body;
+  }>;
+}
+
+ul class=styles.checklist
+  for|item| of=input.item
+    li
+      id/id
+      input id=id type="checkbox" checked=item.checked checkedChange() {}
+      label for=id
+        ${item.content}

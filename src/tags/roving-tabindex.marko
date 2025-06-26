@@ -1,0 +1,12 @@
+export interface Input {
+  selector: string;
+  direction?: "horizontal" | "vertical" | "both" | "grid";
+  columns?: number;
+  loop?: boolean;
+  content?: Marko.Body;
+}
+
+client import "roving-tabindex"
+
+${"roving-tabindex"} ...input
+  ${input.content}

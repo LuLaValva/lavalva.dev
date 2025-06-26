@@ -6,7 +6,8 @@
   "dependencies": {
     "@marko/run-adapter-static": "^2.0.0",
     "immer": "^10.1.1",
-    "marko": "^6.0.31"
+    "marko": "^6.0.31",
+    "roving-tabindex": "^0.3.3"
   },
   "devDependencies": {
     "@marko/run": "^0.7.4"
