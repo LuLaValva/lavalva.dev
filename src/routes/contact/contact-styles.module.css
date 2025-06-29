@@ -1,7 +1,7 @@
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 2em);
-  grid-template-rows: repeat(4, 2em);
+  grid-template-columns: repeat(var(--size), 2em);
+  grid-template-rows: repeat(var(--size), 2em);
   gap: 1px;
 
   button {
@@ -9,13 +9,11 @@
   }
 }
 
-.char {
-  display: block;
-  width: 1em;
-}
-
-.output {
-  height: 2em;
+.hashes {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  font-family: monospace;
+  letter-spacing: 0.2ch;
+  line-height: 2rem;
+  margin: 1rem 0;
 }

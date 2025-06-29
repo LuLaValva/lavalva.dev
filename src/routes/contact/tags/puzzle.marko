@@ -1,16 +1,29 @@
 import { produce } from "immer"
 import styles from "../contact-styles.module.css"
-client import "roving-tabindex"
 
-static const SIZE = 4;
+export interface Input {
+  size: number;
+}
 
-let/grid=Array.from({length:SIZE},()=>Array(SIZE).fill(false)) as boolean[][]
+static declare global {
+  namespace Marko {
+    namespace CSS {
+      interface Properties {
+        "--size"?: number;
+      }
+    }
+  }
+}
 
-${"roving-tabindex"} selector="button" direction="grid" columns=SIZE loop
-  div class=styles.grid
+const/{ size }=input
+
+let/grid=Array.from({length:size},()=>Array(size).fill(false)) as boolean[][]
+
+roving-tabindex selector="button" direction="grid" columns=size loop
+  div class=styles.grid style={ "--size": size }
     for|row, i| of=grid
       for|cell, j| of=row
-        button 
+        button
           ,onClick() {
             grid = produce(grid, (grid) => {
               for (let di = -1; di <= 1; di++) {
@@ -19,7 +32,7 @@ ${"roving-tabindex"} selector="button" direction="grid" columns=SIZE loop
                   
                   const ni = i + di;
                   const nj = j + dj;
-                  if (ni >= 0 && ni < SIZE && nj >= 0 && nj < SIZE) {
+                  if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
                     grid[ni][nj] = !grid[ni][nj];
                   }
                 }
@@ -30,4 +43,4 @@ ${"roving-tabindex"} selector="button" direction="grid" columns=SIZE loop
           ,aria-pressed=cell ? "true" : "false"
           ,style={ "background-color": cell ? "slategray" : "gainsboro"}
 
-return=grid.reduce((acc, row, i) => acc | row.reduce((acc, cell, j) => acc | +cell << j, 0) << i * SIZE, 0)
+return=BigInt("0b" + grid.map(row => row.map(cell => cell ? '1' : '0').join('')).join(''))
