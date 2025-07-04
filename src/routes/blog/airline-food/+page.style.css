@@ -1,0 +1,27 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+hgroup > p {
+  font-size: 1.2rem;
+  color: light-dark(#666, #aaa);
+  margin-bottom: 2rem;
+  font-weight: 400;
+}
+
+img {
+  width: 100%;
+  max-width: 20rem;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  margin: auto;
+  display: block;
+}
+
+article {
+  padding: 0 0.5rem;
+  max-width: 30rem;
+  margin: auto;
+}

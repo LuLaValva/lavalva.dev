@@ -6,6 +6,11 @@
 
   button {
     border: none;
+    background-color: light-dark(gainsboro, lightslategray);
+
+    &[aria-pressed="true"] {
+      background-color: light-dark(slategray, darkslategray);
+    }
   }
 }
 
@@ -29,8 +34,8 @@
       width: 0.6em;
       height: 0.6em;
       box-sizing: border-box;
-      border: solid gainsboro;
-      background-color: slategray;
+      border: solid light-dark(gainsboro, lightslategray);
+      background-color: light-dark(slategray, darkslategray);
 
       &.small {
         border-width: 0.2em;

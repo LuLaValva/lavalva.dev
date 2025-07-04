@@ -41,6 +41,5 @@ roving-tabindex selector="button" direction="grid" columns=size loop
           }
           ,aria-label=`${i} ${j}`
           ,aria-pressed=cell ? "true" : "false"
-          ,style={ "background-color": cell ? "slategray" : "gainsboro"}
 
 return=BigInt("0b" + grid.map(row => row.map(cell => cell ? '1' : '0').join('')).join(''))
