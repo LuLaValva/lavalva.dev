@@ -16,4 +16,33 @@
   letter-spacing: 0.2ch;
   line-height: 2rem;
   margin: 1rem 0;
+  padding-left: 0;
+
+  li {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    > span {
+      display: inline-block;
+      width: 0.6em;
+      height: 0.6em;
+      box-sizing: border-box;
+      border: solid gainsboro;
+      background-color: slategray;
+
+      &.small {
+        border-width: 0.2em;
+      }
+
+      &.medium {
+        border-width: 0.1em;
+      }
+
+      &.large {
+        border-width: 0;
+      }
+    }
+  }
 }

@@ -4,7 +4,7 @@ static const encrypted = [
   [34, 210, 108, 241, 157, 250, 49, 42, 231, 248, 186, 247, 210, 51, 60, 138, 128, 221, 189, 87, 122],
   [229, 45, 55, 201, 66, 255, 195, 237, 126, 7, 12, 40, 96, 136, 63, 37, 24, 134, 64, 85, 174, 195, 48, 65, 240, 129, 156, 111],
   [66, 198, 56, 96, 40, 241, 117, 85, 19, 38, 20, 74, 73, 77, 85, 210, 130, 241, 124, 231, 20, 234, 208, 27, 202, 130, 239, 128, 58, 242, 243, 223]
-]
+];
 
 static function decrypt(seed: bigint, data: number[]) {
   seed ^= seed >> 13n;
@@ -22,13 +22,23 @@ p -- For the worthy
 
 puzzle/hash size=6
 
-div class=styles.hashes
-  for|contact| of=encrypted
-    const/digits=decrypt(hash, contact)
+define/Output|{ value }: { value: number[] }|
+  const/digits=decrypt(hash, value)
+  output
+    for|char| of=digits
+      char-wheel code=char
 
-    output
-      for|char| of=digits
-        char-wheel code=char
+
+ul class=styles.hashes
+  li
+    span class=styles.large role="img" aria-label="bullet point, fully filled in square"
+    Output=encrypted[0];
+  li
+    span class=styles.medium role="img" aria-label="bullet point, square with a smaller square inside"
+    Output=encrypted[1];
+  li
+    span class=styles.small role="img" aria-label="bullet point, square with a tiny square in the middle"
+    Output=encrypted[2];
 
 // static function encrypt(seed: bigint, data: number[]) {
 //   seed ^= seed >> 13n;
