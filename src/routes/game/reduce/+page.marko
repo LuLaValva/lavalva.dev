@@ -41,7 +41,7 @@ client const vibrate = typeof navigator.vibrate === "function" ? navigator.vibra
   const now = new Date();
   const todaySeed = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   setSeed(todaySeed);
-  today = now.toLocaleDateString();
+  today = now.toDateString();
 
   looseLetters = Array.from(
     {
@@ -145,12 +145,11 @@ client const vibrate = typeof navigator.vibrate === "function" ? navigator.vibra
       </form>
     </div>
     <hr>
-    <const/message=`I got down to ${pendingWord.length + looseLetters.filter(Boolean).length + submittedWords.length} points in reduce on ${today}
+    <const/message=`I got down to ${pendingWord.length + looseLetters.filter(Boolean).length + submittedWords.length} points in REDUCE on ${today}
 
 ${submittedWords.map((word) => EmojiNumbers[word.length]).join("")}
 ${"1️⃣".repeat(pendingWord.length + looseLetters.filter(Boolean).length)}
-
-Beat me at https://lavalva.dev/game/reduce`>
+https://lavalva.dev/game/reduce`>
     <pre>${message}</pre>
     <hr>
     <button class=styles.share onClick() {
