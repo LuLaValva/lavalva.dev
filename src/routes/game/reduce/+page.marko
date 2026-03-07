@@ -145,7 +145,8 @@ client const vibrate = typeof navigator.vibrate === "function" ? navigator.vibra
       </form>
     </div>
     <hr>
-    <const/message=`I got down to ${pendingWord.length + looseLetters.filter(Boolean).length + submittedWords.length} points in REDUCE on ${today}
+    <const/message=`I got ${pendingWord.length + looseLetters.filter(Boolean).length + submittedWords.length} points in REDUCE
+${today}
 
 ${submittedWords.map((word) => EmojiNumbers[word.length]).join("")}
 ${"1️⃣".repeat(pendingWord.length + looseLetters.filter(Boolean).length)}
