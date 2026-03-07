@@ -39,8 +39,7 @@ client const vibrate = typeof navigator.vibrate === "function" ? navigator.vibra
 )>
 <script>
   const now = new Date();
-  const todaySeed = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  setSeed(todaySeed);
+  setSeed(Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 100000));
   today = now.toDateString();
 
   looseLetters = Array.from(
