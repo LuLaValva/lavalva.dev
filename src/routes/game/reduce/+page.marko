@@ -28,6 +28,8 @@ static const EmojiNumbers = [
   "🕗",
 ];
 
+client const vibrate = typeof navigator.vibrate === "function" ? navigator.vibrate : (() => {});
+
 <lazy-english-dictionary/words/>
 
 <let/today="">
@@ -58,7 +60,7 @@ static const EmojiNumbers = [
 <let/incorrectGuess=false>
 
 <script>
-  if (incorrectGuess) navigator.vibrate([100, 100, 50, 100, 100]);
+  if (incorrectGuess) vibrate([100, 100, 50, 100, 100]);
 </script>
 
 <const/points=(
@@ -74,7 +76,7 @@ static const EmojiNumbers = [
   pendingWord = [...pendingWord, looseLetters[i]];
   looseLetters = looseLetters.toSpliced(i, 1, null);
   incorrectGuess = false;
-  navigator.vibrate(50);
+  vibrate(50);
 }>
 
 <const/revertLetters(word: Letter[], clearPrevious: () => void) {
@@ -98,7 +100,7 @@ static const EmojiNumbers = [
       document.startViewTransition(() => {
         submittedWords = [...submittedWords, pendingWord];
         pendingWord = [];
-        navigator.vibrate(50);
+        vibrate(50);
       });
     } else {
       incorrectGuess = true;
