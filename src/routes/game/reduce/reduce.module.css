@@ -1,0 +1,202 @@
+:root {
+  view-transition-name: none;
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+.btn {
+  background-color: #8884;
+  border-radius: 0.75rem;
+  height: 1.75rem;
+  width: 1.75rem;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    scale: 1.15;
+  }
+}
+
+.share {
+  margin: auto;
+  display: block;
+  margin-top: 1rem;
+}
+
+.tile {
+  --size: 2rem;
+  all: unset;
+  width: var(--size);
+  height: var(--size);
+  line-height: var(--size);
+  border-radius: 0.2rem;
+  text-align: center;
+  background-color: rgb(200, 174, 121);
+  color: black;
+  font-family: monospace;
+  font-weight: bold;
+  animation: grow 0.1s;
+  box-shadow: 0.05rem -0.1rem 0.25rem inset;
+  user-select: none;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  max-width: 18rem;
+  margin: 1rem auto;
+}
+
+dialog {
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid light-dark(black, white);
+
+  & > :last-child {
+    margin-bottom: 0;
+  }
+
+  .dialogHeading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+
+    h3 {
+      margin: 0;
+    }
+  }
+}
+
+.looseLetters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.3rem;
+  max-width: 18rem;
+  margin: auto;
+  --big: min(4rem, 21vw);
+
+  > span {
+    width: var(--big);
+    height: var(--big);
+  }
+  > .tile {
+    --size: var(--big);
+    font-size: 2rem;
+
+    &:focus-visible {
+      background-color: rgb(83, 203, 115);
+    }
+  }
+}
+
+.pendingWord {
+  margin: 2rem 1rem;
+  height: 2.2rem;
+  display: flex;
+  justify-content: space-between;
+
+  > .pendingLetters {
+    all: unset;
+    display: flex;
+    gap: 0.1rem;
+    overflow-x: scroll;
+    scrollbar-width: none;
+
+    > * {
+      width: 2rem;
+      height: 2rem;
+      line-height: 2rem;
+    }
+
+    &:focus-visible {
+      > span {
+        background-color: rgb(203, 87, 83);
+      }
+    }
+  }
+
+  .incorrectGuess {
+    animation: shake 0.5s;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  > button {
+    animation: grow 0.1s;
+  }
+}
+
+.words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  > button {
+    all: unset;
+    width: fit-content;
+    display: flex;
+    gap: 0.1rem;
+
+    &:focus-visible {
+      > span {
+        background-color: rgb(203, 87, 83);
+      }
+    }
+  }
+}
+
+@keyframes grow {
+  from {
+    scale: 0.5;
+    opacity: 0;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  0% {
+    translate: 0 0;
+  }
+  10% {
+    translate: -2px 0;
+  }
+  20% {
+    translate: 2px 0;
+  }
+  30% {
+    translate: -3px 0;
+  }
+  40% {
+    translate: 3px 0;
+  }
+  50% {
+    translate: -2px 0;
+  }
+  60% {
+    translate: 2px 0;
+  }
+  70% {
+    translate: -1px 0;
+  }
+  80% {
+    translate: 1px 0;
+  }
+  90% {
+    translate: 0.5px 0;
+  }
+  100% {
+    translate: 0 0;
+  }
+}

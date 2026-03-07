@@ -1,0 +1,311 @@
+import styles from "./reduce.module.css";
+client import { randomLetter, binarySearch, setSeed } from "./utils";
+static interface Letter {
+  char: string;
+  id: number;
+}
+static const EmojiNumbers = [
+  "0️⃣",
+  "1️⃣",
+  "2️⃣",
+  "3️⃣",
+  "4️⃣",
+  "5️⃣",
+  "6️⃣",
+  "7️⃣",
+  "8️⃣",
+  "9️⃣",
+  "🔟",
+  "🕚",
+  "🕛",
+  "🕐",
+  "🕑",
+  "🕒",
+  "🕓",
+  "🕔",
+  "🕕",
+  "🕖",
+  "🕗",
+];
+
+<lazy-english-dictionary/words/>
+
+<let/today="">
+
+<let/looseLetters=(
+  Array.from({ length: 20 }, () => ({ char: "" })) as (Letter | null)[]
+)>
+<script>
+  const now = new Date();
+  const todaySeed = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  setSeed(todaySeed);
+  today = now.toLocaleDateString();
+
+  looseLetters = Array.from(
+    {
+      length: 20,
+    },
+    randomLetter,
+  ).map((char, id) => ({
+    char,
+    id,
+  }));
+</script>
+
+<let/pendingWord=([] as Letter[])>
+<let/submittedWords=([] as Letter[][])>
+
+<let/incorrectGuess=false>
+
+<script>
+  if (incorrectGuess) navigator.vibrate([100, 100, 50, 100, 100]);
+</script>
+
+<const/points=(
+  looseLetters.filter(Boolean).length +
+  (pendingWord.length && 1) +
+  submittedWords.length
+)>
+
+<const/addLetter(i: number) {
+  if (!looseLetters[i]) {
+    throw new Error("Something broke! Attempted to add invalid letter");
+  }
+  pendingWord = [...pendingWord, looseLetters[i]];
+  looseLetters = looseLetters.toSpliced(i, 1, null);
+  incorrectGuess = false;
+  navigator.vibrate(50);
+}>
+
+<const/revertLetters(word: Letter[], clearPrevious: () => void) {
+  const nextLetters = [...looseLetters];
+  let i = 0;
+  for (const letter of word) {
+    while (nextLetters[i]) i++;
+    nextLetters[i++] = letter;
+  }
+  document.startViewTransition(() => {
+    looseLetters = nextLetters;
+    clearPrevious();
+  });
+  (document.activeElement as HTMLButtonElement)?.blur?.();
+  incorrectGuess = false;
+}>
+
+<const/submitWord() {
+  if (words) {
+    if (binarySearch(words, pendingWord.map(({ char }) => char).join(""))) {
+      document.startViewTransition(() => {
+        submittedWords = [...submittedWords, pendingWord];
+        pendingWord = [];
+        navigator.vibrate(50);
+      });
+    } else {
+      incorrectGuess = true;
+    }
+  }
+}>
+
+<header class=styles.header>
+  <button
+    class=styles.btn
+    aria-label="help"
+    onclick="this.nextElementSibling.showModal()">
+    ?
+  </button>
+  <dialog closedby="any">
+    <div class=styles.dialogHeading>
+      <h3>Welcome to Reduce!</h3>
+      <form method="dialog">
+        <button aria-label="close dialog">
+          ×
+        </button>
+      </form>
+    </div>
+    <p>Match letters to make words</p>
+    <p>Every word and loose letter counts as a point</p>
+    <p>
+      Your goal is to${" "}
+      <em>minimize</em>
+      ${" "}points
+    </p>
+  </dialog>
+  <button class=styles.btn onclick="this.nextElementSibling.showModal()">
+    ${points}
+  </button>
+  <dialog closedby="any">
+    <div class=styles.dialogHeading>
+      <h3>Lowest you can get?</h3>
+      <form method="dialog">
+        <button class=styles.btn aria-label="close dialog">
+          ×
+        </button>
+      </form>
+    </div>
+    <hr>
+    <const/message=`I got down to ${pendingWord.length + looseLetters.filter(Boolean).length + submittedWords.length} points in reduce on ${today}
+
+${submittedWords.map((word) => EmojiNumbers[word.length]).join("")}
+${"1️⃣".repeat(pendingWord.length + looseLetters.filter(Boolean).length)}
+
+Beat me at lavalva.dev/game/reduce`>
+    <pre>${message}</pre>
+    <hr>
+    <button class=styles.share onClick() {
+      if (navigator.share) {
+        navigator.share({ text: message });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(message).then(() => {
+          alert("Copied to clipboard!");
+        });
+      }
+    }>
+      Share with Friends
+    </button>
+  </dialog>
+  <button
+    class=styles.btn
+    aria-label="shuffle loose letters"
+    onClick() {
+      document.startViewTransition(() => {
+        looseLetters = looseLetters.toSorted((a, b) => {
+          // if (!a) return 1;
+          // if (!b) return -1;
+          return Math.random() - 0.5;
+        });
+      });
+    }>
+    ⇆
+  </button>
+</header>
+
+<div class=styles.looseLetters>
+  <for|letter, i| of=looseLetters>
+    <if=letter>
+      <button
+        class=styles.tile
+        onClick() {
+          addLetter(i);
+        }
+        style={
+          "view-transition-name": `letter-${letter.id}`,
+          rotate: `${(Math.random() - 0.5) * 5}deg`,
+        }>
+        ${letter.char}
+      </button>
+    </if>
+    <else>
+      <span/>
+    </else>
+  </for>
+</div>
+
+<div class=styles.pendingWord>
+  <if=pendingWord.length>
+    <button
+      class=[styles.pendingLetters, incorrectGuess && styles.incorrectGuess]
+      onClick() {
+        revertLetters(pendingWord, () => (pendingWord = []));
+      }>
+      <for|letter| of=pendingWord>
+        <span
+          class=styles.tile
+          style={
+            "view-transition-name": `letter-${letter.id}`,
+            rotate: `${(Math.random() - 0.5) * 2}deg`,
+          }>
+          ${letter.char}
+        </span>
+      </for>
+    </button>
+    <span class=styles.actions>
+      <button
+        class=styles.btn
+        aria-label="delete last letter"
+        onClick() {
+          revertLetters(
+            [pendingWord.at(-1)!],
+            () => (pendingWord = pendingWord.toSpliced(-1)),
+          );
+        }>
+        ⌫
+      </button>
+      <button
+        class=styles.btn
+        aria-label="submit"
+        disabled=!words
+        onClick() {
+          submitWord();
+        }>
+        ⏎
+      </button>
+    </span>
+  </if>
+</div>
+
+<div class=styles.words>
+  <for|word, i| of=submittedWords>
+    <button
+      class=styles.word
+      onClick() {
+        revertLetters(
+          word,
+          () => (submittedWords = submittedWords.toSpliced(i, 1)),
+        );
+      }>
+      <for|letter| of=word>
+        <span
+          class=styles.tile
+          style={
+            "view-transition-name": `letter-${letter.id}`,
+            rotate: `${(Math.random() - 0.5) * 3}deg`,
+          }>
+          ${letter.char}
+        </span>
+      </for>
+    </button>
+  </for>
+</div>
+
+<script>
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      const { key } = e;
+      if (/[a-zA-Z]/.test(key) && !e.altKey && !e.ctrlKey && !e.metaKey) {
+        const char = key.toLowerCase();
+        const i = looseLetters.findIndex((letter) => letter?.char === char);
+        if (i >= 0) {
+          addLetter(i);
+        }
+      }
+      switch (key) {
+        case "Enter":
+          if (pendingWord.length) {
+            e.preventDefault();
+            submitWord();
+          }
+          break;
+        case "Escape":
+          e.preventDefault();
+          revertLetters(pendingWord, () => (pendingWord = []));
+          break;
+        case "Backspace":
+          if (pendingWord.length) {
+            if (e.altKey) {
+              revertLetters(pendingWord, () => (pendingWord = []));
+            } else {
+              revertLetters(
+                [pendingWord.at(-1)!],
+                () => (pendingWord = pendingWord.toSpliced(-1)),
+              );
+            }
+          }
+          break;
+      }
+    },
+    {
+      signal: $signal,
+    },
+  );
+</script>
