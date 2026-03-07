@@ -1,5 +1,6 @@
 :root {
   view-transition-name: none;
+  touch-action: manipulation;
 }
 
 ::view-transition {
@@ -15,6 +16,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  color: light-dark(black, white);
 
   &:active {
     scale: 1.15;
