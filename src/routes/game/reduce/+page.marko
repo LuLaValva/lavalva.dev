@@ -28,7 +28,7 @@ static const EmojiNumbers = [
   "🕗",
 ];
 
-client const vibrate = typeof navigator.vibrate === "function" ? navigator.vibrate : (() => {});
+client const vibrate = typeof navigator.vibrate === "function" ? (...args: Parameters<typeof navigator.vibrate>) => navigator.vibrate(...args) : (() => {});
 
 <lazy-english-dictionary/words/>
 
@@ -118,7 +118,7 @@ client const vibrate = typeof navigator.vibrate === "function" ? navigator.vibra
     <div class=styles.dialogHeading>
       <h3>Welcome to Reduce!</h3>
       <form method="dialog">
-        <button aria-label="close dialog">
+        <button class=styles.btn aria-label="close dialog">
           ×
         </button>
       </form>

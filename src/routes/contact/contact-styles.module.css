@@ -1,16 +1,32 @@
+:root {
+  --tile-color: light-dark(rgb(229, 203, 168), rgb(151, 98, 46));
+  --tile-color-pressed: light-dark(rgb(151, 98, 46), rgb(229, 203, 168));
+}
+
+body {
+  max-width: 30rem;
+  padding: 0 1rem;
+  margin: auto;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--size), 2em);
   grid-template-rows: repeat(var(--size), 2em);
-  gap: 1px;
+  gap: 0.5px;
 
   button {
     border: none;
-    background-color: light-dark(gainsboro, lightslategray);
+    background-color: var(--tile-color);
     touch-action: manipulation;
+    transition: background-color 0.05s;
 
     &[aria-pressed="true"] {
-      background-color: light-dark(slategray, darkslategray);
+      background-color: var(--tile-color-pressed);
+    }
+
+    &:focus {
+      z-index: 1;
     }
   }
 }
@@ -20,8 +36,7 @@
   flex-direction: column;
   font-family: monospace;
   letter-spacing: 0.2ch;
-  line-height: 2rem;
-  margin: 1rem 0;
+  line-height: 1rem;
   padding-left: 0;
 
   li {
@@ -35,8 +50,8 @@
       width: 0.6em;
       height: 0.6em;
       box-sizing: border-box;
-      border: solid light-dark(gainsboro, lightslategray);
-      background-color: light-dark(slategray, darkslategray);
+      border: solid var(--tile-color);
+      background-color: var(--tile-color-pressed);
 
       &.small {
         border-width: 0.2em;

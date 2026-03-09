@@ -7,6 +7,11 @@
   pointer-events: none;
 }
 
+body {
+  max-width: 40rem;
+  margin: auto;
+}
+
 .btn {
   background-color: #8884;
   border-radius: 0.75rem;
@@ -41,7 +46,6 @@
   color: black;
   font-family: monospace;
   font-weight: bold;
-  animation: grow 0.1s;
   box-shadow: 0.05rem -0.1rem 0.25rem inset;
   user-select: none;
 }
@@ -57,6 +61,11 @@ dialog {
   border-radius: 1rem;
   padding: 1rem;
   border: 1px solid light-dark(black, white);
+  background-color: var(--background);
+
+  &::backdrop {
+    background-color: #0008;
+  }
 
   & > :last-child {
     margin-bottom: 0;
@@ -113,6 +122,7 @@ dialog {
       width: 2rem;
       height: 2rem;
       line-height: 2rem;
+      animation: grow 0.1s;
     }
 
     &:focus-visible {

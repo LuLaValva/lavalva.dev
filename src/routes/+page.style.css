@@ -1,0 +1,41 @@
+body {
+  max-width: 30rem;
+  padding: 0 1rem;
+  margin: auto;
+}
+
+.first-name {
+  height: 1lh;
+  overflow: clip;
+  display: inline-block;
+
+  & > span {
+    display: inline-flex;
+    flex-direction: column;
+    animation: name-toggle 10s linear infinite;
+  }
+}
+
+@keyframes name-toggle {
+  48% {
+    translate: 0 0;
+  }
+  48.5% {
+    translate: 0 -0.75lh;
+  }
+  49% {
+    translate: 0 -1.1lh;
+  }
+  50% {
+    translate: 0 -1lh;
+  }
+  98% {
+    translate: 0 -1lh;
+  }
+  98.5% {
+    translate: 0 -0.25lh;
+  }
+  99% {
+    translate: 0 0.1lh;
+  }
+}

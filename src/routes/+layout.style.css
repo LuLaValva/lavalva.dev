@@ -1,4 +1,18 @@
 :root {
   color-scheme: light dark;
+  --background: light-dark(rgb(254, 247, 241), rgb(39, 28, 19));
+  background-color: var(--background);
   font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+a {
+  color: light-dark(rgb(21, 96, 218), rgb(171, 212, 250));
+}
+
+ul {
+  list-style-type: "-  ";
+
+  li {
+    margin: 0.5rem 0;
+  }
 }
