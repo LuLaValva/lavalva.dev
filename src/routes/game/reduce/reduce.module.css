@@ -118,6 +118,8 @@ dialog {
     &[hidden] {
       transition: opacity 0.2s;
       opacity: 0;
+      pointer-events: none;
+      user-select: none;
     }
   }
 }
