@@ -22,7 +22,7 @@ declare module "@marko/run" {
 	}> {}
 }
 
-declare module "../src/routes/+page.marko" {
+declare module "../src/routes/_main-site/+page.marko" {
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
     export type Route = Run.Routes["/"];
@@ -40,7 +40,7 @@ declare module "../src/routes/+page.marko" {
   }
 }
 
-declare module "../src/routes/about/+page.marko" {
+declare module "../src/routes/_main-site/about/+page.marko" {
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
     export type Route = Run.Routes["/about"];
@@ -58,7 +58,7 @@ declare module "../src/routes/about/+page.marko" {
   }
 }
 
-declare module "../src/routes/blog/+page.marko" {
+declare module "../src/routes/_main-site/blog/+page.marko" {
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
     export type Route = Run.Routes["/blog"];
@@ -76,7 +76,7 @@ declare module "../src/routes/blog/+page.marko" {
   }
 }
 
-declare module "../src/routes/blog/airline-food/+page.marko" {
+declare module "../src/routes/_main-site/blog/airline-food/+page.marko" {
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
     export type Route = Run.Routes["/blog/airline-food"];
@@ -94,7 +94,7 @@ declare module "../src/routes/blog/airline-food/+page.marko" {
   }
 }
 
-declare module "../src/routes/bucket-list/+page.marko" {
+declare module "../src/routes/_main-site/bucket-list/+page.marko" {
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
     export type Route = Run.Routes["/bucket-list"];
@@ -112,7 +112,7 @@ declare module "../src/routes/bucket-list/+page.marko" {
   }
 }
 
-declare module "../src/routes/contact/+page.marko" {
+declare module "../src/routes/_main-site/contact/+page.marko" {
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
     export type Route = Run.Routes["/contact"];
@@ -130,7 +130,7 @@ declare module "../src/routes/contact/+page.marko" {
   }
 }
 
-declare module "../src/routes/game/+page.marko" {
+declare module "../src/routes/_main-site/game/+page.marko" {
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
     export type Route = Run.Routes["/game"];
@@ -166,11 +166,11 @@ declare module "../src/routes/game/reduce/+page.marko" {
   }
 }
 
-declare module "../src/routes/+layout.marko" {
-  export interface Input extends Run.LayoutInput<typeof import("../src/routes/+layout.marko")> {}
+declare module "../src/routes/_main-site/+layout.marko" {
+  export interface Input extends Run.LayoutInput<typeof import("../src/routes/_main-site/+layout.marko")> {}
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/" | "/about" | "/blog" | "/blog/airline-food" | "/bucket-list" | "/contact" | "/game" | "/game/reduce"];
+    export type Route = Run.Routes["/" | "/about" | "/blog" | "/blog/airline-food" | "/bucket-list" | "/contact" | "/game"];
     export type Context = Run.MultiRouteContext<Route> & Marko.Global;
     export type Handler = Run.HandlerLike<Route>;
     export type GET = Run.HandlerLike<Route, "GET">;
@@ -185,11 +185,30 @@ declare module "../src/routes/+layout.marko" {
   }
 }
 
-declare module "../src/routes/blog/+layout.marko" {
-  export interface Input extends Run.LayoutInput<typeof import("../src/routes/blog/+layout.marko")> {}
+declare module "../src/routes/_main-site/blog/+layout.marko" {
+  export interface Input extends Run.LayoutInput<typeof import("../src/routes/_main-site/blog/+layout.marko")> {}
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
     export type Route = Run.Routes["/blog" | "/blog/airline-food"];
+    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
+    export type Handler = Run.HandlerLike<Route>;
+    export type GET = Run.HandlerLike<Route, "GET">;
+    export type HEAD = Run.HandlerLike<Route, "HEAD">;
+    export type POST = Run.HandlerLike<Route, "POST">;
+    export type PUT = Run.HandlerLike<Route, "PUT">;
+    export type DELETE = Run.HandlerLike<Route, "DELETE">;
+    export type PATCH = Run.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
+    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
+    export const route: Run.HandlerTypeFn<Route>;
+  }
+}
+
+declare module "../src/routes/game/reduce/+layout.marko" {
+  export interface Input extends Run.LayoutInput<typeof import("../src/routes/game/reduce/+layout.marko")> {}
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = Run.Routes["/game/reduce"];
     export type Context = Run.MultiRouteContext<Route> & Marko.Global;
     export type Handler = Run.HandlerLike<Route>;
     export type GET = Run.HandlerLike<Route, "GET">;

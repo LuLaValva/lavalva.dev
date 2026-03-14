@@ -1,0 +1,23 @@
+{
+  "name": "Reduce",
+  "short_name": "Reduce",
+  "description": "Make words to merge letters!",
+  "id": "/game/reduce",
+  "start_url": "/game/reduce",
+  "scope": "/game/reduce",
+  "display": "standalone",
+  "background_color": "#271C13",
+  "theme_color": "#271C13",
+  "icons": [
+    {
+      "src": "/icons/reduce/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/reduce/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

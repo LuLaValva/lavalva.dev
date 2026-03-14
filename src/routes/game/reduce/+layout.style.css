@@ -1,0 +1,6 @@
+:root {
+  color-scheme: light dark;
+  --background: light-dark(rgb(254, 247, 241), rgb(39, 28, 19));
+  background-color: var(--background);
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}

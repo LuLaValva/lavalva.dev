@@ -27,8 +27,12 @@ static const EmojiNumbers = [
   "🕖",
   "🕗",
 ];
-
-client const vibrate = typeof navigator.vibrate === "function" ? (...args: Parameters<typeof navigator.vibrate>) => navigator.vibrate(...args) : (() => {});
+client const vibrate = (
+  typeof navigator.vibrate === "function"
+    ? (...args: Parameters<typeof navigator.vibrate>) =>
+        navigator.vibrate(...args)
+    : () => {}
+);
 
 <lazy-english-dictionary/words/>
 
@@ -39,9 +43,12 @@ client const vibrate = typeof navigator.vibrate === "function" ? (...args: Param
 )>
 <script>
   const now = new Date();
-  setSeed(Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 100000));
+  setSeed(
+    Math.floor(
+      Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 100000,
+    ),
+  );
   today = now.toDateString();
-
   looseLetters = Array.from(
     {
       length: 20,
@@ -110,7 +117,7 @@ client const vibrate = typeof navigator.vibrate === "function" ? (...args: Param
 <header class=styles.header>
   <button
     class=styles.btn
-    aria-label="help"
+    title="help"
     onclick="this.nextElementSibling.showModal()">
     ?
   </button>
@@ -131,42 +138,10 @@ client const vibrate = typeof navigator.vibrate === "function" ? (...args: Param
       ${" "}points
     </p>
   </dialog>
-  <button class=styles.btn onclick="this.nextElementSibling.showModal()">
-    ${points}
-  </button>
-  <dialog closedby="any">
-    <div class=styles.dialogHeading>
-      <h3>Lowest you can get?</h3>
-      <form method="dialog">
-        <button class=styles.btn aria-label="close dialog">
-          ×
-        </button>
-      </form>
-    </div>
-    <hr>
-    <const/message=`I got ${pendingWord.length + looseLetters.filter(Boolean).length + submittedWords.length} points in REDUCE
-${today}
-
-${submittedWords.map((word) => EmojiNumbers[word.length]).join("")}
-${"1️⃣".repeat(pendingWord.length + looseLetters.filter(Boolean).length)}
-https://lavalva.dev/game/reduce`>
-    <pre>${message}</pre>
-    <hr>
-    <button class=styles.share onClick() {
-      if (navigator.share) {
-        navigator.share({ text: message });
-      } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(message).then(() => {
-          alert("Copied to clipboard!");
-        });
-      }
-    }>
-      Share with Friends
-    </button>
-  </dialog>
+  <strong>${points}</strong>
   <button
     class=styles.btn
-    aria-label="shuffle loose letters"
+    title="shuffle loose letters"
     onClick() {
       document.startViewTransition(() => {
         looseLetters = looseLetters.toSorted((a, b) => {
@@ -199,6 +174,48 @@ https://lavalva.dev/game/reduce`>
       <span/>
     </else>
   </for>
+  <button
+    class=[styles.btn, styles.openSubmit]
+    hidden=looseLetters.some(Boolean)
+    title="share score"
+    onclick="this.nextElementSibling.showModal()"
+    onClick() {
+      submitWord();
+    }>
+    ⇪
+  </button>
+  <dialog closedby="any">
+    <div class=styles.dialogHeading>
+      <h3>Lowest you can get?</h3>
+      <form method="dialog">
+        <button class=styles.btn aria-label="close dialog">
+          ×
+        </button>
+      </form>
+    </div>
+    <hr>
+    <const/message=`I got down to ${pendingWord.length + looseLetters.filter(Boolean).length + submittedWords.length} points in REDUCE
+${today}
+
+${submittedWords.map((word) => EmojiNumbers[word.length]).join("")}
+${"1️⃣".repeat(pendingWord.length + looseLetters.filter(Boolean).length)}
+https://lavalva.dev/game/reduce`>
+    <pre>${message}</pre>
+    <hr>
+    <button
+      class=styles.share
+      onClick() {
+        if (navigator.share) {
+          navigator.share({ text: message });
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(message).then(() => {
+            alert("Copied to clipboard!");
+          });
+        }
+      }>
+      Share with Friends
+    </button>
+  </dialog>
 </div>
 
 <div class=styles.pendingWord>
