@@ -10,12 +10,12 @@
   "theme_color": "#271C13",
   "icons": [
     {
-      "src": "/icons/reduce/icon-192.png",
+      "src": "/game/reduce/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icons/reduce/icon-512.png",
+      "src": "/game/reduce/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
