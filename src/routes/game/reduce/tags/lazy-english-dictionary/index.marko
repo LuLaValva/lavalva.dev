@@ -1,5 +1,4 @@
 import dictUrl from "./words.json?url";
-
 export interface Input {}
 
 <let/words=null as null | string[]>
@@ -7,7 +6,10 @@ export interface Input {}
 <link rel="preload" href=dictUrl as="fetch">
 
 <script>
-  fetch(dictUrl).then(async (res) => {
+  fetch(dictUrl, {
+    mode: "no-cors",
+    credentials: "include",
+  }).then(async (res) => {
     words = await res.json();
   });
 </script>
