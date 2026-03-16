@@ -4,7 +4,7 @@ export interface Input {}
 
 <let/words=null as null | string[]>
 
-<link rel="preload" href=dictUrl>
+<link rel="preload" href=dictUrl as="fetch">
 
 <script>
   fetch(dictUrl).then(async (res) => {

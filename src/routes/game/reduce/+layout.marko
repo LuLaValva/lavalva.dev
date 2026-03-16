@@ -22,3 +22,7 @@ export interface Input {
     <${input.content}/>
   </body>
 </html>
+
+<script>
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/game/reduce/sw.js");
+</script>
