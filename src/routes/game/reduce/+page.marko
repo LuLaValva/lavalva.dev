@@ -95,9 +95,9 @@ client const vibrate = (
   document.startViewTransition(() => {
     looseLetters = nextLetters;
     clearPrevious();
+    incorrectGuess = false;
   });
   (document.activeElement as HTMLButtonElement)?.blur?.();
-  incorrectGuess = false;
 }>
 
 <const/submitWord() {
