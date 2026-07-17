@@ -1,53 +1,47 @@
 import styles from "./lamp.module.css";
 import {
   Lamp,
-  PROTOCOLS,
-  hexColorToRgb,
-  bytesToHex,
+  SERVICE,
+  CHARACTERISTIC,
+  rgbCommand,
+  powerCommand,
+  hexToRgb,
   parseHex,
   parseUuid,
-  uuidLabel,
-  bluetoothSupported,
+  toHex,
+  supported,
 } from "./ble";
 import type { ServiceInfo } from "./ble";
 
 static interface LogEntry {
-  time: string;
   msg: string;
   kind: "info" | "ok" | "err";
 }
 
-static const Swatches = [
-  "#ff0000", "#ff7b00", "#ffd500", "#37d300",
-  "#00c2ff", "#0033ff", "#8a2be2", "#ff2fb0",
-  "#ffffff", "#ffb46b", "#7fd4ff", "#000000",
-];
-
-<let/supported=true>
+<let/ok=true>
 <let/lamp=(null as Lamp | null)>
 <let/connecting=false>
-<let/protoId=PROTOCOLS[0].id>
 <let/color="#ff8800">
-<let/brightness=100>
 <let/services=([] as ServiceInfo[])>
 <let/rawService="0xffe9">
 <let/rawChar="0xffe9">
 <let/rawBytes="56 FF 00 00 00 F0 AA">
 <let/logs=([] as LogEntry[])>
 
-<const/proto=(PROTOCOLS.find((p) => p.id === protoId) ?? PROTOCOLS[0])>
 <const/connected=(lamp !== null)>
 
 <script>
-  // Web Bluetooth only exists on the client, and only in Chromium browsers
-  // over HTTPS. Reflect real support once mounted.
-  supported = bluetoothSupported();
+  ok = supported();
 </script>
 
 <const/log(msg: string, kind: LogEntry["kind"] = "info") {
-  const d = new Date();
-  const time = d.toLocaleTimeString();
-  logs = [...logs.slice(-49), { time, msg, kind }];
+  logs = [...logs.slice(-49), { msg, kind }];
+}>
+
+<const/run(label: string, work: () => Promise<unknown>) {
+  work()
+    .then((r) => log(typeof r === "string" ? r : label, "ok"))
+    .catch((e: unknown) => log(e instanceof Error ? e.message : String(e), "err"));
 }>
 
 <const/connect() {
@@ -64,54 +58,17 @@ static const Swatches = [
       });
     })
     .catch((e: unknown) => log(e instanceof Error ? e.message : String(e), "err"))
-    .finally(() => {
-      connecting = false;
-    });
-}>
-
-<const/disconnect() {
-  lamp?.disconnect();
-  lamp = null;
-  services = [];
-  log("Disconnected");
-}>
-
-<const/runInspect() {
-  const l = lamp;
-  if (!l) return;
-  log("Reading GATT services…");
-  l.inspect()
-    .then((svcs) => {
-      services = svcs;
-      log(`Found ${svcs.length} service(s)`, "ok");
-    })
-    .catch((e: unknown) => log(e instanceof Error ? e.message : String(e), "err"));
+    .finally(() => (connecting = false));
 }>
 
 <const/applyColor() {
   const l = lamp;
   if (!l) return;
-  const [r, g, b] = hexColorToRgb(color, brightness);
-  const bytes = proto.rgb(r, g, b);
-  l.send(proto, bytes)
-    .then(() => log(`color → ${bytesToHex(bytes)}`, "ok"))
-    .catch((e: unknown) => log(e instanceof Error ? e.message : String(e), "err"));
+  const [r, g, b] = hexToRgb(color);
+  run(`color → ${toHex(rgbCommand(r, g, b))}`, () => l.write(SERVICE, CHARACTERISTIC, rgbCommand(r, g, b)));
 }>
 
-<const/power(on: boolean) {
-  const l = lamp;
-  if (!l) return;
-  const cmd = proto.power(on);
-  if (cmd === null && on) {
-    applyColor();
-    return;
-  }
-  l.setPower(proto, on)
-    .then(() => log(on ? "power on" : "power off", "ok"))
-    .catch((e: unknown) => log(e instanceof Error ? e.message : String(e), "err"));
-}>
-
-<const/sendRawCmd() {
+<const/sendRaw() {
   const l = lamp;
   if (!l) return;
   let bytes: number[];
@@ -121,236 +78,101 @@ static const Swatches = [
     log(e instanceof Error ? e.message : String(e), "err");
     return;
   }
-  if (!bytes.length) {
-    log("Nothing to send", "err");
-    return;
-  }
-  l.sendRaw(parseUuid(rawService), parseUuid(rawChar), bytes)
-    .then(() => log(`raw → ${bytesToHex(bytes)}`, "ok"))
-    .catch((e: unknown) => log(e instanceof Error ? e.message : String(e), "err"));
+  run(`raw → ${toHex(bytes)}`, () => l.write(parseUuid(rawService), parseUuid(rawChar), bytes));
 }>
 
 <div class=styles.page>
   <div class=styles.shell>
-    <header class=styles.header>
+    <header>
       <h1>🔦 Bluetooth Lamp</h1>
-      <p>
+      <p class=styles.muted>
         Take over a generic BLE lamp — the kind the <em>Colorful Light</em> app
-        drives — straight from the browser with the Web Bluetooth API.
+        drives — from the browser with the Web Bluetooth API.
       </p>
     </header>
 
-    <if=!supported>
+    <if=!ok>
       <div class=[styles.panel, styles.warn]>
-        <strong>Web Bluetooth isn't available here.</strong>
-        <p class=styles.hint>
-          It needs a Chromium-based browser (Chrome, Edge, Opera) over HTTPS or
-          localhost. Safari and Firefox don't support it. On desktop you may
-          also need to enable it at <span class=styles.mono>chrome://flags/#enable-web-bluetooth</span>.
-        </p>
+        Web Bluetooth needs a Chromium browser (Chrome, Edge, Opera) over HTTPS
+        or localhost. It isn't available here.
       </div>
     </if>
 
     <section class=styles.panel>
-      <div class=[styles.row, styles.spread]>
-        <span class=styles.status>
-          <span class=[styles.dot, connected && styles.dotOn]/>
-          <if=connected>Connected — ${lamp?.name}</if>
-          <else>Not connected</else>
+      <div class=styles.spread>
+        <span>
+          <if=connected>🟢 ${lamp?.name}</if>
+          <else>⚪ Not connected</else>
         </span>
-        <div class=styles.row>
+        <span class=styles.row>
           <if=!connected>
-            <button
-              class=[styles.btn, styles.btnPrimary]
-              disabled=(!supported || connecting)
-              onClick() { connect(); }>
-              ${connecting ? "Connecting…" : "Connect lamp"}
+            <button class=styles.primary disabled=(!ok || connecting) onClick() { connect(); }>
+              ${connecting ? "Connecting…" : "Connect"}
             </button>
           </if>
           <else>
-            <button class=styles.btn onClick() { runInspect(); }>Inspect</button>
-            <button class=[styles.btn, styles.btnDanger] onClick() { disconnect(); }>
-              Disconnect
+            <button onClick() { run("Inspected", () => lamp!.inspect().then((s) => { services = s; return `Found ${s.length} services`; })); }>
+              Inspect
             </button>
+            <button onClick() { lamp?.disconnect(); lamp = null; services = []; }>Disconnect</button>
           </else>
-        </div>
+        </span>
       </div>
-      <p class=styles.hint>
-        Click <strong>Connect</strong>, pick your lamp from the browser chooser,
-        then <strong>Inspect</strong> to see which services it exposes.
-      </p>
     </section>
 
     <section class=styles.panel>
-      <h2>Protocol</h2>
-      <select
-        class=styles.select
-        onChange(e) {
-          protoId = (e.target as HTMLSelectElement).value;
-        }>
-        <for|p| of=PROTOCOLS>
-          <option value=p.id selected=(p.id === protoId)>${p.name}</option>
-        </for>
-      </select>
-      <p class=styles.hint>${proto.note}</p>
-      <p class=styles.hint>
-        Active target — service <span class=styles.mono>${uuidLabel(proto.service)}</span>,
-        characteristic <span class=styles.mono>${uuidLabel(proto.characteristic)}</span>.
-      </p>
-    </section>
-
-    <section class=styles.panel>
-      <h2>Color</h2>
-      <div class=styles.row style="align-items: stretch">
-        <div class=styles.field style="flex: 1 1 10rem">
-          <label for="picker">Pick a color</label>
-          <input
-            id="picker"
-            class=styles.colorInput
-            type="color"
-            value=color
-            onInput(e) {
-              color = (e.target as HTMLInputElement).value;
-            }>
-        </div>
-        <div class=styles.field style="flex: 2 1 14rem; justify-content: flex-end">
-          <label for="bright">Brightness — ${brightness}%</label>
-          <input
-            id="bright"
-            class=styles.slider
-            type="range"
-            min="0"
-            max="100"
-            value=brightness
-            onInput(e) {
-              brightness = Number((e.target as HTMLInputElement).value);
-            }>
-        </div>
-      </div>
-
-      <div class=styles.swatches style="margin-top: 0.9rem">
-        <for|hex| of=Swatches>
-          <button
-            class=styles.swatch
-            style=`background:${hex}`
-            aria-label=`set ${hex}`
-            onClick() {
-              color = hex;
-              if (connected) applyColor();
-            }/>
-        </for>
-      </div>
-
-      <div class=styles.row style="margin-top: 1rem">
-        <button
-          class=[styles.btn, styles.btnPrimary]
-          disabled=!connected
-          onClick() { applyColor(); }>
-          Apply color
-        </button>
-        <button class=styles.btn disabled=!connected onClick() { power(true); }>
-          Power on
-        </button>
-        <button class=styles.btn disabled=!connected onClick() { power(false); }>
-          Power off
-        </button>
+      <h2>Color &amp; power</h2>
+      <p class=styles.muted>Uses the Triones protocol (0xFFE5 / 0xFFE9) — the most common one.</p>
+      <div class=styles.row>
+        <input type="color" value=color onInput(e) { color = (e.target as HTMLInputElement).value; }>
+        <button class=styles.primary disabled=!connected onClick() { applyColor(); }>Apply</button>
+        <button disabled=!connected onClick() { run("Power on", () => lamp!.write(SERVICE, CHARACTERISTIC, powerCommand(true))); }>On</button>
+        <button disabled=!connected onClick() { run("Power off", () => lamp!.write(SERVICE, CHARACTERISTIC, powerCommand(false))); }>Off</button>
       </div>
     </section>
 
     <if=services.length>
       <section class=styles.panel>
-        <h2>Discovered services</h2>
-        <div class=styles.inspector>
-          <for|svc| of=services>
-            <div class=styles.svc>
-              <div class=styles.svcName>${svc.uuid}</div>
-              <if=!svc.characteristics.length>
-                <div class=styles.charLine>(no readable characteristics)</div>
-              </if>
-              <for|c| of=svc.characteristics>
-                <div class=styles.charLine>
-                  ${c.uuid}
-                  <for|prop| of=c.props>
-                    <span class=styles.tag>${prop}</span>
-                  </for>
-                </div>
-              </for>
-            </div>
-          </for>
-        </div>
-        <p class=styles.hint>
-          Look for a characteristic with <span class=styles.mono>write</span> or
-          <span class=styles.mono>writeNR</span> — that's where commands go. Set
-          it as the raw target below to experiment.
-        </p>
+        <h2>Services</h2>
+        <p class=styles.muted>Find a characteristic marked <b>write</b> — that's the command target.</p>
+        <for|svc| of=services>
+          <div class=styles.svc>
+            <div class=styles.mono>${svc.uuid}</div>
+            <for|c| of=svc.chars>
+              <div class=[styles.mono, styles.char]>
+                ${c.uuid} <if=c.write><span class=styles.tag>write</span></if>
+              </div>
+            </for>
+          </div>
+        </for>
       </section>
     </if>
 
     <section class=styles.panel>
-      <h2>Raw command console</h2>
-      <p class=styles.hint>
-        For reverse-engineering an unknown lamp: write arbitrary bytes to any
-        characteristic and watch what the light does.
-      </p>
-      <div class=styles.row style="margin-top: 0.6rem">
-        <div class=styles.field style="flex: 1 1 8rem">
-          <label for="rawSvc">Service</label>
-          <input
-            id="rawSvc"
-            class=styles.hexInput
-            value=rawService
-            onInput(e) { rawService = (e.target as HTMLInputElement).value; }>
-        </div>
-        <div class=styles.field style="flex: 1 1 8rem">
-          <label for="rawChr">Characteristic</label>
-          <input
-            id="rawChr"
-            class=styles.hexInput
-            value=rawChar
-            onInput(e) { rawChar = (e.target as HTMLInputElement).value; }>
-        </div>
-      </div>
-      <div class=styles.row style="margin-top: 0.6rem">
-        <div class=styles.field style="flex: 1 1 100%">
-          <label for="rawBytes">Bytes (hex)</label>
-          <input
-            id="rawBytes"
-            class=styles.hexInput
-            value=rawBytes
-            onInput(e) { rawBytes = (e.target as HTMLInputElement).value; }>
-        </div>
-      </div>
-      <div class=styles.row style="margin-top: 0.7rem">
-        <button
-          class=[styles.btn, styles.btnPrimary]
-          disabled=!connected
-          onClick() { sendRawCmd(); }>
-          Send bytes
-        </button>
+      <h2>Raw console</h2>
+      <p class=styles.muted>Write arbitrary bytes to any characteristic to reverse-engineer an unknown lamp.</p>
+      <div class=styles.row>
+        <input class=styles.mono style="width:6rem" value=rawService onInput(e) { rawService = (e.target as HTMLInputElement).value; } aria-label="service">
+        <input class=styles.mono style="width:6rem" value=rawChar onInput(e) { rawChar = (e.target as HTMLInputElement).value; } aria-label="characteristic">
+        <input class=[styles.mono, styles.grow] value=rawBytes onInput(e) { rawBytes = (e.target as HTMLInputElement).value; } aria-label="bytes">
+        <button class=styles.primary disabled=!connected onClick() { sendRaw(); }>Send</button>
       </div>
     </section>
 
-    <section class=styles.panel>
-      <div class=[styles.row, styles.spread]>
-        <h2 style="margin: 0">Log</h2>
-        <button class=styles.btn onClick() { logs = []; }>Clear</button>
-      </div>
-      <div class=styles.log style="margin-top: 0.75rem">
-        <if=!logs.length>Waiting for activity…</if>
-        <for|entry| of=logs>
-          <div
-            class=[
-              entry.kind === "err" && styles.logErr,
-              entry.kind === "ok" && styles.logOk,
-            ]>
-            <span class=styles.logTime>${entry.time}</span> ${entry.msg}
-          </div>
-        </for>
-      </div>
-    </section>
+    <if=logs.length>
+      <section class=styles.panel>
+        <div class=styles.spread>
+          <h2>Log</h2>
+          <button onClick() { logs = []; }>Clear</button>
+        </div>
+        <div class=styles.log>
+          <for|e| of=logs>
+            <div class=[e.kind === "err" && styles.err, e.kind === "ok" && styles.good]>${e.msg}</div>
+          </for>
+        </div>
+      </section>
+    </if>
 
-    <footer>
-      <a class=styles.footerLink href="/">← lavalva.dev</a>
-    </footer>
+    <a class=styles.muted href="/">← lavalva.dev</a>
   </div>
 </div>
