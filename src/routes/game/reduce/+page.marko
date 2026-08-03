@@ -49,12 +49,20 @@ client const vibrate = (
     ),
   );
   today = now.toDateString();
-  looseLetters = Array.from(
+  const chars = Array.from(
     {
       length: 20,
     },
     randomLetter,
-  ).map((char, id) => ({
+  );
+  // a q is only playable with a u, so turn any excess q's into u's
+  while (
+    chars.filter((char) => char === "q").length >
+    chars.filter((char) => char === "u").length
+  ) {
+    chars[chars.lastIndexOf("q")] = "u";
+  }
+  looseLetters = chars.map((char, id) => ({
     char,
     id,
   }));
