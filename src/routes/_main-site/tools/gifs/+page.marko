@@ -5,6 +5,7 @@ import type { GifMode, RenderResult } from "./capture";
 // binding is undefined on the server, which renders the handles away entirely.
 import { HANDLES, clamp, dragCrop } from "./crop";
 client import { renderGif } from "./capture";
+client import { previewSeek, primeVideo } from "./preview";
 
 // Enough for a few seconds of smooth motion without melting a phone.
 static const MAX_FRAMES = 240;
@@ -41,6 +42,7 @@ static function formatBytes(bytes: number) {
 <let/start=0>
 <let/end=0>
 <let/playing=false>
+<let/priming=true>
 
 <let/crop={ x: 0, y: 0, width: 1, height: 1 } as Crop>
 
@@ -81,6 +83,7 @@ static function formatBytes(bytes: number) {
   if (videoUrl) URL.revokeObjectURL(videoUrl);
   fileName = file.name;
   duration = 0;
+  priming = true;
   error = "";
   videoUrl = URL.createObjectURL(file);
 }>
@@ -95,7 +98,7 @@ static function formatBytes(bytes: number) {
 <const/seekTo(time: number) {
   const video = videoEl();
   video.pause();
-  video.currentTime = time;
+  previewSeek(video, time);
 }>
 
 <const/beginDrag(event: PointerEvent, el: HTMLElement, handle: Handle) {
@@ -259,16 +262,20 @@ static function formatBytes(bytes: number) {
               // once you seek past the end.
               el.currentTime = 1e101;
             }
+            primeVideo(el).finally(() => {
+              priming = false;
+              previewSeek(el, start);
+            });
           }
           onDurationChange(e, el: HTMLVideoElement) {
             applyDuration(el.duration);
             if (el.currentTime > el.duration) el.currentTime = 0;
           }
           onPlay() {
-            playing = true;
+            if (!priming) playing = true;
           }
           onPause() {
-            playing = false;
+            if (!priming) playing = false;
           }
           onTimeUpdate(e, el: HTMLVideoElement) {
             // Only wrap around during playback. Without the paused check,

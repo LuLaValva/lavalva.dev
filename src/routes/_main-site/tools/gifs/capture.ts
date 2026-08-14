@@ -1,5 +1,6 @@
 import type { Crop } from "./crop";
 import { encodeGif } from "./gif-encoder";
+import { primeVideo } from "./preview";
 
 export type GifMode = "loop" | "pingpong" | "once";
 
@@ -60,6 +61,9 @@ function seek(video: HTMLVideoElement, time: number) {
 export async function renderGif(request: RenderRequest): Promise<RenderResult> {
   const { video, crop, start, fps, speed, mode, frameCount, dither } = request;
 
+  // Without this, a browser that hasn't buffered any media data (iOS Safari
+  // until something plays) hands back blank or repeated frames.
+  await primeVideo(video);
   video.pause();
   const videoWidth = video.videoWidth;
   const videoHeight = video.videoHeight;
