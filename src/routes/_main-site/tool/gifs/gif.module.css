@@ -197,16 +197,82 @@ body {
   }
 }
 
-.choice {
-  display: grid;
-  grid-template-columns: 5rem 1fr;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
+.playbar {
+  display: flex;
+  justify-content: center;
+  margin: 0.75rem 0 0;
+}
 
-  select {
-    width: 100%;
-    padding: 0.25rem;
+.play {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  background-color: light-dark(#0001, #fff2);
+  cursor: pointer;
+
+  &:hover {
+    background-color: light-dark(#0002, #fff3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  padding: 0;
+  margin: 0.75rem 0;
+
+  legend {
+    font-size: 0.85rem;
+    opacity: 0.6;
+  }
+}
+
+.chip {
+  cursor: pointer;
+
+  input {
+    /* Focusable, but the pill is what you see. */
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  span {
+    display: block;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    background-color: light-dark(#0001, #fff1);
+    border: 1px solid transparent;
+  }
+
+  &:hover span {
+    background-color: light-dark(#0002, #fff2);
+  }
+
+  input:focus-visible + span {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  input:checked + span {
+    background-color: light-dark(rgb(21, 96, 218), rgb(171, 212, 250));
+    color: light-dark(white, black);
+    font-weight: bold;
   }
 }
 

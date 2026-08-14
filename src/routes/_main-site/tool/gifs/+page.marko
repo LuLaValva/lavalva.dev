@@ -27,11 +27,11 @@ static const FRAME_RATES: { delay: number; label: string }[] = [
 // Simple ratios: each one samples the source at a regular stride rather than
 // landing between frames the way an arbitrary multiplier does.
 static const SPEEDS: { value: number; label: string }[] = [
-  { value: 0.25, label: "0.25× — quarter speed" },
-  { value: 0.5, label: "0.5× — half speed" },
-  { value: 1, label: "1× — realtime" },
-  { value: 2, label: "2× — double speed" },
-  { value: 4, label: "4× — quadruple speed" },
+  { value: 0.25, label: "0.25×" },
+  { value: 0.5, label: "0.5×" },
+  { value: 1, label: "1×" },
+  { value: 2, label: "2×" },
+  { value: 4, label: "4×" },
 ];
 static const MODES: { value: GifMode; label: string; hint: string }[] = [
   { value: "loop", label: "Loop", hint: "restarts from the beginning" },
@@ -63,8 +63,8 @@ static function formatBytes(bytes: number) {
 
 <let/crop={ x: 0, y: 0, width: 1, height: 1 } as Crop>
 
-<let/delay=10>
-<let/speed=1>
+<let/delayChoice="10">
+<let/speedChoice="1">
 <let/mode="loop">
 <let/requestedWidth=360>
 <let/dither=true>
@@ -75,16 +75,20 @@ static function formatBytes(bytes: number) {
 <let/error="">
 <let/result=null as (RenderResult & { url: string }) | null>
 
+<const/delay=+delayChoice>
+<const/speed=+speedChoice>
 <const/fps=100 / delay>
+// Seconds of source video between two output frames.
+<const/sourceStep=(speed * delay) / 100>
 <const/cropWidth=Math.max(1, Math.round(crop.width * naturalWidth))>
 <const/cropHeight=Math.max(1, Math.round(crop.height * naturalHeight))>
 <const/maxWidth=Math.max(80, Math.min(cropWidth, 720))>
 <const/outWidth=Math.min(requestedWidth, maxWidth)>
 <const/outHeight=Math.max(1, Math.round((outWidth * cropHeight) / cropWidth))>
 
-// One output frame every `speed / fps` seconds of source video.
-<const/uncappedFrames=Math.max(1, Math.floor(((end - start) * fps) / speed))>
+<const/uncappedFrames=Math.max(1, Math.round((end - start) / sourceStep))>
 <const/frameCount=Math.min(uncappedFrames, MAX_FRAMES)>
+<const/snappedEnd=Math.min(duration, start + frameCount * sourceStep)>
 // `checkedValue` binds a plain string, so narrow it back once, here.
 <const/gifMode=mode as GifMode>
 <const/playedFrames=(
@@ -113,6 +117,26 @@ static function formatBytes(bytes: number) {
   const video = videoEl();
   video.pause();
   previewSeek(video, time);
+}>
+
+<const/setStart(value: number) {
+  const next = clamp(value, 0, Math.max(0, duration - sourceStep));
+  start = next;
+  // Pushed past the end? Take it along rather than refusing to move.
+  if (end < next + sourceStep) end = Math.min(duration, next + sourceStep);
+  seekTo(next);
+}>
+
+<const/setEnd(value: number) {
+  const next = clamp(value, sourceStep, duration);
+  const nextStart = Math.min(start, Math.max(0, next - sourceStep));
+  start = nextStart;
+  end = next;
+  const frames = Math.min(
+    MAX_FRAMES,
+    Math.max(1, Math.round((next - nextStart) / sourceStep)),
+  );
+  seekTo(Math.min(duration, nextStart + frames * sourceStep));
 }>
 
 <const/beginDrag(event: PointerEvent, el: HTMLElement, handle: Handle) {
@@ -312,7 +336,7 @@ static function formatBytes(bytes: number) {
             // Only wrap around during playback. Without the paused check,
             // scrubbing the end handle past `end` immediately yanked the
             // preview back to `start`, which read as the video jittering.
-            if (rendering || el.paused || el.currentTime < end) return;
+            if (rendering || el.paused || el.currentTime < snappedEnd) return;
             el.currentTime = start;
           }
           onError() {
@@ -360,6 +384,33 @@ static function formatBytes(bytes: number) {
         </div>
       </div>
 
+      <p class=styles.playbar>
+        <button
+          class=styles.play
+          type="button"
+          aria-label=playing ? "Pause preview" : "Play preview"
+          onClick() {
+            const video = videoEl();
+            if (video.paused) {
+              if (
+                video.currentTime < start ||
+                video.currentTime >= snappedEnd
+              ) {
+                video.currentTime = start;
+              }
+              video.play().then(
+                () => (playing = true),
+                () => {},
+              );
+            } else {
+              video.pause();
+            }
+          }
+        >
+          ${playing ? "⏸" : "▶"}
+        </button>
+      </p>
+
       <p class=styles.hint>
         Drag the box or its corners. With one focused, the arrow keys nudge it —
         hold shift for bigger steps, or alt for one pixel at a time.
@@ -389,8 +440,7 @@ static function formatBytes(bytes: number) {
           step="0.01"
           value=start
           valueChange(value) {
-            start = clamp(+value, 0, Math.max(0, end - 0.05));
-            seekTo(start);
+            setStart(+value);
           }
         >
         <output>${formatTime(start)}</output>
@@ -402,66 +452,50 @@ static function formatBytes(bytes: number) {
           min="0"
           max=duration
           step="0.01"
-          value=end
+          value=snappedEnd
           valueChange(value) {
-            end = clamp(+value, start + 0.05, duration);
-            seekTo(end);
+            setEnd(+value);
           }
         >
-        <output>${formatTime(end)}</output>
+        <output>${formatTime(snappedEnd)}</output>
       </label>
       <p class=styles.meta>
-        <button
-          class=styles.link
-          onClick() {
-            const video = videoEl();
-            if (video.paused) {
-              if (video.currentTime < start || video.currentTime >= end) {
-                video.currentTime = start;
-              }
-              video.play().then(
-                () => (playing = true),
-                () => {},
-              );
-            } else {
-              video.pause();
-            }
-          }
-        >
-          ${playing ? "⏸ Pause" : "▶ Preview as GIF"}
-        </button>
-        <span>${formatTime(Math.max(0, end - start))} selected</span>
+        <span>${frameCount} frames selected</span>
+        <span>${formatTime(Math.max(0, snappedEnd - start))} of source</span>
       </p>
     </section>
 
     <section>
       <h2>Timing</h2>
-      <label class=styles.choice>
-        <span>Frame rate</span>
-        <select
-          value=String(delay)
-          valueChange(value) {
-            delay = +value;
-          }
-        >
-          <for|option| of=FRAME_RATES by="delay">
-            <option value=String(option.delay)>${option.label}</option>
-          </for>
-        </select>
-      </label>
-      <label class=styles.choice>
-        <span>Speed</span>
-        <select
-          value=String(speed)
-          valueChange(value) {
-            speed = +value;
-          }
-        >
-          <for|option| of=SPEEDS by="value">
-            <option value=String(option.value)>${option.label}</option>
-          </for>
-        </select>
-      </label>
+      <fieldset class=styles.chips>
+        <legend>Frame rate</legend>
+        <for|option| of=FRAME_RATES by="delay">
+          <label class=styles.chip>
+            <input
+              type="radio"
+              name="delay"
+              value=String(option.delay)
+              checkedValue:=delayChoice
+            >
+            <span>${option.label}</span>
+          </label>
+        </for>
+      </fieldset>
+
+      <fieldset class=styles.chips>
+        <legend>Speed</legend>
+        <for|option| of=SPEEDS by="value">
+          <label class=styles.chip>
+            <input
+              type="radio"
+              name="speed"
+              value=String(option.value)
+              checkedValue:=speedChoice
+            >
+            <span>${option.label}</span>
+          </label>
+        </for>
+      </fieldset>
       <label class=styles.slider>
         <span>Width</span>
         <input
