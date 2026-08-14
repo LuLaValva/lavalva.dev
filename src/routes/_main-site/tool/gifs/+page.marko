@@ -41,10 +41,10 @@ static const PALETTES: { value: number; label: string }[] = [
   { value: 64, label: "64" },
   { value: 32, label: "32" },
 ];
-static const MODES: { value: GifMode; label: string; hint: string }[] = [
-  { value: "loop", label: "Loop", hint: "restarts from the beginning" },
-  { value: "pingpong", label: "Ping-pong", hint: "plays forwards, then back" },
-  { value: "once", label: "Play once", hint: "stops on the last frame" },
+static const MODES: { value: GifMode; label: string }[] = [
+  { value: "loop", label: "Loop" },
+  { value: "pingpong", label: "Ping-pong" },
+  { value: "once", label: "Once" },
 ];
 
 static function formatTime(seconds: number) {
@@ -98,7 +98,6 @@ static function formatBytes(bytes: number) {
 
 <const/uncappedFrames=Math.max(1, Math.round((end - start) / sourceStep))>
 <const/frameCount=Math.min(uncappedFrames, MAX_FRAMES)>
-<const/snappedEnd=Math.min(duration, start + frameCount * sourceStep)>
 // `checkedValue` binds a plain string, so narrow it back once, here.
 <const/gifMode=mode as GifMode>
 <const/playedFrames=(
@@ -139,14 +138,17 @@ static function formatBytes(bytes: number) {
 
 <const/setEnd(value: number) {
   const next = clamp(value, sourceStep, duration);
+  // Pushed past the start? Take it along rather than refusing to move.
   const nextStart = Math.min(start, Math.max(0, next - sourceStep));
-  start = nextStart;
-  end = next;
+  // Only the end handle locks to a frame boundary.
   const frames = Math.min(
     MAX_FRAMES,
     Math.max(1, Math.round((next - nextStart) / sourceStep)),
   );
-  seekTo(Math.min(duration, nextStart + frames * sourceStep));
+  const snapped = Math.min(duration, nextStart + frames * sourceStep);
+  start = nextStart;
+  end = snapped;
+  seekTo(snapped);
 }>
 
 <const/beginDrag(event: PointerEvent, el: HTMLElement, handle: Handle) {
@@ -277,7 +279,11 @@ static function formatBytes(bytes: number) {
   </p>
 
   <section
-    class=[styles.dropzone, dragOver && styles.armed]
+    class=[
+      styles.dropzone,
+      videoUrl && styles.compact,
+      dragOver && styles.armed,
+    ]
     onDragOver(e) {
       e.preventDefault();
       dragOver = true;
@@ -310,8 +316,7 @@ static function formatBytes(bytes: number) {
   </if>
 
   <show=!!videoUrl>
-    <section>
-      <h2>Frame the shot</h2>
+    <div class=styles.previewDock>
       <div/stageEl class=styles.stage>
         <video/videoEl
           class=styles.video
@@ -347,7 +352,7 @@ static function formatBytes(bytes: number) {
             // Only wrap around during playback. Without the paused check,
             // scrubbing the end handle past `end` immediately yanked the
             // preview back to `start`, which read as the video jittering.
-            if (rendering || el.paused || el.currentTime < snappedEnd) return;
+            if (rendering || el.paused || el.currentTime < end) return;
             el.currentTime = start;
           }
           onError() {
@@ -403,10 +408,7 @@ static function formatBytes(bytes: number) {
           onClick() {
             const video = videoEl();
             if (video.paused) {
-              if (
-                video.currentTime < start ||
-                video.currentTime >= snappedEnd
-              ) {
+              if (video.currentTime < start || video.currentTime >= end) {
                 video.currentTime = start;
               }
               video.play().then(
@@ -421,10 +423,11 @@ static function formatBytes(bytes: number) {
           ${playing ? "⏸" : "▶"}
         </button>
       </p>
+    </div>
 
+    <section>
       <p class=styles.hint>
-        Drag the box or its corners. With one focused, the arrow keys nudge it —
-        hold shift for bigger steps, or alt for one pixel at a time.
+        Drag the box or corners; arrow keys nudge (shift bigger, alt one pixel).
       </p>
 
       <p class=styles.meta>
@@ -441,7 +444,6 @@ static function formatBytes(bytes: number) {
     </section>
 
     <section>
-      <h2>Pick the frames</h2>
       <label class=styles.slider>
         <span>Start</span>
         <input
@@ -463,21 +465,20 @@ static function formatBytes(bytes: number) {
           min="0"
           max=duration
           step="0.01"
-          value=snappedEnd
+          value=end
           valueChange(value) {
             setEnd(+value);
           }
         >
-        <output>${formatTime(snappedEnd)}</output>
+        <output>${formatTime(end)}</output>
       </label>
       <p class=styles.meta>
         <span>${frameCount} frames selected</span>
-        <span>${formatTime(Math.max(0, snappedEnd - start))} of source</span>
+        <span>${formatTime(Math.max(0, end - start))} of source</span>
       </p>
     </section>
 
     <section>
-      <h2>Timing</h2>
       <fieldset class=styles.chips>
         <legend>Frame rate</legend>
         <for|option| of=FRAME_RATES by="delay">
@@ -521,19 +522,17 @@ static function formatBytes(bytes: number) {
         >
         <output>${outWidth}px</output>
       </label>
-      <fieldset class=styles.modes>
+      <fieldset class=styles.chips>
         <legend>Playback</legend>
         <for|option| of=MODES by="value">
-          <label class=styles.mode>
+          <label class=styles.chip>
             <input
               type="radio"
               name="mode"
               value=option.value
               checkedValue:=mode
             >
-            <span>
-              <strong>${option.label}</strong><small>${option.hint}</small>
-            </span>
+            <span>${option.label}</span>
           </label>
         </for>
       </fieldset>
