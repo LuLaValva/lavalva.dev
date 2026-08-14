@@ -45,7 +45,9 @@ static function formatBytes(bytes: number) {
 <let/crop={ x: 0, y: 0, width: 1, height: 1 } as Crop>
 
 <let/fps=12>
-<let/speed=1>
+// Speed rides a log scale: the slider is an exponent, so a step is always the
+// same proportional change whether you're near 0.25x or 4x.
+<let/speedExponent=0>
 <let/mode="loop">
 <let/requestedWidth=360>
 <let/dither=true>
@@ -57,6 +59,7 @@ static function formatBytes(bytes: number) {
 <let/result=null as RenderResult | null>
 <let/resultUrl="">
 
+<const/speed=Math.round(Math.pow(2, speedExponent) * 100) / 100>
 <const/cropWidth=Math.max(1, Math.round(crop.width * naturalWidth))>
 <const/cropHeight=Math.max(1, Math.round(crop.height * naturalHeight))>
 <const/maxWidth=Math.max(80, Math.min(cropWidth, 720))>
@@ -124,25 +127,37 @@ static function formatBytes(bytes: number) {
 }>
 
 <const/nudge(event: KeyboardEvent, handle: Handle) {
-  const step = event.shiftKey ? 0.1 : 0.01;
+  // Alt holds it to a single source pixel; the crop is stored as a fraction,
+  // so one pixel is a different step on each axis.
+  const stepX = event.altKey
+    ? 1 / Math.max(1, naturalWidth)
+    : event.shiftKey
+      ? 0.1
+      : 0.01;
+  const stepY = event.altKey
+    ? 1 / Math.max(1, naturalHeight)
+    : event.shiftKey
+      ? 0.1
+      : 0.01;
   let dx = 0;
   let dy = 0;
   switch (event.key) {
     case "ArrowLeft":
-      dx = -step;
+      dx = -stepX;
       break;
     case "ArrowRight":
-      dx = step;
+      dx = stepX;
       break;
     case "ArrowUp":
-      dy = -step;
+      dy = -stepY;
       break;
     case "ArrowDown":
-      dy = step;
+      dy = stepY;
       break;
     default:
       return;
   }
+  // Also stops alt+arrow from triggering browser history navigation.
   event.preventDefault();
   crop = dragCrop(crop, handle, dx, dy);
 }>
@@ -256,9 +271,11 @@ static function formatBytes(bytes: number) {
             playing = false;
           }
           onTimeUpdate(e, el: HTMLVideoElement) {
-            if (rendering || el.currentTime < end) return;
+            // Only wrap around during playback. Without the paused check,
+            // scrubbing the end handle past `end` immediately yanked the
+            // preview back to `start`, which read as the video jittering.
+            if (rendering || el.paused || el.currentTime < end) return;
             el.currentTime = start;
-            if (!el.paused) el.play();
           }
           onError() {
             error = "This browser can't play that video file.";
@@ -302,6 +319,11 @@ static function formatBytes(bytes: number) {
           </for>
         </div>
       </div>
+
+      <p class=styles.hint>
+        Drag the box or its corners. With one focused, the arrow keys nudge it —
+        hold shift for bigger steps, or alt for one pixel at a time.
+      </p>
 
       <p class=styles.meta>
         <span aria-live="polite">Crop ${cropWidth}×${cropHeight}</span>
@@ -389,15 +411,15 @@ static function formatBytes(bytes: number) {
         <span>Speed</span>
         <input
           type="range"
-          min="0.25"
-          max="4"
-          step="0.25"
-          value=speed
+          min="-2"
+          max="2"
+          step="0.02"
+          value=speedExponent
           valueChange(value) {
-            speed = +value;
+            speedExponent = +value;
           }
         >
-        <output>${speed}×</output>
+        <output>${speed.toFixed(2)}×</output>
       </label>
       <label class=styles.slider>
         <span>Width</span>
