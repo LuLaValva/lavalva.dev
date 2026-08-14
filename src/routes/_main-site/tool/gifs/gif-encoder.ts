@@ -1,8 +1,6 @@
 // A small GIF89a encoder: median-cut palette + optional Floyd-Steinberg
 // dithering + LZW. Frames come in as raw RGBA (canvas `ImageData.data`).
 
-/** The most a GIF's global color table can hold. */
-const MAX_COLORS = 256;
 /** Pixels sampled across every frame to build the shared palette. */
 const MAX_SAMPLES = 40_000;
 /** Largest code the LZW table can hold before it has to be reset. */
@@ -320,23 +318,24 @@ function lzwEncode(indices: Uint8Array, minCodeSize: number, out: ByteBuffer) {
   flushChunk();
 }
 
-interface GifOptions {
+export interface GifOptions {
   width: number;
   height: number;
   /** Frame delay in hundredths of a second. */
   delay: number;
   loop: boolean;
   dither: boolean;
+  /** Palette size. Fewer colors means a smaller file and coarser gradients. */
+  colors: number;
   onProgress?: (fraction: number) => void;
 }
 
-/** Async only so the progress callback can actually paint between frames. */
-export async function encodeGif(
+export function encodeGif(
   frames: Uint8ClampedArray[],
   options: GifOptions,
-): Promise<Uint8Array<ArrayBuffer>> {
-  const { width, height, delay, loop, dither } = options;
-  const palette = buildPalette(frames, MAX_COLORS);
+): Uint8Array<ArrayBuffer> {
+  const { width, height, delay, loop, dither, colors: maxColors } = options;
+  const palette = buildPalette(frames, maxColors);
   const colors = palette.length / 3;
   const depth = Math.max(2, Math.ceil(Math.log2(Math.max(2, colors))));
   const map = new PaletteMap(palette);
@@ -395,7 +394,6 @@ export async function encodeGif(
     out.byte(0);
 
     options.onProgress?.((f + 1) / frames.length);
-    await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
   out.byte(0x3b);

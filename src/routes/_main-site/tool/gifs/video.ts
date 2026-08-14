@@ -1,5 +1,5 @@
 import type { Crop } from "./crop";
-import { encodeGif } from "./gif-encoder";
+import type { GifOptions } from "./gif-encoder";
 
 export type GifMode = "loop" | "pingpong" | "once";
 
@@ -104,6 +104,8 @@ interface RenderRequest {
   /** Output width in pixels; height follows the crop's aspect ratio. */
   width: number;
   dither: boolean;
+  /** Palette size. Fewer colors means a smaller file. */
+  colors: number;
   onProgress?: (stage: string, fraction: number) => void;
 }
 
@@ -114,8 +116,45 @@ export interface RenderResult {
   frames: number;
 }
 
+/**
+ * Quantizing and LZW-coding every frame is the slow part, and it's pure
+ * computation, so it runs off the main thread and the page stays responsive.
+ * Frame buffers are transferred rather than copied.
+ */
+function encodeOffThread(
+  frames: Uint8ClampedArray[],
+  options: Omit<GifOptions, "onProgress">,
+  onProgress: (fraction: number) => void,
+) {
+  return new Promise<Uint8Array<ArrayBuffer>>((resolve, reject) => {
+    const worker = new Worker(new URL("./encode-worker.ts", import.meta.url), {
+      type: "module",
+    });
+
+    worker.onmessage = (event) => {
+      const message = event.data;
+      if (message.type === "progress") {
+        onProgress(message.fraction);
+        return;
+      }
+      worker.terminate();
+      if (message.type === "done") resolve(message.bytes);
+      else reject(new Error(message.message));
+    };
+    worker.onerror = (event) => {
+      worker.terminate();
+      reject(new Error(event.message || "The GIF encoder crashed"));
+    };
+
+    // Ping-pong repeats frame objects, so the same buffer can appear twice —
+    // listing one twice in the transfer list is an error.
+    const buffers = [...new Set(frames.map((frame) => frame.buffer))];
+    worker.postMessage({ frames, options }, buffers as Transferable[]);
+  });
+}
+
 export async function renderGif(request: RenderRequest): Promise<RenderResult> {
-  const { video, crop, start, delay, speed, mode, frameCount, dither } =
+  const { video, crop, start, delay, speed, mode, frameCount, dither, colors } =
     request;
 
   // Without this, a browser that hasn't buffered any media data (iOS Safari
@@ -158,14 +197,11 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
       ? frames.concat(frames.slice(1, -1).reverse())
       : frames;
 
-  const bytes = await encodeGif(ordered, {
-    width,
-    height,
-    delay,
-    loop: mode !== "once",
-    dither,
-    onProgress: (fraction) => request.onProgress?.("Encoding GIF", fraction),
-  });
+  const bytes = await encodeOffThread(
+    ordered,
+    { width, height, delay, loop: mode !== "once", dither, colors },
+    (fraction) => request.onProgress?.("Encoding GIF", fraction),
+  );
 
   return {
     blob: new Blob([bytes], { type: "image/gif" }),
