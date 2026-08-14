@@ -4,34 +4,34 @@ import type { GifMode, RenderResult } from "./video";
 // Not a `client import` — HANDLES is read while rendering, and a client-only
 // binding is undefined on the server, which renders the handles away entirely.
 import { HANDLES, clamp, dragCrop } from "./crop";
-client import { previewSeek, primeVideo, renderGif } from "./video";
+client import {
+  detectFrameRate,
+  previewSeek,
+  primeVideo,
+  renderGif,
+} from "./video";
 
 // Enough for a few seconds of smooth motion without melting a phone.
 static const MAX_FRAMES = 240;
+// Browsers treat a delay of 0 or 1 hundredth as 10, so 2 is the real floor.
+static const MIN_DELAY = 2;
+// Firefox has no way to report a video's frame rate; assume the most common one
+// so the tool still works there, just without exact frame boundaries.
+static const ASSUMED_FRAME_SECONDS = 1 / 30;
 static const HANDLE_LABELS: Record<Corner, string> = {
   nw: "top left",
   ne: "top right",
   sw: "bottom left",
   se: "bottom right",
 };
-// GIF delays are whole hundredths of a second, so only rates that divide 100
-// exactly are honest: anything else silently exports at a different speed than
-// it claims. Delay is the primitive here; the label is the rate it really is.
-static const FRAME_RATES: { delay: number; label: string }[] = [
-  { delay: 20, label: "5 fps" },
-  { delay: 10, label: "10 fps" },
-  { delay: 8, label: "12.5 fps" },
-  { delay: 5, label: "20 fps" },
-  { delay: 4, label: "25 fps" },
-];
-// Simple ratios: each one samples the source at a regular stride rather than
-// landing between frames the way an arbitrary multiplier does.
-static const SPEEDS: { value: number; label: string }[] = [
-  { value: 0.25, label: "0.25×" },
-  { value: 0.5, label: "0.5×" },
-  { value: 1, label: "1×" },
-  { value: 2, label: "2×" },
-  { value: 4, label: "4×" },
+// Every output frame is a real source frame, so sampling is always a whole
+// fraction of the source's own rate — never an interpolation between frames.
+static const STRIDES: { value: number; label: string }[] = [
+  { value: 1, label: "All" },
+  { value: 2, label: "1/2" },
+  { value: 3, label: "1/3" },
+  { value: 4, label: "1/4" },
+  { value: 6, label: "1/6" },
 ];
 // Fewer colors means a smaller file; flat or screen-recorded footage barely
 // notices the drop, photographic footage does.
@@ -46,6 +46,16 @@ static const MODES: { value: GifMode; label: string }[] = [
   { value: "pingpong", label: "Ping-pong" },
   { value: "once", label: "Once" },
 ];
+
+// How many output frames fit in a span, kept to at least one and to whatever
+// the encoder can be trusted with.
+static function frameFit(span: number, step: number) {
+  return Math.min(MAX_FRAMES, Math.max(1, Math.round(span / step)));
+}
+
+static function formatRate(perSecond: number) {
+  return `${Math.round(perSecond * 10) / 10} fps`;
+}
 
 static function formatTime(seconds: number) {
   const minutes = Math.floor(seconds / 60);
@@ -71,8 +81,14 @@ static function formatBytes(bytes: number) {
 
 <let/crop={ x: 0, y: 0, width: 1, height: 1 } as Crop>
 
-<let/delayChoice="10">
-<let/speedChoice="1">
+<let/frameSeconds=ASSUMED_FRAME_SECONDS>
+// "" until the measurement below has had its say — the answer takes a few
+// frames of playback to arrive, and claiming either way before then is a lie.
+<let/frameRateSource="">
+<let/strideChoice="1">
+// Speed rides an exponent so a drag covers 0.25× to 8× with the same relative
+// precision everywhere, instead of crawling at the bottom of the range.
+<let/speedExponent=0>
 <let/mode="loop">
 <let/requestedWidth=360>
 <let/colorsChoice="256">
@@ -85,11 +101,21 @@ static function formatBytes(bytes: number) {
 <let/result=null as (RenderResult & { url: string }) | null>
 
 <const/colors=+colorsChoice>
-<const/delay=+delayChoice>
-<const/speed=+speedChoice>
+<const/stride=+strideChoice>
+// Seconds of source video between two captured frames. Speed deliberately
+// doesn't enter into it: which frames get captured is a property of the source,
+// and speed only decides how long each one is shown for.
+<const/sourceStep=stride * frameSeconds>
+<const/targetSpeed=2 ** speedExponent>
+// The GIF can only hold a whole number of hundredths per frame — in one 16-bit
+// field — so the speed that comes back out is whatever that rounding allows.
+<const/delay=clamp(
+  Math.round((sourceStep * 100) / targetSpeed),
+  MIN_DELAY,
+  65535,
+)>
+<const/speed=(sourceStep * 100) / delay>
 <const/fps=100 / delay>
-// Seconds of source video between two output frames.
-<const/sourceStep=(speed * delay) / 100>
 <const/cropWidth=Math.max(1, Math.round(crop.width * naturalWidth))>
 <const/cropHeight=Math.max(1, Math.round(crop.height * naturalHeight))>
 <const/maxWidth=Math.max(80, Math.min(cropWidth, 720))>
@@ -112,6 +138,9 @@ static function formatBytes(bytes: number) {
   fileName = file.name;
   duration = 0;
   error = "";
+  // Don't let the previous video's frame rate stand in for this one's.
+  frameRateSource = "";
+  frameSeconds = ASSUMED_FRAME_SECONDS;
   videoUrl = URL.createObjectURL(file);
 }>
 
@@ -129,7 +158,10 @@ static function formatBytes(bytes: number) {
 }>
 
 <const/setStart(value: number) {
-  const next = clamp(value, 0, Math.max(0, duration - sourceStep));
+  // The start lands on any source frame; only the end is held to the sampling
+  // stride, so the two handles stay independent.
+  const onFrame = Math.round(value / frameSeconds) * frameSeconds;
+  const next = clamp(onFrame, 0, Math.max(0, duration - sourceStep));
   start = next;
   // Pushed past the end? Take it along rather than refusing to move.
   if (end < next + sourceStep) end = Math.min(duration, next + sourceStep);
@@ -140,15 +172,29 @@ static function formatBytes(bytes: number) {
   const next = clamp(value, sourceStep, duration);
   // Pushed past the start? Take it along rather than refusing to move.
   const nextStart = Math.min(start, Math.max(0, next - sourceStep));
-  // Only the end handle locks to a frame boundary.
-  const frames = Math.min(
-    MAX_FRAMES,
-    Math.max(1, Math.round((next - nextStart) / sourceStep)),
-  );
-  const snapped = Math.min(duration, nextStart + frames * sourceStep);
+  const span = frameFit(next - nextStart, sourceStep) * sourceStep;
+  const snapped = Math.min(duration, nextStart + span);
   start = nextStart;
   end = snapped;
   seekTo(snapped);
+}>
+
+// Both of these move the frame grid underneath the trim, so pull the end back
+// onto it. The start is only re-snapped when the grid itself changed.
+<const/setStride(value: string) {
+  strideChoice = value;
+  const step = +value * frameSeconds;
+  end = Math.min(duration, start + frameFit(end - start, step) * step);
+}>
+
+<const/applyFrameSeconds(seconds: number | null) {
+  frameRateSource = seconds === null ? "assumed" : "measured";
+  const next = seconds ?? ASSUMED_FRAME_SECONDS;
+  frameSeconds = next;
+  const step = stride * next;
+  const nextStart = Math.round(start / next) * next;
+  start = nextStart;
+  end = Math.min(duration, nextStart + frameFit(end - nextStart, step) * step);
 }>
 
 <const/beginDrag(event: PointerEvent, el: HTMLElement, handle: Handle) {
@@ -227,8 +273,9 @@ static function formatBytes(bytes: number) {
       video: videoEl(),
       crop,
       start,
+      frameSeconds,
+      sourceStep,
       delay,
-      speed,
       mode: gifMode,
       frameCount,
       width: outWidth,
@@ -336,7 +383,10 @@ static function formatBytes(bytes: number) {
               // once you seek past the end.
               el.currentTime = 1e101;
             }
-            primeVideo(el).finally(() => previewSeek(el, start));
+            primeVideo(el)
+              .then(() => detectFrameRate(el))
+              .then(applyFrameSeconds, () => applyFrameSeconds(null))
+              .finally(() => previewSeek(el, start));
           }
           onDurationChange(e, el: HTMLVideoElement) {
             applyDuration(el.duration);
@@ -444,13 +494,15 @@ static function formatBytes(bytes: number) {
     </section>
 
     <section>
+      <!-- Both sliders take any position: the handlers do the snapping, and a
+      step grid of their own would only fight it. -->
       <label class=styles.slider>
         <span>Start</span>
         <input
           type="range"
           min="0"
           max=duration
-          step="0.01"
+          step="any"
           value=start
           valueChange(value) {
             setStart(+value);
@@ -464,7 +516,7 @@ static function formatBytes(bytes: number) {
           type="range"
           min="0"
           max=duration
-          step="0.01"
+          step="any"
           value=end
           valueChange(value) {
             setEnd(+value);
@@ -480,34 +532,52 @@ static function formatBytes(bytes: number) {
 
     <section>
       <fieldset class=styles.chips>
-        <legend>Frame rate</legend>
-        <for|option| of=FRAME_RATES by="delay">
+        <legend>Frames</legend>
+        <for|option| of=STRIDES by="value">
           <label class=styles.chip>
             <input
               type="radio"
-              name="delay"
-              value=String(option.delay)
-              checkedValue:=delayChoice
-            >
-            <span>${option.label}</span>
-          </label>
-        </for>
-      </fieldset>
-
-      <fieldset class=styles.chips>
-        <legend>Speed</legend>
-        <for|option| of=SPEEDS by="value">
-          <label class=styles.chip>
-            <input
-              type="radio"
-              name="speed"
+              name="stride"
               value=String(option.value)
-              checkedValue:=speedChoice
+              checkedValue=strideChoice
+              checkedValueChange(value: string) {
+                setStride(value);
+              }
             >
             <span>${option.label}</span>
           </label>
         </for>
       </fieldset>
+      <p class=styles.hint>
+        <if=frameRateSource === "measured">
+          Source is ${formatRate(1 / frameSeconds)}; every GIF frame is a real one.
+        </if>
+        <else-if=frameRateSource === "assumed">
+          This browser won't say what the source's frame rate is, so it's
+          assumed to be ${formatRate(1 / frameSeconds)}.
+        </else-if>
+        <else>Checking the source's frame rate…</else>
+      </p>
+
+      <label class=styles.slider>
+        <span>Speed</span>
+        <input
+          type="range"
+          min="-2"
+          max="3"
+          step="0.05"
+          value=speedExponent
+          valueChange(value) {
+            speedExponent = +value;
+          }
+        >
+        <output>${speed.toFixed(2)}×</output>
+      </label>
+      <p class=styles.hint>
+        A GIF holds whole hundredths of a second per frame, so nearby speeds
+        round to the same one.
+      </p>
+
       <label class=styles.slider>
         <span>Width</span>
         <input
@@ -560,13 +630,13 @@ static function formatBytes(bytes: number) {
 
     <section>
       <p class=styles.summary>
-        ${outWidth}×${outHeight}, ${playedFrames} frames at ${fps} fps — ${
+        ${outWidth}×${outHeight}, ${playedFrames} frames at ${formatRate(fps)} — ${
           outputSeconds.toFixed(2)
         }s of GIF
         <if=(uncappedFrames > MAX_FRAMES)>
           <em>
             — capped at ${MAX_FRAMES} captured frames, so the clip will cut
-            short. Trim it, or lower the frame rate.
+            short. Trim it, or sample fewer frames.
           </em>
         </if>
       </p>

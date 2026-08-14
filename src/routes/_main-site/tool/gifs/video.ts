@@ -7,6 +7,34 @@ export type GifMode = "loop" | "pingpong" | "once";
 const HAVE_CURRENT_DATA = 2;
 /** Give up on a `seeked` event that never arrives and use whatever is painted. */
 const SEEK_TIMEOUT = 5000;
+/** Frames to watch go by before calling the source's frame rate measured. */
+const FRAME_SAMPLES = 8;
+/** Stop watching for frames on a video that isn't producing any. */
+const DETECT_TIMEOUT = 1500;
+/**
+ * Capture rates worth snapping a measurement to, including the 1000/1001 "NTSC"
+ * variants. A frame interval that's off by even a fraction of a percent drifts a
+ * whole frame over a few hundred of them, so a measurement landing next to one
+ * of these is taken to be it.
+ */
+const COMMON_RATES = [
+  8,
+  10,
+  12,
+  15,
+  20,
+  24000 / 1001,
+  24,
+  25,
+  30000 / 1001,
+  30,
+  48,
+  50,
+  60000 / 1001,
+  60,
+  100,
+  120,
+];
 
 /**
  * iOS Safari ignores `preload` and refuses to buffer media data until playback
@@ -28,6 +56,69 @@ export async function primeVideo(video: HTMLVideoElement) {
     return;
   }
   video.pause();
+}
+
+/**
+ * Measures how long a single source frame lasts, in seconds.
+ *
+ * `requestVideoFrameCallback` hands back the media timestamp of each frame as
+ * it reaches the compositor, so playing for a moment and dividing the media
+ * time covered by the number of frames presented gives the interval directly.
+ * Counting *presented* frames rather than callbacks keeps the answer right even
+ * when the compositor drops some.
+ *
+ * Firefox has never shipped the API; there this returns null and the caller has
+ * to assume a rate.
+ */
+export async function detectFrameRate(video: HTMLVideoElement) {
+  if (!video.requestVideoFrameCallback) return null;
+
+  const resumeAt = video.currentTime;
+  video.muted = true;
+  try {
+    await video.play();
+  } catch {
+    return null;
+  }
+
+  const measured = await new Promise<number | null>((resolve) => {
+    let first: VideoFrameCallbackMetadata | undefined;
+    let last: VideoFrameCallbackMetadata | undefined;
+
+    const finish = () => {
+      clearTimeout(timer);
+      video.removeEventListener("ended", finish);
+      const frames =
+        first && last ? last.presentedFrames - first.presentedFrames : 0;
+      const elapsed = first && last ? last.mediaTime - first.mediaTime : 0;
+      resolve(frames > 0 && elapsed > 0 ? elapsed / frames : null);
+    };
+
+    const onFrame = (_now: number, meta: VideoFrameCallbackMetadata) => {
+      first ??= meta;
+      last = meta;
+      if (meta.presentedFrames - first.presentedFrames >= FRAME_SAMPLES)
+        finish();
+      else video.requestVideoFrameCallback(onFrame);
+    };
+
+    // A clip too short to present that many frames would otherwise hang here.
+    const timer = setTimeout(finish, DETECT_TIMEOUT);
+    video.addEventListener("ended", finish, { once: true });
+    video.requestVideoFrameCallback(onFrame);
+  });
+
+  video.pause();
+  video.currentTime = resumeAt;
+  if (measured === null) return null;
+
+  const rate = 1 / measured;
+  let closest = COMMON_RATES[0]!;
+  for (const candidate of COMMON_RATES) {
+    if (Math.abs(candidate - rate) < Math.abs(closest - rate))
+      closest = candidate;
+  }
+  return Math.abs(closest - rate) / rate < 0.02 ? 1 / closest : measured;
 }
 
 const pendingSeek = new WeakMap<HTMLVideoElement, number>();
@@ -95,10 +186,12 @@ interface RenderRequest {
   crop: Crop;
   /** Seconds into the video where the first frame is taken. */
   start: number;
+  /** How long one source frame lasts, in seconds. */
+  frameSeconds: number;
+  /** Seconds of source between two captured frames — a whole number of frames. */
+  sourceStep: number;
   /** Frame delay in hundredths of a second — GIF's native unit. */
   delay: number;
-  /** Playback multiplier — 2 skips twice as far through the source per frame. */
-  speed: number;
   mode: GifMode;
   frameCount: number;
   /** Output width in pixels; height follows the crop's aspect ratio. */
@@ -154,8 +247,18 @@ function encodeOffThread(
 }
 
 export async function renderGif(request: RenderRequest): Promise<RenderResult> {
-  const { video, crop, start, delay, speed, mode, frameCount, dither, colors } =
-    request;
+  const {
+    video,
+    crop,
+    start,
+    frameSeconds,
+    sourceStep,
+    delay,
+    mode,
+    frameCount,
+    dither,
+    colors,
+  } = request;
 
   // Without this, a browser that hasn't buffered any media data (iOS Safari
   // until something plays) hands back blank or repeated frames.
@@ -180,11 +283,13 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) throw new Error("Could not get a 2d canvas context");
 
-  // How far to walk through the source video between two output frames.
-  const sourceStep = (speed * delay) / 100;
+  // Seeking to a frame boundary is a coin flip between that frame and the one
+  // before it, so aim at the middle of the frame we actually want.
+  const center = frameSeconds / 2;
+  const lastMoment = Math.max(0, video.duration - 1e-3);
   const frames: Uint8ClampedArray[] = [];
   for (let i = 0; i < frameCount; i++) {
-    await seek(video, start + i * sourceStep);
+    await seek(video, Math.min(start + i * sourceStep + center, lastMoment));
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, width, height);
     frames.push(ctx.getImageData(0, 0, width, height).data);
     request.onProgress?.("Capturing frames", (i + 1) / frameCount);
