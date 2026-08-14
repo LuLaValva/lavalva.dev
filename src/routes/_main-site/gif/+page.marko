@@ -1,11 +1,19 @@
 import styles from "./gif.module.css";
-import type { Crop, Handle } from "./crop";
+import type { Corner, Crop, Handle } from "./crop";
 import type { GifMode, RenderResult } from "./capture";
-client import { HANDLES, clamp, dragCrop } from "./crop";
+// Not a `client import` — HANDLES is read while rendering, and a client-only
+// binding is undefined on the server, which renders the handles away entirely.
+import { HANDLES, clamp, dragCrop } from "./crop";
 client import { renderGif } from "./capture";
 
 // Enough for a few seconds of smooth motion without melting a phone.
 static const MAX_FRAMES = 240;
+static const HANDLE_LABELS: Record<Corner, string> = {
+  nw: "top left",
+  ne: "top right",
+  sw: "bottom left",
+  se: "bottom right",
+};
 static const MODES: { value: GifMode; label: string; hint: string }[] = [
   { value: "loop", label: "Loop", hint: "restarts from the beginning" },
   { value: "pingpong", label: "Ping-pong", hint: "plays forwards, then back" },
@@ -113,6 +121,30 @@ static function formatBytes(bytes: number) {
   el.addEventListener("pointermove", onMove);
   el.addEventListener("pointerup", onDone);
   el.addEventListener("pointercancel", onDone);
+}>
+
+<const/nudge(event: KeyboardEvent, handle: Handle) {
+  const step = event.shiftKey ? 0.1 : 0.01;
+  let dx = 0;
+  let dy = 0;
+  switch (event.key) {
+    case "ArrowLeft":
+      dx = -step;
+      break;
+    case "ArrowRight":
+      dx = step;
+      break;
+    case "ArrowUp":
+      dy = -step;
+      break;
+    case "ArrowDown":
+      dy = step;
+      break;
+    default:
+      return;
+  }
+  event.preventDefault();
+  crop = dragCrop(crop, handle, dx, dy);
 }>
 
 // An arrow, not `async onClick()` — prettier-plugin-marko drops the `async`
@@ -241,16 +273,30 @@ static function formatBytes(bytes: number) {
             width: `${crop.width * 100}%`,
             height: `${crop.height * 100}%`,
           }
-          onPointerDown(e: PointerEvent, el: HTMLElement) {
-            beginDrag(e, el, "move");
-          }
         >
+          <!-- A sibling of the handles, not their parent, so a pointerdown on
+          a handle can never also start a move. -->
+          <button
+            class=styles.moveArea
+            type="button"
+            aria-label="Crop region: drag to move it, or use the arrow keys"
+            onPointerDown(e: PointerEvent, el: HTMLElement) {
+              beginDrag(e, el, "move");
+            }
+            onKeyDown(e: KeyboardEvent) {
+              nudge(e, "move");
+            }
+          />
           <for|handle| of=HANDLES by=(h) => h>
-            <span
+            <button
               class=[styles.handle, styles[handle]]
+              type="button"
+              aria-label=`Crop ${HANDLE_LABELS[handle]} corner: drag, or use the arrow keys`
               onPointerDown(e: PointerEvent, el: HTMLElement) {
-                e.stopPropagation();
                 beginDrag(e, el, handle);
+              }
+              onKeyDown(e: KeyboardEvent) {
+                nudge(e, handle);
               }
             />
           </for>
@@ -258,7 +304,7 @@ static function formatBytes(bytes: number) {
       </div>
 
       <p class=styles.meta>
-        <span>Crop ${cropWidth}×${cropHeight}</span>
+        <span aria-live="polite">Crop ${cropWidth}×${cropHeight}</span>
         <button
           class=styles.link
           onClick() {

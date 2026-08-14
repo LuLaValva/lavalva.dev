@@ -105,13 +105,31 @@ body {
   cursor: move;
 }
 
-.handle {
+.moveArea {
+  all: unset;
   position: absolute;
+  inset: 0;
+  cursor: move;
+}
+
+.handle {
+  all: unset;
+  position: absolute;
+  box-sizing: border-box;
+  /* Above the move surface so the corners always win the pointer. */
+  z-index: 1;
   width: 1.25rem;
   height: 1.25rem;
   border: 2px solid white;
   border-radius: 0.2rem;
   background-color: #0006;
+}
+
+.moveArea:focus-visible,
+.handle:focus-visible {
+  outline: 3px solid light-dark(rgb(21, 96, 218), rgb(171, 212, 250));
+  outline-offset: -1px;
+  background-color: #0008;
 }
 
 /* Anchored inside the box so the stage's overflow clip never eats them. */
