@@ -4,221 +4,298 @@
 */
 
 import { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform } from "@marko/run/namespace";
-import type * as Run from "@marko/run";
+import type * as $ from "@marko/run";
 
 
 declare module "@marko/run" {
-	interface AppData extends Run.DefineApp<{
-		routes: {
-			"/": { verb: "get"; };
-			"/about": { verb: "get"; };
-			"/blog": { verb: "get"; };
-			"/blog/airline-food": { verb: "get"; };
-			"/bucket-list": { verb: "get"; };
-			"/contact": { verb: "get"; };
-			"/game": { verb: "get"; };
-			"/game/reduce": { verb: "get"; };
-		}
+	interface App extends $.DefineRoutes<{
+		"/": [L1, P1];
+		"/about": [L1, P2];
+		"/blog": [L1, L2, P3];
+		"/blog/airline-food": [L1, L2, P4];
+		"/bucket-list": [L1, P5];
+		"/contact": [L1, P6];
+		"/game": [L1, P7];
+		"/gif": [L1, P8];
+		"/game/reduce": [L3, P9];
 	}> {}
 }
 
-declare module "../src/routes/_main-site/+page.marko" {
-  namespace MarkoRun {
-    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
-  }
-}
-
-declare module "../src/routes/_main-site/about/+page.marko" {
-  namespace MarkoRun {
-    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/about"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
-  }
-}
-
-declare module "../src/routes/_main-site/blog/+page.marko" {
-  namespace MarkoRun {
-    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/blog"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
-  }
-}
-
-declare module "../src/routes/_main-site/blog/airline-food/+page.marko" {
-  namespace MarkoRun {
-    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/blog/airline-food"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
-  }
-}
-
-declare module "../src/routes/_main-site/bucket-list/+page.marko" {
-  namespace MarkoRun {
-    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/bucket-list"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
-  }
-}
-
-declare module "../src/routes/_main-site/contact/+page.marko" {
-  namespace MarkoRun {
-    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/contact"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
-  }
-}
-
-declare module "../src/routes/_main-site/game/+page.marko" {
-  namespace MarkoRun {
-    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/game"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
-  }
-}
-
-declare module "../src/routes/game/reduce/+page.marko" {
-  namespace MarkoRun {
-    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/game/reduce"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
-  }
-}
-
+type L1 = $.Template<"L1", typeof import("../src/routes/_main-site/+layout.marko")>;
 declare module "../src/routes/_main-site/+layout.marko" {
-  export interface Input extends Run.LayoutInput<typeof import("../src/routes/_main-site/+layout.marko")> {}
+  interface Input extends $.LayoutInput<L1> {}
+  const Run: $.Namespace<L1>;
+  namespace Run {
+    type Context = $.ContextForFile<L1> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/" | "/about" | "/blog" | "/blog/airline-food" | "/bucket-list" | "/contact" | "/game"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
+    export type Route = $.Routes["/" | "/about" | "/blog" | "/blog/airline-food" | "/bucket-list" | "/contact" | "/game" | "/gif"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
   }
 }
 
+type L2 = $.Template<"L2", typeof import("../src/routes/_main-site/blog/+layout.marko")>;
 declare module "../src/routes/_main-site/blog/+layout.marko" {
-  export interface Input extends Run.LayoutInput<typeof import("../src/routes/_main-site/blog/+layout.marko")> {}
+  interface Input extends $.LayoutInput<L2> {}
+  const Run: $.Namespace<L2>;
+  namespace Run {
+    type Context = $.ContextForFile<L2> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/blog" | "/blog/airline-food"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
+    export type Route = $.Routes["/blog" | "/blog/airline-food"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
   }
 }
 
+type L3 = $.Template<"L3", typeof import("../src/routes/game/reduce/+layout.marko")>;
 declare module "../src/routes/game/reduce/+layout.marko" {
-  export interface Input extends Run.LayoutInput<typeof import("../src/routes/game/reduce/+layout.marko")> {}
+  interface Input extends $.LayoutInput<L3> {}
+  const Run: $.Namespace<L3>;
+  namespace Run {
+    type Context = $.ContextForFile<L3> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = Run.Routes["/game/reduce"];
-    export type Context = Run.MultiRouteContext<Route> & Marko.Global;
-    export type Handler = Run.HandlerLike<Route>;
-    export type GET = Run.HandlerLike<Route, "GET">;
-    export type HEAD = Run.HandlerLike<Route, "HEAD">;
-    export type POST = Run.HandlerLike<Route, "POST">;
-    export type PUT = Run.HandlerLike<Route, "PUT">;
-    export type DELETE = Run.HandlerLike<Route, "DELETE">;
-    export type PATCH = Run.HandlerLike<Route, "PATCH">;
-    export type OPTIONS = Run.HandlerLike<Route, "OPTIONS">;
-    /** @deprecated use `((context, next) => { ... }) satisfies MarkoRun.Handler` instead */
-    export const route: Run.HandlerTypeFn<Route>;
+    export type Route = $.Routes["/game/reduce"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P1 = $.Template<"P1", typeof import("../src/routes/_main-site/+page.marko")>;
+declare module "../src/routes/_main-site/+page.marko" {
+  const Run: $.Namespace<P1>;
+  namespace Run {
+    type Context = $.ContextForFile<P1> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P2 = $.Template<"P2", typeof import("../src/routes/_main-site/about/+page.marko")>;
+declare module "../src/routes/_main-site/about/+page.marko" {
+  const Run: $.Namespace<P2>;
+  namespace Run {
+    type Context = $.ContextForFile<P2> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/about"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P3 = $.Template<"P3", typeof import("../src/routes/_main-site/blog/+page.marko")>;
+declare module "../src/routes/_main-site/blog/+page.marko" {
+  const Run: $.Namespace<P3>;
+  namespace Run {
+    type Context = $.ContextForFile<P3> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/blog"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P4 = $.Template<"P4", typeof import("../src/routes/_main-site/blog/airline-food/+page.marko")>;
+declare module "../src/routes/_main-site/blog/airline-food/+page.marko" {
+  const Run: $.Namespace<P4>;
+  namespace Run {
+    type Context = $.ContextForFile<P4> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/blog/airline-food"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P5 = $.Template<"P5", typeof import("../src/routes/_main-site/bucket-list/+page.marko")>;
+declare module "../src/routes/_main-site/bucket-list/+page.marko" {
+  const Run: $.Namespace<P5>;
+  namespace Run {
+    type Context = $.ContextForFile<P5> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/bucket-list"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P6 = $.Template<"P6", typeof import("../src/routes/_main-site/contact/+page.marko")>;
+declare module "../src/routes/_main-site/contact/+page.marko" {
+  const Run: $.Namespace<P6>;
+  namespace Run {
+    type Context = $.ContextForFile<P6> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/contact"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P7 = $.Template<"P7", typeof import("../src/routes/_main-site/game/+page.marko")>;
+declare module "../src/routes/_main-site/game/+page.marko" {
+  const Run: $.Namespace<P7>;
+  namespace Run {
+    type Context = $.ContextForFile<P7> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/game"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P8 = $.Template<"P8", typeof import("../src/routes/_main-site/gif/+page.marko")>;
+declare module "../src/routes/_main-site/gif/+page.marko" {
+  const Run: $.Namespace<P8>;
+  namespace Run {
+    type Context = $.ContextForFile<P8> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/gif"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P9 = $.Template<"P9", typeof import("../src/routes/game/reduce/+page.marko")>;
+declare module "../src/routes/game/reduce/+page.marko" {
+  const Run: $.Namespace<P9>;
+  namespace Run {
+    type Context = $.ContextForFile<P9> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/game/reduce"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
   }
 }

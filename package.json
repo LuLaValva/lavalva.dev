@@ -12,13 +12,13 @@
   },
   "dependencies": {
     "immer": "^11.1.4",
-    "marko": "^6.0.50",
+    "marko": "^6.3.36",
     "roving-tabindex": "^0.3.3"
   },
   "devDependencies": {
-    "@marko/run": "^0.9.6",
-    "@marko/run-adapter-static": "^2.0.4",
-    "@marko/type-check": "^2.1.27",
+    "@marko/run": "^0.11.9",
+    "@marko/run-adapter-static": "^2.0.9",
+    "@marko/type-check": "^3.2.0",
     "prettier": "^3.8.1",
     "prettier-plugin-marko": "^4.0.8",
     "prettier-plugin-packagejson": "^3.0.2"

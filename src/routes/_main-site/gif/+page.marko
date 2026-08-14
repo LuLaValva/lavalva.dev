@@ -1,0 +1,444 @@
+import styles from "./gif.module.css";
+import type { Crop, Handle } from "./crop";
+import type { GifMode, RenderResult } from "./capture";
+client import { HANDLES, clamp, dragCrop } from "./crop";
+client import { renderGif } from "./capture";
+
+// Enough for a few seconds of smooth motion without melting a phone.
+static const MAX_FRAMES = 240;
+static const MODES: { value: GifMode; label: string; hint: string }[] = [
+  { value: "loop", label: "Loop", hint: "restarts from the beginning" },
+  { value: "pingpong", label: "Ping-pong", hint: "plays forwards, then back" },
+  { value: "once", label: "Play once", hint: "stops on the last frame" },
+];
+
+static function formatTime(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${(seconds - minutes * 60).toFixed(2).padStart(5, "0")}`;
+}
+
+static function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} kB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+<let/videoUrl="">
+<let/fileName="">
+<let/duration=0>
+<let/naturalWidth=0>
+<let/naturalHeight=0>
+<let/dragOver=false>
+
+<let/start=0>
+<let/end=0>
+<let/playing=false>
+
+<let/crop={ x: 0, y: 0, width: 1, height: 1 } as Crop>
+
+<let/fps=12>
+<let/speed=1>
+<let/mode="loop">
+<let/requestedWidth=360>
+<let/dither=true>
+
+<let/rendering=false>
+<let/statusText="">
+<let/progress=0>
+<let/error="">
+<let/result=null as RenderResult | null>
+<let/resultUrl="">
+
+<const/cropWidth=Math.max(1, Math.round(crop.width * naturalWidth))>
+<const/cropHeight=Math.max(1, Math.round(crop.height * naturalHeight))>
+<const/maxWidth=Math.max(80, Math.min(cropWidth, 720))>
+<const/outWidth=Math.min(requestedWidth, maxWidth)>
+<const/outHeight=Math.max(1, Math.round((outWidth * cropHeight) / cropWidth))>
+
+// One output frame every `speed / fps` seconds of source video.
+<const/uncappedFrames=Math.max(1, Math.floor(((end - start) * fps) / speed))>
+<const/frameCount=Math.min(uncappedFrames, MAX_FRAMES)>
+// `checkedValue` binds a plain string, so narrow it back once, here.
+<const/gifMode=mode as GifMode>
+<const/playedFrames=(
+  mode === "pingpong" && frameCount > 2 ? frameCount * 2 - 2 : frameCount
+)>
+<const/downloadName=`${fileName.replace(/\.[^.]+$/, "") || "clip"}.gif`>
+
+<const/loadFile(file: File | undefined | null) {
+  if (!file) return;
+  if (videoUrl) URL.revokeObjectURL(videoUrl);
+  fileName = file.name;
+  duration = 0;
+  error = "";
+  videoUrl = URL.createObjectURL(file);
+}>
+
+<const/applyDuration(value: number) {
+  if (!Number.isFinite(value) || value <= 0 || duration === value) return;
+  duration = value;
+  start = 0;
+  end = Math.min(value, 5);
+}>
+
+<const/seekTo(time: number) {
+  const video = videoEl();
+  video.pause();
+  video.currentTime = time;
+}>
+
+<const/beginDrag(event: PointerEvent, el: HTMLElement, handle: Handle) {
+  const box = stageEl().getBoundingClientRect();
+  if (!box.width || !box.height) return;
+
+  const originX = event.clientX;
+  const originY = event.clientY;
+  const origin = crop;
+  el.setPointerCapture(event.pointerId);
+
+  const onMove = (moved: PointerEvent) => {
+    crop = dragCrop(
+      origin,
+      handle,
+      (moved.clientX - originX) / box.width,
+      (moved.clientY - originY) / box.height,
+    );
+  };
+  const onDone = () => {
+    el.removeEventListener("pointermove", onMove);
+    el.removeEventListener("pointerup", onDone);
+    el.removeEventListener("pointercancel", onDone);
+  };
+
+  el.addEventListener("pointermove", onMove);
+  el.addEventListener("pointerup", onDone);
+  el.addEventListener("pointercancel", onDone);
+}>
+
+// An arrow, not `async onClick()` — prettier-plugin-marko drops the `async`
+// keyword off a method-shorthand handler and the await stops compiling.
+<const/startRender=async () => {
+  rendering = true;
+  error = "";
+  statusText = "Capturing frames";
+  progress = 0;
+  try {
+    const rendered = await renderGif({
+      video: videoEl(),
+      crop,
+      start,
+      fps,
+      speed,
+      mode: gifMode,
+      frameCount,
+      width: outWidth,
+      dither,
+      onProgress(current, fraction) {
+        statusText = current;
+        progress = fraction;
+      },
+    });
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
+    result = rendered;
+    resultUrl = URL.createObjectURL(rendered.blob);
+  } catch (thrown) {
+    error = thrown instanceof Error ? thrown.message : "Rendering failed.";
+  } finally {
+    rendering = false;
+    statusText = "";
+  }
+}>
+
+<main class=styles.page>
+  <h1>GIF Editor</h1>
+  <p class=styles.lede>
+    Trim, crop and export a clip as a GIF. Everything happens in this tab — your
+    video is never uploaded.
+  </p>
+
+  <section
+    class=[styles.dropzone, dragOver && styles.armed]
+    onDragOver(e) {
+      e.preventDefault();
+      dragOver = true;
+    }
+    onDragLeave() {
+      dragOver = false;
+    }
+    onDrop(e: DragEvent) {
+      e.preventDefault();
+      dragOver = false;
+      loadFile(e.dataTransfer?.files[0]);
+    }
+  >
+    <label class=styles.pick>
+      <input
+        type="file"
+        accept="video/*"
+        onChange(e, el: HTMLInputElement) {
+          loadFile(el.files?.[0]);
+          el.value = "";
+        }
+      >
+      <span>${videoUrl ? "Choose a different video" : "Choose a video"}</span>
+    </label>
+    <p class=styles.hint>${fileName || "…or drop one here"}</p>
+  </section>
+
+  <if=error>
+    <p class=styles.error role="alert">${error}</p>
+  </if>
+
+  <show=!!videoUrl>
+    <section>
+      <h2>Frame the shot</h2>
+      <div/stageEl class=styles.stage>
+        <video/videoEl
+          class=styles.video
+          src=videoUrl || null
+          muted
+          playsinline
+          preload="auto"
+          onLoadedMetadata(e, el: HTMLVideoElement) {
+            el.muted = true;
+            naturalWidth = el.videoWidth;
+            naturalHeight = el.videoHeight;
+            crop = { x: 0, y: 0, width: 1, height: 1 };
+            requestedWidth = Math.min(360, el.videoWidth || 360);
+            if (Number.isFinite(el.duration)) {
+              applyDuration(el.duration);
+            } else {
+              // Recordings without a duration header only admit their length
+              // once you seek past the end.
+              el.currentTime = 1e101;
+            }
+          }
+          onDurationChange(e, el: HTMLVideoElement) {
+            applyDuration(el.duration);
+            if (el.currentTime > el.duration) el.currentTime = 0;
+          }
+          onPlay() {
+            playing = true;
+          }
+          onPause() {
+            playing = false;
+          }
+          onTimeUpdate(e, el: HTMLVideoElement) {
+            if (rendering || el.currentTime < end) return;
+            el.currentTime = start;
+            if (!el.paused) el.play();
+          }
+          onError() {
+            error = "This browser can't play that video file.";
+          }
+        />
+
+        <div
+          class=styles.cropBox
+          style={
+            left: `${crop.x * 100}%`,
+            top: `${crop.y * 100}%`,
+            width: `${crop.width * 100}%`,
+            height: `${crop.height * 100}%`,
+          }
+          onPointerDown(e: PointerEvent, el: HTMLElement) {
+            beginDrag(e, el, "move");
+          }
+        >
+          <for|handle| of=HANDLES by=(h) => h>
+            <span
+              class=[styles.handle, styles[handle]]
+              onPointerDown(e: PointerEvent, el: HTMLElement) {
+                e.stopPropagation();
+                beginDrag(e, el, handle);
+              }
+            />
+          </for>
+        </div>
+      </div>
+
+      <p class=styles.meta>
+        <span>Crop ${cropWidth}×${cropHeight}</span>
+        <button
+          class=styles.link
+          onClick() {
+            crop = { x: 0, y: 0, width: 1, height: 1 };
+          }
+        >
+          Reset crop
+        </button>
+      </p>
+    </section>
+
+    <section>
+      <h2>Pick the frames</h2>
+      <label class=styles.slider>
+        <span>Start</span>
+        <input
+          type="range"
+          min="0"
+          max=duration
+          step="0.01"
+          value=start
+          valueChange(value) {
+            start = clamp(+value, 0, Math.max(0, end - 0.05));
+            seekTo(start);
+          }
+        >
+        <output>${formatTime(start)}</output>
+      </label>
+      <label class=styles.slider>
+        <span>End</span>
+        <input
+          type="range"
+          min="0"
+          max=duration
+          step="0.01"
+          value=end
+          valueChange(value) {
+            end = clamp(+value, start + 0.05, duration);
+            seekTo(end);
+          }
+        >
+        <output>${formatTime(end)}</output>
+      </label>
+      <p class=styles.meta>
+        <button
+          class=styles.link
+          onClick() {
+            const video = videoEl();
+            if (video.paused) {
+              if (video.currentTime < start || video.currentTime >= end) {
+                video.currentTime = start;
+              }
+              video.play();
+            } else {
+              video.pause();
+            }
+          }
+        >
+          ${playing ? "⏸ Pause" : "▶ Preview selection"}
+        </button>
+        <span>${formatTime(Math.max(0, end - start))} selected</span>
+      </p>
+    </section>
+
+    <section>
+      <h2>Timing</h2>
+      <label class=styles.slider>
+        <span>Frame rate</span>
+        <input
+          type="range"
+          min="2"
+          max="30"
+          step="1"
+          value=fps
+          valueChange(value) {
+            fps = +value;
+          }
+        >
+        <output>${fps} fps</output>
+      </label>
+      <label class=styles.slider>
+        <span>Speed</span>
+        <input
+          type="range"
+          min="0.25"
+          max="4"
+          step="0.25"
+          value=speed
+          valueChange(value) {
+            speed = +value;
+          }
+        >
+        <output>${speed}×</output>
+      </label>
+      <label class=styles.slider>
+        <span>Width</span>
+        <input
+          type="range"
+          min="80"
+          max=maxWidth
+          step="10"
+          value=outWidth
+          valueChange(value) {
+            requestedWidth = +value;
+          }
+        >
+        <output>${outWidth}px</output>
+      </label>
+      <fieldset class=styles.modes>
+        <legend>Playback</legend>
+        <for|option| of=MODES by="value">
+          <label class=styles.mode>
+            <input
+              type="radio"
+              name="mode"
+              value=option.value
+              checkedValue:=mode
+            >
+            <span>
+              <strong>${option.label}</strong><small>${option.hint}</small>
+            </span>
+          </label>
+        </for>
+      </fieldset>
+
+      <label class=styles.check>
+        <input type="checkbox" checked:=dither>
+        <span>Dither — smoother gradients, slightly larger file</span>
+      </label>
+    </section>
+
+    <section>
+      <p class=styles.summary>
+        ${outWidth}×${outHeight}, ${playedFrames} frames at ${fps} fps
+        <if=(uncappedFrames > MAX_FRAMES)>
+          <em>
+            — capped at ${MAX_FRAMES} captured frames, so the clip will cut
+            short. Trim it, or lower the frame rate.
+          </em>
+        </if>
+      </p>
+
+      <button
+        class=styles.render
+        disabled=rendering || !duration
+        onClick() {
+          startRender();
+        }
+      >
+        ${rendering ? "Rendering…" : "Render GIF"}
+      </button>
+
+      <if=rendering>
+        <p class=styles.progress>
+          <progress value=progress max="1"/>
+          <span>${statusText}… ${Math.round(progress * 100)}%</span>
+        </p>
+      </if>
+    </section>
+
+    <if=result>
+      <section>
+        <h2>Result</h2>
+        <img
+          class=styles.result
+          src=resultUrl
+          alt="the rendered gif"
+          width=result.width
+          height=result.height
+        >
+        <p class=styles.meta>
+          <a class=styles.download href=resultUrl download=downloadName>
+            Download ${downloadName}
+          </a>
+          <span>
+            ${result.width}×${result.height} · ${result.frames} frames ·
+            ${formatBytes(result.blob.size)}
+          </span>
+        </p>
+      </section>
+    </if>
+  </show>
+</main>
