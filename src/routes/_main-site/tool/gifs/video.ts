@@ -95,7 +95,8 @@ interface RenderRequest {
   crop: Crop;
   /** Seconds into the video where the first frame is taken. */
   start: number;
-  fps: number;
+  /** Frame delay in hundredths of a second — GIF's native unit. */
+  delay: number;
   /** Playback multiplier — 2 skips twice as far through the source per frame. */
   speed: number;
   mode: GifMode;
@@ -114,7 +115,8 @@ export interface RenderResult {
 }
 
 export async function renderGif(request: RenderRequest): Promise<RenderResult> {
-  const { video, crop, start, fps, speed, mode, frameCount, dither } = request;
+  const { video, crop, start, delay, speed, mode, frameCount, dither } =
+    request;
 
   // Without this, a browser that hasn't buffered any media data (iOS Safari
   // until something plays) hands back blank or repeated frames.
@@ -140,7 +142,7 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
   if (!ctx) throw new Error("Could not get a 2d canvas context");
 
   // How far to walk through the source video between two output frames.
-  const sourceStep = speed / fps;
+  const sourceStep = (speed * delay) / 100;
   const frames: Uint8ClampedArray[] = [];
   for (let i = 0; i < frameCount; i++) {
     await seek(video, start + i * sourceStep);
@@ -159,8 +161,7 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
   const bytes = await encodeGif(ordered, {
     width,
     height,
-    // Most browsers clamp anything under 2/100s back up to 10/100s.
-    delay: Math.max(2, Math.round(100 / fps)),
+    delay,
     loop: mode !== "once",
     dither,
     onProgress: (fraction) => request.onProgress?.("Encoding GIF", fraction),

@@ -14,6 +14,25 @@ static const HANDLE_LABELS: Record<Corner, string> = {
   sw: "bottom left",
   se: "bottom right",
 };
+// GIF delays are whole hundredths of a second, so only rates that divide 100
+// exactly are honest: anything else silently exports at a different speed than
+// it claims. Delay is the primitive here; the label is the rate it really is.
+static const FRAME_RATES: { delay: number; label: string }[] = [
+  { delay: 20, label: "5 fps" },
+  { delay: 10, label: "10 fps" },
+  { delay: 8, label: "12.5 fps" },
+  { delay: 5, label: "20 fps" },
+  { delay: 4, label: "25 fps" },
+];
+// Simple ratios: each one samples the source at a regular stride rather than
+// landing between frames the way an arbitrary multiplier does.
+static const SPEEDS: { value: number; label: string }[] = [
+  { value: 0.25, label: "0.25× — quarter speed" },
+  { value: 0.5, label: "0.5× — half speed" },
+  { value: 1, label: "1× — realtime" },
+  { value: 2, label: "2× — double speed" },
+  { value: 4, label: "4× — quadruple speed" },
+];
 static const MODES: { value: GifMode; label: string; hint: string }[] = [
   { value: "loop", label: "Loop", hint: "restarts from the beginning" },
   { value: "pingpong", label: "Ping-pong", hint: "plays forwards, then back" },
@@ -44,10 +63,8 @@ static function formatBytes(bytes: number) {
 
 <let/crop={ x: 0, y: 0, width: 1, height: 1 } as Crop>
 
-<let/fps=12>
-// Speed rides a log scale: the slider is an exponent, so a step is always the
-// same proportional change whether you're near 0.25x or 4x.
-<let/speedExponent=0>
+<let/delay=10>
+<let/speed=1>
 <let/mode="loop">
 <let/requestedWidth=360>
 <let/dither=true>
@@ -58,7 +75,7 @@ static function formatBytes(bytes: number) {
 <let/error="">
 <let/result=null as (RenderResult & { url: string }) | null>
 
-<const/speed=Math.round(Math.pow(2, speedExponent) * 100) / 100>
+<const/fps=100 / delay>
 <const/cropWidth=Math.max(1, Math.round(crop.width * naturalWidth))>
 <const/cropHeight=Math.max(1, Math.round(crop.height * naturalHeight))>
 <const/maxWidth=Math.max(80, Math.min(cropWidth, 720))>
@@ -73,6 +90,7 @@ static function formatBytes(bytes: number) {
 <const/playedFrames=(
   mode === "pingpong" && frameCount > 2 ? frameCount * 2 - 2 : frameCount
 )>
+<const/outputSeconds=(playedFrames * delay) / 100>
 <const/downloadName=`${fileName.replace(/\.[^.]+$/, "") || "clip"}.gif`>
 
 <const/loadFile(file: File | undefined | null) {
@@ -173,7 +191,7 @@ static function formatBytes(bytes: number) {
       video: videoEl(),
       crop,
       start,
-      fps,
+      delay,
       speed,
       mode: gifMode,
       frameCount,
@@ -193,6 +211,28 @@ static function formatBytes(bytes: number) {
     statusText = "";
   }
 }>
+
+<script>
+  // The preview plays at the export speed.
+  if (videoUrl) videoEl().playbackRate = speed;
+</script>
+
+<script>
+  // ...and repaints only at the export frame rate, so the preview stutters
+  // exactly the way the GIF will. The video underneath keeps playing smoothly;
+  // this samples it. Reruns whenever playback starts or the rate changes.
+  const video = videoEl();
+  const canvas = previewCanvas();
+  const ctx = canvas.getContext("2d");
+  if (playing && ctx && video.videoWidth) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const draw = () => ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    draw();
+    const timer = setInterval(draw, delay * 10);
+    $signal.onabort = () => clearInterval(timer);
+  }
+</script>
 
 <main class=styles.page>
   <h1>GIF Editor</h1>
@@ -279,6 +319,8 @@ static function formatBytes(bytes: number) {
             error = "This browser can't play that video file.";
           }
         />
+
+        <canvas/previewCanvas class=styles.preview hidden=!playing/>
 
         <div
           class=styles.cropBox
@@ -386,7 +428,7 @@ static function formatBytes(bytes: number) {
             }
           }
         >
-          ${playing ? "⏸ Pause" : "▶ Preview selection"}
+          ${playing ? "⏸ Pause" : "▶ Preview as GIF"}
         </button>
         <span>${formatTime(Math.max(0, end - start))} selected</span>
       </p>
@@ -394,33 +436,31 @@ static function formatBytes(bytes: number) {
 
     <section>
       <h2>Timing</h2>
-      <label class=styles.slider>
+      <label class=styles.choice>
         <span>Frame rate</span>
-        <input
-          type="range"
-          min="2"
-          max="30"
-          step="1"
-          value=fps
+        <select
+          value=String(delay)
           valueChange(value) {
-            fps = +value;
+            delay = +value;
           }
         >
-        <output>${fps} fps</output>
+          <for|option| of=FRAME_RATES by="delay">
+            <option value=String(option.delay)>${option.label}</option>
+          </for>
+        </select>
       </label>
-      <label class=styles.slider>
+      <label class=styles.choice>
         <span>Speed</span>
-        <input
-          type="range"
-          min="-2"
-          max="2"
-          step="0.02"
-          value=speedExponent
+        <select
+          value=String(speed)
           valueChange(value) {
-            speedExponent = +value;
+            speed = +value;
           }
         >
-        <output>${speed.toFixed(2)}×</output>
+          <for|option| of=SPEEDS by="value">
+            <option value=String(option.value)>${option.label}</option>
+          </for>
+        </select>
       </label>
       <label class=styles.slider>
         <span>Width</span>
@@ -461,7 +501,9 @@ static function formatBytes(bytes: number) {
 
     <section>
       <p class=styles.summary>
-        ${outWidth}×${outHeight}, ${playedFrames} frames at ${fps} fps
+        ${outWidth}×${outHeight}, ${playedFrames} frames at ${fps} fps — ${
+          outputSeconds.toFixed(2)
+        }s of GIF
         <if=(uncappedFrames > MAX_FRAMES)>
           <em>
             — capped at ${MAX_FRAMES} captured frames, so the clip will cut
