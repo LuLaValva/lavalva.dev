@@ -1,38 +1,70 @@
 import type { Crop } from "./crop";
 import { encodeGif } from "./gif-encoder";
-import { primeVideo } from "./preview";
 
 export type GifMode = "loop" | "pingpong" | "once";
 
+/** `HTMLMediaElement.HAVE_CURRENT_DATA` — enough data to paint the current frame. */
+const HAVE_CURRENT_DATA = 2;
 /** Give up on a `seeked` event that never arrives and use whatever is painted. */
 const SEEK_TIMEOUT = 5000;
 
-export interface RenderRequest {
-  video: HTMLVideoElement;
-  crop: Crop;
-  /** Seconds into the video where the first frame is taken. */
-  start: number;
-  fps: number;
-  /** Playback multiplier — 2 skips twice as far through the source per frame. */
-  speed: number;
-  mode: GifMode;
-  frameCount: number;
-  /** Output width in pixels; height follows the crop's aspect ratio. */
-  width: number;
-  dither: boolean;
-  onProgress?: (stage: string, fraction: number) => void;
+/**
+ * iOS Safari ignores `preload` and refuses to buffer media data until playback
+ * has happened once, so the element sits at HAVE_METADATA: it knows the video's
+ * size and duration but holds no frames. Seeking then has nothing to paint and
+ * the scrub preview stays blank — while hitting play works, because playing is
+ * what loads the data.
+ *
+ * A muted inline play/pause gets that data flowing without the user noticing.
+ * Muted + `playsinline` is exempt from the autoplay restrictions on iOS 10+.
+ */
+export async function primeVideo(video: HTMLVideoElement) {
+  if (video.readyState >= HAVE_CURRENT_DATA) return;
+  video.muted = true;
+  try {
+    await video.play();
+  } catch {
+    // Autoplay refused. The first real play() the user triggers will load it.
+    return;
+  }
+  video.pause();
 }
 
-export interface RenderResult {
-  blob: Blob;
-  width: number;
-  height: number;
-  frames: number;
+const pendingSeek = new WeakMap<HTMLVideoElement, number>();
+
+/**
+ * Seeks the preview, collapsing a burst of scrubbing down to the latest target.
+ * Assigning `currentTime` while a seek is already in flight is dropped on
+ * mobile WebKit, which leaves the preview showing a stale frame.
+ */
+export function previewSeek(video: HTMLVideoElement, time: number) {
+  if (video.seeking) {
+    pendingSeek.set(video, time);
+    return;
+  }
+
+  pendingSeek.delete(video);
+  video.currentTime = time;
+
+  video.addEventListener(
+    "seeked",
+    () => {
+      const next = pendingSeek.get(video);
+      if (next === undefined) return;
+      pendingSeek.delete(video);
+      previewSeek(video, next);
+    },
+    { once: true },
+  );
 }
 
+/** Seeks and waits for the frame to be ready to draw. */
 function seek(video: HTMLVideoElement, time: number) {
   return new Promise<void>((resolve, reject) => {
-    if (video.readyState >= 2 && Math.abs(video.currentTime - time) < 1e-3) {
+    if (
+      video.readyState >= HAVE_CURRENT_DATA &&
+      Math.abs(video.currentTime - time) < 1e-3
+    ) {
       resolve();
       return;
     }
@@ -56,6 +88,29 @@ function seek(video: HTMLVideoElement, time: number) {
     video.addEventListener("error", onError);
     video.currentTime = time;
   });
+}
+
+interface RenderRequest {
+  video: HTMLVideoElement;
+  crop: Crop;
+  /** Seconds into the video where the first frame is taken. */
+  start: number;
+  fps: number;
+  /** Playback multiplier — 2 skips twice as far through the source per frame. */
+  speed: number;
+  mode: GifMode;
+  frameCount: number;
+  /** Output width in pixels; height follows the crop's aspect ratio. */
+  width: number;
+  dither: boolean;
+  onProgress?: (stage: string, fraction: number) => void;
+}
+
+export interface RenderResult {
+  blob: Blob;
+  width: number;
+  height: number;
+  frames: number;
 }
 
 export async function renderGif(request: RenderRequest): Promise<RenderResult> {
