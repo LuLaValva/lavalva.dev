@@ -5,13 +5,12 @@ body {
 }
 
 .first-name {
+  display: inline-flex;
+  flex-direction: column;
   height: 1lh;
   overflow: clip;
-  display: inline-block;
 
   & > span {
-    display: inline-flex;
-    flex-direction: column;
     animation: name-toggle 10s linear infinite;
   }
 }
