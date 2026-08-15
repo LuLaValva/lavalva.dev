@@ -7,6 +7,8 @@ export type GifMode = "loop" | "pingpong" | "once";
 const HAVE_CURRENT_DATA = 2;
 /** Give up on a `seeked` event that never arrives and use whatever is painted. */
 const SEEK_TIMEOUT = 5000;
+/** Stop queueing preview seeks behind an in-flight one that isn't reporting back. */
+const PREVIEW_SEEK_TIMEOUT = 500;
 /** Frames to watch go by before calling the source's frame rate measured. */
 const FRAME_SAMPLES = 8;
 /** Stop watching for frames on a video that isn't producing any. */
@@ -122,6 +124,10 @@ export async function detectFrameRate(video: HTMLVideoElement) {
 }
 
 const pendingSeek = new WeakMap<HTMLVideoElement, number>();
+const seekWatcher = new WeakMap<
+  HTMLVideoElement,
+  ReturnType<typeof setTimeout>
+>();
 
 /**
  * Seeks the preview, collapsing a burst of scrubbing down to the latest target.
@@ -129,24 +135,51 @@ const pendingSeek = new WeakMap<HTMLVideoElement, number>();
  * mobile WebKit, which leaves the preview showing a stale frame.
  */
 export function previewSeek(video: HTMLVideoElement, time: number) {
-  if (video.seeking) {
-    pendingSeek.set(video, time);
-    return;
+  pendingSeek.set(video, time);
+  flushSeek(video);
+}
+
+function flushSeek(video: HTMLVideoElement) {
+  const next = pendingSeek.get(video);
+  if (next === undefined) return;
+  if (!video.seeking) {
+    pendingSeek.delete(video);
+    video.currentTime = next;
   }
+  watchSeek(video);
+}
 
-  pendingSeek.delete(video);
-  video.currentTime = time;
+/**
+ * Holds the queue until the in-flight seek lands.
+ *
+ * The timeout is the point of it. Rendering drives `currentTime` itself, dozens
+ * of times, and an element left with `seeking` stuck on afterwards would park
+ * every later preview seek in the queue behind a seek that is never going to
+ * report finishing — the preview would simply stop responding once you had
+ * rendered once. Waiting is an optimisation, so give up on it rather than hang.
+ */
+function watchSeek(video: HTMLVideoElement) {
+  if (seekWatcher.has(video)) return;
 
-  video.addEventListener(
-    "seeked",
-    () => {
-      const next = pendingSeek.get(video);
-      if (next === undefined) return;
-      pendingSeek.delete(video);
-      previewSeek(video, next);
-    },
-    { once: true },
-  );
+  const stop = () => {
+    clearTimeout(timer);
+    video.removeEventListener("seeked", settled);
+    seekWatcher.delete(video);
+  };
+  const settled = () => {
+    stop();
+    flushSeek(video);
+  };
+  const timer = setTimeout(() => {
+    stop();
+    const next = pendingSeek.get(video);
+    if (next === undefined) return;
+    pendingSeek.delete(video);
+    video.currentTime = next;
+  }, PREVIEW_SEEK_TIMEOUT);
+
+  video.addEventListener("seeked", settled);
+  seekWatcher.set(video, timer);
 }
 
 /** Seeks and waits for the frame to be ready to draw. */
@@ -264,6 +297,9 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
   // until something plays) hands back blank or repeated frames.
   await primeVideo(video);
   video.pause();
+  // Capturing drives `currentTime` directly, so a preview seek queued from the
+  // last scrub must not land in the middle of it and shift a frame.
+  pendingSeek.delete(video);
   const videoWidth = video.videoWidth;
   const videoHeight = video.videoHeight;
   if (!videoWidth || !videoHeight) {
@@ -288,11 +324,19 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
   const center = frameSeconds / 2;
   const lastMoment = Math.max(0, video.duration - 1e-3);
   const frames: Uint8ClampedArray[] = [];
-  for (let i = 0; i < frameCount; i++) {
-    await seek(video, Math.min(start + i * sourceStep + center, lastMoment));
-    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, width, height);
-    frames.push(ctx.getImageData(0, 0, width, height).data);
-    request.onProgress?.("Capturing frames", (i + 1) / frameCount);
+  try {
+    for (let i = 0; i < frameCount; i++) {
+      await seek(video, Math.min(start + i * sourceStep + center, lastMoment));
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, width, height);
+      frames.push(ctx.getImageData(0, 0, width, height).data);
+      request.onProgress?.("Capturing frames", (i + 1) / frameCount);
+    }
+  } finally {
+    // Hand the element back. Capturing parks it on the last frame, and iOS
+    // reclaims the buffered media data it just worked so hard through, which
+    // leaves the scrub preview as blank as it is before anything has played —
+    // priming it is what filled that in the first time.
+    void primeVideo(video).then(() => previewSeek(video, start));
   }
 
   // Ping-pong replays the middle frames backwards; the ends aren't repeated so
