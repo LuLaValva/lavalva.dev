@@ -7,8 +7,7 @@ const SEEK_TIMEOUT = 5000;
 const PREVIEW_SEEK_TIMEOUT = 500;
 const FRAME_SAMPLES = 8;
 const DETECT_TIMEOUT = 1500;
-/** A measurement off by a fraction of a percent drifts a whole frame over a few
- * hundred, so anything landing near a standard rate is taken to be it. */
+/** Snap targets. A percent of error drifts a whole frame over a few hundred. */
 const COMMON_RATES = [
   8,
   10,
@@ -29,10 +28,8 @@ const COMMON_RATES = [
 ];
 
 /**
- * iOS Safari won't buffer media data until playback has happened once, so the
- * element knows its size and duration but holds no frames and seeking has
- * nothing to paint. A muted inline play/pause is exempt from the autoplay
- * restrictions and gets the data flowing.
+ * iOS Safari holds no frames until playback happens once, so seeking has
+ * nothing to paint. Muted inline playback is exempt from autoplay rules.
  */
 export async function primeVideo(video: HTMLVideoElement) {
   if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return;
@@ -40,18 +37,16 @@ export async function primeVideo(video: HTMLVideoElement) {
   try {
     await video.play();
   } catch {
-    // Autoplay refused. The first real play() the user triggers will load it.
+    // Refused. The user's first real play() will load it.
     return;
   }
   video.pause();
 }
 
 /**
- * How long a single source frame lasts, in seconds, or null where the browser
- * won't say (Firefox has never shipped `requestVideoFrameCallback`).
- *
- * Counting *presented* frames rather than callbacks keeps the answer right when
- * the compositor drops some.
+ * Seconds per source frame, or null where the browser won't say (Firefox has
+ * no `requestVideoFrameCallback`). Counts presented frames, not callbacks, so
+ * dropped frames don't skew it.
  */
 export async function detectFrameRate(video: HTMLVideoElement) {
   if (!video.requestVideoFrameCallback) return null;
@@ -86,7 +81,7 @@ export async function detectFrameRate(video: HTMLVideoElement) {
       else video.requestVideoFrameCallback(onFrame);
     };
 
-    // A clip too short to present that many frames would otherwise hang here.
+    // A clip too short to present that many would hang.
     const timer = setTimeout(finish, DETECT_TIMEOUT);
     video.addEventListener("ended", finish, {
       signal: stop.signal,
@@ -109,9 +104,8 @@ export async function detectFrameRate(video: HTMLVideoElement) {
 }
 
 /**
- * Readies a freshly loaded video and reports its frame rate. The order matters
- * — priming precedes any frame read, and measuring plays the video so the
- * preview has to be put back — hence one call rather than three.
+ * Readies a loaded video and reports its frame rate. One call, not three:
+ * priming must precede any frame read, and measuring plays the video.
  */
 export async function prepareVideo(video: HTMLVideoElement, showAt: number) {
   await primeVideo(video);
@@ -135,8 +129,7 @@ function seekState(video: HTMLVideoElement) {
 
 /**
  * Seeks the preview, collapsing a burst of scrubbing to the latest target.
- * Assigning `currentTime` mid-seek is dropped on mobile WebKit, leaving a stale
- * frame on screen.
+ * Mobile WebKit drops `currentTime` assigned mid-seek.
  */
 export function previewSeek(video: HTMLVideoElement, time: number) {
   seekState(video).target = time;
@@ -154,9 +147,8 @@ function flushSeek(video: HTMLVideoElement, force = false) {
 }
 
 /**
- * Holds the queue until the in-flight seek lands. The timeout is the point of
- * it: an element left with `seeking` stuck on after a render would otherwise
- * park every later scrub behind a seek that never reports finishing.
+ * Holds the queue until the in-flight seek lands. The timeout is the point:
+ * `seeking` can stick on after a render, stranding every later scrub.
  */
 function watchSeek(video: HTMLVideoElement) {
   const state = seekState(video);
@@ -177,10 +169,8 @@ function watchSeek(video: HTMLVideoElement) {
   });
 }
 
-/**
- * Seeks and waits for the frame to be ready to draw, dropping any queued
- * preview seek so it can't land mid-capture and shift a frame.
- */
+/** Seeks and waits for a drawable frame. Drops any queued preview seek, which
+ * would otherwise land mid-capture and shift a frame. */
 function seek(video: HTMLVideoElement, time: number) {
   seekState(video).target = undefined;
   return new Promise<void>((resolve, reject) => {
@@ -213,17 +203,17 @@ function seek(video: HTMLVideoElement, time: number) {
 interface RenderRequest {
   video: HTMLVideoElement;
   crop: Crop;
-  /** Seconds into the video, where the first frame is taken. */
+  /** Seconds in, where the first frame is taken. */
   start: number;
   frameSeconds: number;
-  /** Take every nth source frame. A stride rather than a duration because
-   * capture aims at frame midpoints, which needs whole frames. */
+  /** Take every nth source frame. A stride, not a duration: capture aims at
+   * frame midpoints, which needs whole frames. */
   stride: number;
-  /** Frame delay in hundredths of a second — GIF's native unit. */
+  /** Hundredths of a second, GIF's native unit. */
   delay: number;
   mode: GifMode;
   frameCount: number;
-  /** Output width in pixels; height follows the crop's aspect ratio. */
+  /** Pixels. Height follows the crop's aspect ratio. */
   width: number;
   dither: boolean;
   colors: number;
@@ -237,8 +227,8 @@ export interface RenderResult {
   frames: number;
 }
 
-/** Encoding is pure computation and the slow part, so it runs off the main
- * thread with the frame buffers transferred rather than copied. */
+/** Encoding is the slow part and pure computation, so it runs off-thread.
+ * Frame buffers are transferred, not copied. */
 function encodeOffThread(
   frames: Uint8ClampedArray[],
   options: Omit<GifOptions, "onProgress">,
@@ -264,8 +254,7 @@ function encodeOffThread(
       reject(new Error(event.message || "The GIF encoder crashed"));
     };
 
-    // Ping-pong repeats frame objects, so the same buffer can appear twice —
-    // listing one twice in the transfer list is an error.
+    // Ping-pong repeats frame objects, and a transfer list can't name one twice.
     const buffers = [...new Set(frames.map((frame) => frame.buffer))];
     worker.postMessage({ frames, options }, buffers as Transferable[]);
   });
@@ -297,8 +286,7 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) throw new Error("Could not get a 2d canvas context");
 
-  // Seeking to a frame boundary is a coin flip between that frame and the one
-  // before it, so aim at the middle of the frame we actually want.
+  // A boundary seek is a coin flip between two frames. Aim at the midpoint.
   const center = frameSeconds / 2;
   const sourceStep = stride * frameSeconds;
   const lastMoment = Math.max(0, video.duration - 1e-3);
@@ -311,8 +299,8 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
       onProgress?.("Capturing frames", (i + 1) / frameCount);
     }
   } finally {
-    // Capturing parks the element on the last frame, and iOS reclaims the media
-    // data it just read through, leaving the preview blank until re-primed.
+    // Capture parks the element on the last frame, and iOS reclaims the media
+    // data it just read. Both need undoing.
     void primeVideo(video).then(() => previewSeek(video, start));
   }
 

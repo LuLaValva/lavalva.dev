@@ -8,7 +8,7 @@ export interface Input<T extends string | number> {
   valueChange: (value: T) => void;
 }
 
-// Radios carry strings; the round trip back to the caller's type stays here.
+// Radios carry strings. The round trip to the caller's type stays here.
 <fieldset class=styles.chips>
   <legend>${input.legend}</legend>
   <for|option| of=input.options by="value">

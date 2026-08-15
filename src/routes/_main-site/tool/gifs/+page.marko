@@ -2,7 +2,7 @@ import styles from "./gif.module.css";
 import type { Corner, Crop, Handle } from "./crop";
 import type { RenderResult } from "./video";
 import { type GifMode, playedFrameCount } from "./playback";
-// Not a `client import`: HANDLES is read while rendering, and a client-only
+// Not a `client import`: HANDLES is read during render, and a client-only
 // binding is undefined on the server.
 import {
   FULL_CROP,
@@ -15,9 +15,9 @@ import {
 } from "./crop";
 client import { prepareVideo, previewSeek, renderGif } from "./video";
 
-// Enough for a few seconds of motion without melting a phone.
+// A few seconds of motion, without melting a phone.
 static const MAX_FRAMES = 240;
-// Browsers treat a delay of 0 or 1 hundredth as 10, so 2 is the real floor.
+// Browsers treat 0 or 1 as 10, so 2 is the real floor.
 static const MIN_DELAY = 2;
 static const ASSUMED_FRAME_SECONDS = 1 / 30;
 static const ARROWS: Record<string, [number, number]> = {
@@ -86,7 +86,7 @@ static function formatBytes(bytes: number) {
 <let/frameSeconds=ASSUMED_FRAME_SECONDS>
 <let/frameRateSource="checking" as "checking" | "measured" | "assumed">
 <let/stride=1>
-// An exponent, so a drag covers 0.25x to 8x at even relative precision.
+// An exponent: even relative precision across 0.25x to 8x.
 <let/speedExponent=0>
 <let/mode="loop" as GifMode>
 <let/requestedWidth=360>
@@ -103,11 +103,11 @@ static function formatBytes(bytes: number) {
     | null
 )>
 
-// Speed doesn't enter into this: which frames get captured is a property of
-// the source, and speed only decides how long each one is shown for.
+// Speed is absent on purpose. Which frames get captured is a property of the
+// source; speed only sets how long each is shown.
 <const/sourceStep=stride * frameSeconds>
-// A GIF holds whole hundredths of a second per frame, in a 16-bit field, so the
-// speed that comes back out is whatever that rounding allows.
+// Whole hundredths per frame, in a 16-bit field. The speed that comes back
+// out is whatever that rounding allows.
 <const/delay=clamp(
   Math.round((sourceStep * 100) / 2 ** speedExponent),
   MIN_DELAY,
@@ -116,8 +116,7 @@ static function formatBytes(bytes: number) {
 <const/speed=(sourceStep * 100) / delay>
 <const/fps=100 / delay>
 <const/source=cropPixels(crop, naturalWidth, naturalHeight)>
-// The same call the renderer makes, so the size promised below is the size
-// encoded rather than two roundings that happen to agree.
+// The same call the renderer makes, so the size promised is the size encoded.
 <const/output=outputSize(crop, naturalWidth, naturalHeight, requestedWidth)>
 <const/outWidth=output.width>
 <const/outHeight=output.height>
@@ -155,8 +154,8 @@ static function formatBytes(bytes: number) {
   return Math.min(duration, from + frameFit(to - from, step) * step);
 }>
 
-// The start lands on any source frame; only the end is held to the sampling
-// stride, which is what keeps the two handles independent.
+// The start lands on any source frame. Only the end is held to the sampling
+// stride, which is what keeps the handles independent.
 <const/setStart(value: number) {
   start = clamp(
     Math.round(value / frameSeconds) * frameSeconds,
@@ -215,11 +214,10 @@ static function formatBytes(bytes: number) {
 <const/nudge(event: KeyboardEvent, handle: Handle) {
   const arrow = ARROWS[event.key];
   if (!arrow) return;
-  // Alt holds it to a single source pixel; the crop is stored as a fraction,
-  // so one pixel is a different step on each axis.
+  // Alt means one source pixel. The crop is a fraction, so that differs per axis.
   const step = (natural: number) =>
     event.altKey ? 1 / Math.max(1, natural) : event.shiftKey ? 0.1 : 0.01;
-  // Also stops alt+arrow from triggering browser history navigation.
+  // Also stops alt+arrow navigating history.
   event.preventDefault();
   crop = dragCrop(
     crop,
@@ -229,22 +227,21 @@ static function formatBytes(bytes: number) {
   );
 }>
 
-// iOS offers "Save Image" on the sheet, which writes to the camera roll and
-// skips the downloads-folder detour.
+// The sheet's "Save Image" writes to the camera roll, skipping downloads.
 <const/shareResult() {
   const shared = result;
   if (!shared) return;
   // Nothing awaited first: sharing needs the click's transient activation.
-  // Files only — iOS shares the text instead when given both.
+  // Files only. Given both, iOS shares the text.
   navigator.share({ files: [shared.file] }).catch((thrown: unknown) => {
-    // Dismissing the sheet rejects too, and that isn't a failure.
+    // Dismissing rejects too. Not a failure.
     if (thrown instanceof Error && thrown.name === "AbortError") return;
     error = "This browser wouldn't hand the file to the share sheet.";
   });
 }>
 
-// An arrow, not `async onClick()` — prettier-plugin-marko drops the `async`
-// keyword off a method-shorthand handler and the await stops compiling.
+// An arrow, not `async onClick()`: prettier-plugin-marko strips `async` off
+// method shorthand and the await stops compiling.
 <const/startRender=async () => {
   rendering = true;
   error = "";
@@ -287,8 +284,7 @@ static function formatBytes(bytes: number) {
 <script>if (videoUrl) videoEl().playbackRate = speed;</script>
 
 <script>
-  // Object URLs pin their blob until revoked, and a source video is routinely
-  // hundreds of megabytes.
+  // Object URLs pin their blob until revoked. A source video is often huge.
   const url = videoUrl;
   if (url) $signal.onabort = () => URL.revokeObjectURL(url);
 </script>
@@ -299,14 +295,14 @@ static function formatBytes(bytes: number) {
 </script>
 
 <script>
-  // ...and repaints only at the export frame rate, so the preview stutters
-  // exactly the way the GIF will, sampling the video playing underneath.
+  // ...and repaints at the export frame rate, sampling the video underneath,
+  // so the preview stutters the way the GIF will.
   const video = videoEl();
   const canvas = previewCanvas();
   const ctx = canvas.getContext("2d");
   if (playing && ctx && video.videoWidth) {
-    // Assigning either reallocates and clears the backing store even when the
-    // value is unchanged, and this reruns on every speed-slider tick.
+    // Assigning either reallocates the backing store even when unchanged, and
+    // this reruns on every speed-slider tick.
     if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
     if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
     const draw = () => ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -377,7 +373,7 @@ static function formatBytes(bytes: number) {
             if (Number.isFinite(el.duration)) {
               applyDuration(el.duration);
             } else {
-              // Recordings without a duration header only admit their length
+              // Recordings with no duration header only admit their length
               // once you seek past the end.
               el.currentTime = 1e101;
             }
@@ -394,8 +390,8 @@ static function formatBytes(bytes: number) {
             playing = false;
           }
           onTimeUpdate(e, el: HTMLVideoElement) {
-            // Only during playback: without this, scrubbing the end handle
-            // past `end` yanks the preview to `start` and reads as jitter.
+            // Playback only. Otherwise scrubbing the end handle past `end`
+            // yanks the preview to `start` and reads as jitter.
             if (rendering || el.paused || el.currentTime < end) return;
             el.currentTime = start;
           }
@@ -416,7 +412,7 @@ static function formatBytes(bytes: number) {
           }
         >
           <!-- A sibling of the handles, not their parent, so a pointerdown on
-          a handle can never also start a move. -->
+          a handle can't also start a move. -->
           <button
             class=styles.moveArea
             type="button"

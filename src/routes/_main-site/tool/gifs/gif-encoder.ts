@@ -1,9 +1,9 @@
-// A small GIF89a encoder: median-cut palette + optional Floyd-Steinberg
-// dithering + LZW. Frames come in as raw RGBA (canvas `ImageData.data`).
+// GIF89a: median-cut palette, optional Floyd-Steinberg dithering, LZW.
+// Frames arrive as raw RGBA (canvas `ImageData.data`).
 
-/** Pixels sampled across every frame to build the shared palette. */
+/** Pixels sampled across all frames to build the shared palette. */
 const MAX_SAMPLES = 40_000;
-/** Largest code the LZW table holds before it has to be reset. */
+/** Largest code the LZW table holds before a reset. */
 const LZW_MAX_CODE = 4096;
 
 class ByteBuffer {
@@ -54,8 +54,8 @@ class ByteBuffer {
   }
 }
 
-/** Closest palette entry for a color, memoized per 5-bit RGB cell so a long
- * video costs at most 32768 searches. */
+/** Closest palette entry for a color, memoized per 5-bit RGB cell: at most
+ * 32768 searches for a whole video. */
 class PaletteMap {
   private cache = new Int16Array(1 << 15).fill(-1);
   readonly palette: Uint8Array;
@@ -72,7 +72,7 @@ class PaletteMap {
     let best = 0;
     let bestDistance = Infinity;
     for (let i = 0; i < this.palette.length; i += 3) {
-      // Weighted to roughly match how the eye trades off the channels.
+      // Weighted roughly to the eye's sensitivity per channel.
       const dr = r - this.palette[i];
       const dg = g - this.palette[i + 1];
       const db = b - this.palette[i + 2];
@@ -98,7 +98,7 @@ function buildPalette(frames: Uint8ClampedArray[], maxColors: number) {
 
   for (const frame of frames) {
     const pixels = frame.length >> 2;
-    // `seen` carries across frames so the stride stays even over the clip.
+    // `seen` carries across frames, keeping the stride even over the clip.
     for (let p = (stride - (seen % stride)) % stride; p < pixels; p += stride) {
       const from = p << 2;
       const to = count * 3;
@@ -124,12 +124,12 @@ interface Box {
 function medianCut(samples: Uint8Array, count: number, maxColors: number) {
   if (!count) return new Uint8Array(6);
 
-  // Boxes are ranges over `order`, which gets sorted in place per split.
+  // Boxes are ranges over `order`, sorted in place per split.
   const order = new Uint32Array(count);
   for (let i = 0; i < count; i++) order[i] = i;
 
-  // Measured once, when the box is made: a split only reorders `order` within
-  // the box being split, so no other box's extent can change.
+  // Measured once, at creation. A split reorders `order` only within the box
+  // being split, so no other box's extent changes.
   const measure = (lo: number, hi: number): Box => {
     let channel = 0;
     let spread = -1;
@@ -158,7 +158,7 @@ function medianCut(samples: Uint8Array, count: number, maxColors: number) {
     for (let b = 0; b < boxes.length; b++) {
       const box = boxes[b];
       if (box.hi - box.lo < 2) continue;
-      // Prefer boxes that are both wide and heavily populated.
+      // Prefer boxes that are wide and heavily populated.
       const score = box.spread * (box.hi - box.lo);
       if (score > bestScore) {
         bestScore = score;
@@ -201,11 +201,11 @@ function clamp255(value: number) {
   return value < 0 ? 0 : value > 255 ? 255 : value;
 }
 
-/** Allocated once per encode; a long clip would otherwise churn tens of
- * megabytes of short-lived arrays through the worker's heap. */
+/** Allocated once per encode. Per frame, a long clip churns tens of megabytes
+ * through the worker's heap. */
 class FrameScratch {
   readonly indices: Uint8Array;
-  /** Floyd-Steinberg only ever spills error onto the current and next row. */
+  /** Floyd-Steinberg spills error onto the current and next row only. */
   readonly current: Float32Array;
   readonly next: Float32Array;
 
@@ -239,7 +239,7 @@ function ditherFrame(
   const palette = map.palette;
   let current = scratch.current;
   let next = scratch.next;
-  // Reused across frames; `next` is zeroed per row below.
+  // Reused across frames. `next` is zeroed per row below.
   current.fill(0);
 
   for (let y = 0; y < height; y++) {
@@ -287,9 +287,9 @@ function ditherFrame(
 }
 
 /**
- * Probed once per pixel of every frame, and the key is already a bounded
- * integer, so a flat array beats a `Map`. Clearing walks the keys actually
- * written, because the table resets every time it fills.
+ * Probed once per pixel of every frame, on an already-bounded integer key, so a
+ * flat array beats a `Map`. Clearing walks only the keys written, because the
+ * table resets every time it fills.
  */
 class LzwTable {
   /** `(prefix << 8) | next` -> code + 1, leaving 0 to mean "not present". */
@@ -390,7 +390,7 @@ export interface GifOptions {
   delay: number;
   loop: boolean;
   dither: boolean;
-  /** Palette size. Fewer colors means a smaller file and coarser gradients. */
+  /** Fewer colors, smaller file, coarser gradients. */
   colors: number;
   onProgress?: (fraction: number) => void;
 }
@@ -409,7 +409,7 @@ export function encodeGif(
   const table = new LzwTable();
 
   // A frame's blocks depend on nothing but its pixels and the delay, so a
-  // repeated frame (ping-pong) is a byte-for-byte copy of the first one.
+  // repeat (ping-pong) is a byte-for-byte copy of the first.
   const encoded =
     frames.length === new Set(frames).size
       ? null

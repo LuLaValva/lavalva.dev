@@ -5,14 +5,13 @@ export interface EncodeRequest {
   options: Omit<GifOptions, "onProgress">;
 }
 
-/** Both ends agree by type rather than by two lists of string literals. */
+/** Both ends agree by type, not by two lists of string literals. */
 export type EncodeResponse =
   | { type: "progress"; fraction: number }
   | { type: "done"; bytes: Uint8Array<ArrayBuffer> }
   | { type: "error"; message: string };
 
-// Typed by hand rather than pulling in the webworker lib, which fights the DOM
-// lib the rest of this project is built against.
+// Hand-typed: the webworker lib fights the DOM lib this project builds against.
 const worker = self as unknown as {
   postMessage(message: EncodeResponse, transfer?: Transferable[]): void;
   onmessage: ((event: MessageEvent<EncodeRequest>) => void) | null;

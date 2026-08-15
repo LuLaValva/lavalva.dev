@@ -13,7 +13,7 @@ export const HANDLES: Corner[] = ["nw", "ne", "sw", "se"];
 
 export const FULL_CROP: Crop = { x: 0, y: 0, width: 1, height: 1 };
 
-/** Smallest crop the drag handles will let you make, as a fraction. */
+/** Smallest crop the handles allow, as a fraction. */
 const MIN_SIZE = 0.05;
 
 export const MIN_OUTPUT_WIDTH = 80;
@@ -23,7 +23,7 @@ export function clamp(value: number, min: number, max: number) {
   return value < min ? min : value > max ? max : value;
 }
 
-/** A crop as whole source pixels — the rectangle to copy off the video. */
+/** The crop as whole source pixels: what to copy off the video. */
 export function cropPixels(
   crop: Crop,
   videoWidth: number,
@@ -37,10 +37,8 @@ export function cropPixels(
   };
 }
 
-/**
- * Both the page (to say what it is about to make) and the renderer (to make it)
- * go through here, so the promised size is the produced size by construction.
- */
+/** The page promises a size and the renderer produces one. Same call, so they
+ * agree by construction. */
 export function outputSize(
   crop: Crop,
   videoWidth: number,
@@ -53,8 +51,8 @@ export function outputSize(
   return { width, height: Math.max(1, Math.round((width * sh) / sw)), limit };
 }
 
-/** `dx`/`dy` are a delta against the crop passed in, as a fraction of the
- * video's displayed size — a pointer's travel, or a keyboard nudge. */
+/** `dx`/`dy` are a delta on the crop passed in, as a fraction of displayed
+ * size: a pointer's travel, or a keyboard nudge. */
 export function dragCrop(crop: Crop, handle: Handle, dx: number, dy: number) {
   if (handle === "move") {
     return {
