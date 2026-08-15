@@ -1,0 +1,25 @@
+import styles from "../gif.module.css";
+
+export interface Input {
+  label: string;
+  min: number | string;
+  max: number | string;
+  step: number | string;
+  value: number;
+  valueChange: (value: number) => void;
+  content: Marko.Body;
+}
+
+<label class=styles.slider>
+  <span>${input.label}</span>
+  <input
+    type="range"
+    min=input.min
+    max=input.max
+    step=input.step
+    value:parseFloat:=input.value
+  >
+  <output>
+    <${input.content}/>
+  </output>
+</label>

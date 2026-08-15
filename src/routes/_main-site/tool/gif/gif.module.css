@@ -1,0 +1,378 @@
+body {
+  max-width: 40rem;
+  padding: 0 1rem 4rem;
+  margin: auto;
+}
+
+.page {
+  h2 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.6;
+    margin-bottom: 0.5rem;
+  }
+
+  section {
+    margin: 1.25rem 0;
+  }
+}
+
+.lede {
+  opacity: 0.75;
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  border: 2px dashed light-dark(#0003, #fff3);
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.compact {
+  flex-direction: row;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-style: solid;
+  border-width: 1px;
+
+  .pick span {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+  }
+}
+
+.armed {
+  border-color: var(--accent);
+  background-color: light-dark(#0001, #fff1);
+}
+
+.pick {
+  span {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background-color: light-dark(#0001, #fff2);
+    cursor: pointer;
+  }
+
+  &:hover span,
+  &:focus-within span {
+    background-color: light-dark(#0002, #fff3);
+  }
+}
+
+/* The real control in both cases is the label; the input stays focusable but
+   invisible rather than being hidden from assistive tech. */
+.pick input,
+.chip input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  overflow-wrap: anywhere;
+}
+
+.error {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background-color: light-dark(#f8d7d7, #4a1f1f);
+}
+
+/* A wrapping row, so the play button decides for itself where to go: a tall
+   video leaves room beside it, a wide one fills the line and pushes it under. */
+.previewDock {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+  background-color: var(--background);
+}
+
+.stage {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin: auto;
+  touch-action: none;
+  line-height: 0;
+  /* Clips the crop box's dimming shadow to the video. */
+  overflow: hidden;
+  background-color: #0004;
+}
+
+.video {
+  display: block;
+  max-width: 100%;
+  max-height: 45vh;
+}
+
+.cropBox {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid white;
+  /* Dim everything outside the crop without stacking extra elements. */
+  box-shadow: 0 0 0 100vmax #0009;
+  cursor: move;
+}
+
+.moveArea {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  cursor: move;
+}
+
+.handle {
+  all: unset;
+  position: absolute;
+  box-sizing: border-box;
+  /* Above the move surface so the corners always win the pointer. */
+  z-index: 1;
+  width: 1.25rem;
+  height: 1.25rem;
+  --handle-inset: 2px;
+  border: 2px solid white;
+  border-radius: 0.2rem;
+  background-color: #0006;
+}
+
+.moveArea:focus-visible,
+.handle:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -1px;
+  background-color: #0008;
+}
+
+/* Anchored inside the box, by --handle-inset, so the stage's overflow clip
+   never eats them. */
+.nw,
+.sw {
+  left: var(--handle-inset);
+}
+
+.ne,
+.se {
+  right: var(--handle-inset);
+}
+
+.nw,
+.ne {
+  top: var(--handle-inset);
+}
+
+.sw,
+.se {
+  bottom: var(--handle-inset);
+}
+
+.nw,
+.se {
+  cursor: nwse-resize;
+}
+
+.ne,
+.sw {
+  cursor: nesw-resize;
+}
+
+/* One focus ring for everything in here. The crop handles opt out above —
+   they sit on top of video and need to be far louder. */
+.pick:focus-within span,
+.link:focus-visible,
+.play:focus-visible,
+.chip input:focus-visible + span,
+.render:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.link {
+  all: unset;
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--accent);
+}
+
+.slider {
+  display: grid;
+  grid-template-columns: 5rem 1fr 4.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+
+  input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  output {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    opacity: 0.8;
+  }
+}
+
+.playbar {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+.play {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  background-color: light-dark(#0001, #fff2);
+  cursor: pointer;
+
+  &:hover {
+    background-color: light-dark(#0002, #fff3);
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  padding: 0;
+  margin: 0.75rem 0;
+
+  legend {
+    font-size: 0.85rem;
+    opacity: 0.6;
+  }
+}
+
+.chip {
+  cursor: pointer;
+
+  span {
+    display: block;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    background-color: light-dark(#0001, #fff1);
+    border: 1px solid transparent;
+  }
+
+  &:hover span {
+    background-color: light-dark(#0002, #fff2);
+  }
+
+  input:checked + span {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: bold;
+  }
+}
+
+/* Sits over the video during playback, repainted at the export frame rate.
+   The video stays visible underneath rather than display:none, which iOS
+   needs in order to keep decoding frames we can draw. */
+.preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.summary {
+  font-variant-numeric: tabular-nums;
+
+  em {
+    opacity: 0.8;
+  }
+}
+
+.render {
+  all: unset;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  border-radius: 0.5rem;
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: bold;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+
+  progress {
+    flex: 1;
+  }
+}
+
+.result {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: auto;
+  border-radius: 0.5rem;
+  background-color: #0004;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.download {
+  font-weight: bold;
+}
