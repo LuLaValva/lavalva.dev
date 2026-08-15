@@ -3,20 +3,12 @@ import type { EncodeResponse } from "./encode-worker";
 import type { GifOptions } from "./gif-encoder";
 import { type GifMode, playbackOrder } from "./playback";
 
-/** Give up on a `seeked` event that never arrives and use whatever is painted. */
 const SEEK_TIMEOUT = 5000;
-/** Stop queueing preview seeks behind an in-flight one that isn't reporting back. */
 const PREVIEW_SEEK_TIMEOUT = 500;
-/** Frames to watch go by before calling the source's frame rate measured. */
 const FRAME_SAMPLES = 8;
-/** Stop watching for frames on a video that isn't producing any. */
 const DETECT_TIMEOUT = 1500;
-/**
- * Capture rates worth snapping a measurement to, including the 1000/1001 "NTSC"
- * variants. A frame interval that's off by even a fraction of a percent drifts a
- * whole frame over a few hundred of them, so a measurement landing next to one
- * of these is taken to be it.
- */
+/** A measurement off by a fraction of a percent drifts a whole frame over a few
+ * hundred, so anything landing near a standard rate is taken to be it. */
 const COMMON_RATES = [
   8,
   10,
@@ -37,14 +29,10 @@ const COMMON_RATES = [
 ];
 
 /**
- * iOS Safari ignores `preload` and refuses to buffer media data until playback
- * has happened once, so the element sits at HAVE_METADATA: it knows the video's
- * size and duration but holds no frames. Seeking then has nothing to paint and
- * the scrub preview stays blank — while hitting play works, because playing is
- * what loads the data.
- *
- * A muted inline play/pause gets that data flowing without the user noticing.
- * Muted + `playsinline` is exempt from the autoplay restrictions on iOS 10+.
+ * iOS Safari won't buffer media data until playback has happened once, so the
+ * element knows its size and duration but holds no frames and seeking has
+ * nothing to paint. A muted inline play/pause is exempt from the autoplay
+ * restrictions and gets the data flowing.
  */
 export async function primeVideo(video: HTMLVideoElement) {
   if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return;
@@ -59,16 +47,11 @@ export async function primeVideo(video: HTMLVideoElement) {
 }
 
 /**
- * Measures how long a single source frame lasts, in seconds.
+ * How long a single source frame lasts, in seconds, or null where the browser
+ * won't say (Firefox has never shipped `requestVideoFrameCallback`).
  *
- * `requestVideoFrameCallback` hands back the media timestamp of each frame as
- * it reaches the compositor, so playing for a moment and dividing the media
- * time covered by the number of frames presented gives the interval directly.
- * Counting *presented* frames rather than callbacks keeps the answer right even
- * when the compositor drops some.
- *
- * Firefox has never shipped the API; there this returns null and the caller has
- * to assume a rate.
+ * Counting *presented* frames rather than callbacks keeps the answer right when
+ * the compositor drops some.
  */
 export async function detectFrameRate(video: HTMLVideoElement) {
   if (!video.requestVideoFrameCallback) return null;
@@ -126,13 +109,9 @@ export async function detectFrameRate(video: HTMLVideoElement) {
 }
 
 /**
- * Gets a freshly loaded video ready to work with, and reports its frame rate
- * (null if the browser won't say).
- *
- * The order matters — priming has to happen before anything tries to read
- * frames, and the preview has to be put back afterwards because measuring plays
- * the video — so it lives here rather than being three calls a caller has to
- * remember to make in sequence.
+ * Readies a freshly loaded video and reports its frame rate. The order matters
+ * — priming precedes any frame read, and measuring plays the video so the
+ * preview has to be put back — hence one call rather than three.
  */
 export async function prepareVideo(video: HTMLVideoElement, showAt: number) {
   await primeVideo(video);
@@ -141,7 +120,6 @@ export async function prepareVideo(video: HTMLVideoElement, showAt: number) {
   return frameSeconds;
 }
 
-/** One element's queued preview seek, and the wait it is queued behind. */
 interface PreviewSeek {
   target?: number;
   waiting?: ReturnType<typeof setTimeout>;
@@ -156,9 +134,9 @@ function seekState(video: HTMLVideoElement) {
 }
 
 /**
- * Seeks the preview, collapsing a burst of scrubbing down to the latest target.
- * Assigning `currentTime` while a seek is already in flight is dropped on
- * mobile WebKit, which leaves the preview showing a stale frame.
+ * Seeks the preview, collapsing a burst of scrubbing to the latest target.
+ * Assigning `currentTime` mid-seek is dropped on mobile WebKit, leaving a stale
+ * frame on screen.
  */
 export function previewSeek(video: HTMLVideoElement, time: number) {
   seekState(video).target = time;
@@ -176,13 +154,9 @@ function flushSeek(video: HTMLVideoElement, force = false) {
 }
 
 /**
- * Holds the queue until the in-flight seek lands.
- *
- * The timeout is the point of it. Rendering drives `currentTime` itself, dozens
- * of times, and an element left with `seeking` stuck on afterwards would park
- * every later preview seek in the queue behind a seek that is never going to
- * report finishing — the preview would simply stop responding once you had
- * rendered once. Waiting is an optimisation, so give up on it rather than hang.
+ * Holds the queue until the in-flight seek lands. The timeout is the point of
+ * it: an element left with `seeking` stuck on after a render would otherwise
+ * park every later scrub behind a seek that never reports finishing.
  */
 function watchSeek(video: HTMLVideoElement) {
   const state = seekState(video);
@@ -204,12 +178,8 @@ function watchSeek(video: HTMLVideoElement) {
 }
 
 /**
- * Seeks and waits for the frame to be ready to draw.
- *
- * Taking the queue with it: this drives `currentTime` directly, so a preview
- * seek left queued from the last scrub must not land in the middle of a capture
- * and shift a frame. Doing it here rather than at the call site means no caller
- * has to remember.
+ * Seeks and waits for the frame to be ready to draw, dropping any queued
+ * preview seek so it can't land mid-capture and shift a frame.
  */
 function seek(video: HTMLVideoElement, time: number) {
   seekState(video).target = undefined;
@@ -228,7 +198,6 @@ function seek(video: HTMLVideoElement, time: number) {
       stop.abort();
       finish();
     };
-    // A `seeked` that never arrives: use whatever is painted rather than hang.
     const timer = setTimeout(settle(resolve), SEEK_TIMEOUT);
 
     video.addEventListener("seeked", settle(resolve), { signal: stop.signal });
@@ -244,13 +213,11 @@ function seek(video: HTMLVideoElement, time: number) {
 interface RenderRequest {
   video: HTMLVideoElement;
   crop: Crop;
-  /** Seconds into the video where the first frame is taken. */
+  /** Seconds into the video, where the first frame is taken. */
   start: number;
-  /** How long one source frame lasts, in seconds. */
   frameSeconds: number;
-  /** Take every nth source frame. Whole frames only, hence a stride and not a
-   * duration — capture aims at frame midpoints and that only works if the step
-   * really is a multiple of `frameSeconds`. */
+  /** Take every nth source frame. A stride rather than a duration because
+   * capture aims at frame midpoints, which needs whole frames. */
   stride: number;
   /** Frame delay in hundredths of a second — GIF's native unit. */
   delay: number;
@@ -259,7 +226,6 @@ interface RenderRequest {
   /** Output width in pixels; height follows the crop's aspect ratio. */
   width: number;
   dither: boolean;
-  /** Palette size. Fewer colors means a smaller file. */
   colors: number;
   onProgress?: (stage: string, fraction: number) => void;
 }
@@ -271,11 +237,8 @@ export interface RenderResult {
   frames: number;
 }
 
-/**
- * Quantizing and LZW-coding every frame is the slow part, and it's pure
- * computation, so it runs off the main thread and the page stays responsive.
- * Frame buffers are transferred rather than copied.
- */
+/** Encoding is pure computation and the slow part, so it runs off the main
+ * thread with the frame buffers transferred rather than copied. */
 function encodeOffThread(
   frames: Uint8ClampedArray[],
   options: Omit<GifOptions, "onProgress">,
@@ -312,8 +275,6 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
   const { video, crop, start, frameSeconds, stride, delay, mode } = request;
   const { frameCount, dither, colors, onProgress } = request;
 
-  // Without this, a browser that hasn't buffered any media data (iOS Safari
-  // until something plays) hands back blank or repeated frames.
   await primeVideo(video);
   video.pause();
   const videoWidth = video.videoWidth;
@@ -350,10 +311,8 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
       onProgress?.("Capturing frames", (i + 1) / frameCount);
     }
   } finally {
-    // Hand the element back. Capturing parks it on the last frame, and iOS
-    // reclaims the buffered media data it just worked so hard through, which
-    // leaves the scrub preview as blank as it is before anything has played —
-    // priming it is what filled that in the first time.
+    // Capturing parks the element on the last frame, and iOS reclaims the media
+    // data it just read through, leaving the preview blank until re-primed.
     void primeVideo(video).then(() => previewSeek(video, start));
   }
 

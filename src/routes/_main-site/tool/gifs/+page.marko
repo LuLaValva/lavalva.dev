@@ -2,8 +2,8 @@ import styles from "./gif.module.css";
 import type { Corner, Crop, Handle } from "./crop";
 import type { RenderResult } from "./video";
 import { type GifMode, playedFrameCount } from "./playback";
-// Not a `client import` — HANDLES is read while rendering, and a client-only
-// binding is undefined on the server, which renders the handles away entirely.
+// Not a `client import`: HANDLES is read while rendering, and a client-only
+// binding is undefined on the server.
 import {
   FULL_CROP,
   HANDLES,
@@ -15,12 +15,10 @@ import {
 } from "./crop";
 client import { prepareVideo, previewSeek, renderGif } from "./video";
 
-// Enough for a few seconds of smooth motion without melting a phone.
+// Enough for a few seconds of motion without melting a phone.
 static const MAX_FRAMES = 240;
 // Browsers treat a delay of 0 or 1 hundredth as 10, so 2 is the real floor.
 static const MIN_DELAY = 2;
-// Firefox has no way to report a video's frame rate; assume the most common one
-// so the tool still works there, just without exact frame boundaries.
 static const ASSUMED_FRAME_SECONDS = 1 / 30;
 static const ARROWS: Record<string, [number, number]> = {
   ArrowLeft: [-1, 0],
@@ -34,40 +32,27 @@ static const HANDLE_LABELS: Record<Corner, string> = {
   sw: "bottom left",
   se: "bottom right",
 };
-// Every output frame is a real source frame, so sampling is always a whole
-// fraction of the source's own rate — never an interpolation between frames.
 static const STRIDES = [
-  { value: "1", label: "All" },
-  { value: "2", label: "1/2" },
-  { value: "3", label: "1/3" },
-  { value: "4", label: "1/4" },
-  { value: "6", label: "1/6" },
+  { value: 1, label: "All" },
+  { value: 2, label: "1/2" },
+  { value: 3, label: "1/3" },
+  { value: 4, label: "1/4" },
+  { value: 6, label: "1/6" },
 ];
-// Fewer colors means a smaller file; flat or screen-recorded footage barely
-// notices the drop, photographic footage does.
 static const PALETTES = [
-  { value: "256", label: "256" },
-  { value: "128", label: "128" },
-  { value: "64", label: "64" },
-  { value: "32", label: "32" },
+  { value: 256, label: "256" },
+  { value: 128, label: "128" },
+  { value: 64, label: "64" },
+  { value: 32, label: "32" },
 ];
-static const MODES = [
+static const MODES: { value: GifMode; label: string }[] = [
   { value: "loop", label: "Loop" },
   { value: "pingpong", label: "Ping-pong" },
   { value: "once", label: "Once" },
 ];
 
-// How many output frames fit in a span, kept to at least one and to whatever
-// the encoder can be trusted with.
 static function frameFit(span: number, step: number) {
   return Math.min(MAX_FRAMES, Math.max(1, Math.round(span / step)));
-}
-
-// The end always sits on a frame boundary a whole number of steps from the
-// start. Every control that moves the grid — the end handle, the sampling
-// stride, a newly measured frame rate — puts it back through here.
-static function snapEnd(from: number, to: number, step: number, limit: number) {
-  return Math.min(limit, from + frameFit(to - from, step) * step);
 }
 
 static function formatRate(perSecond: number) {
@@ -98,60 +83,48 @@ static function formatBytes(bytes: number) {
 
 <let/crop=FULL_CROP as Crop>
 
-// undefined while the measurement is still running — it takes a few frames of
-// playback to arrive, and claiming either way before then is a lie. null once
-// the browser has been asked and had no answer.
-<let/measuredFrameSeconds=undefined as number | null | undefined>
-<let/strideChoice="1">
-// Speed rides an exponent so a drag covers 0.25× to 8× with the same relative
-// precision everywhere, instead of crawling at the bottom of the range.
+<let/frameSeconds=ASSUMED_FRAME_SECONDS>
+<let/frameRateSource="checking" as "checking" | "measured" | "assumed">
+<let/stride=1>
+// An exponent, so a drag covers 0.25x to 8x at even relative precision.
 <let/speedExponent=0>
-<let/mode="loop">
+<let/mode="loop" as GifMode>
 <let/requestedWidth=360>
-<let/colorsChoice="256">
+<let/colors=256>
 <let/dither=true>
 
 <let/rendering=false>
 <let/statusText="">
 <let/progress=0>
 <let/error="">
-// `file` is kept alongside the blob because sharing has to happen inside the
-// click that asked for it, with nothing awaited in between.
 <let/result=(
   null as
     | (RenderResult & { url: string; file: File; shareable: boolean })
     | null
 )>
 
-<const/colors=+colorsChoice>
-<const/stride=+strideChoice>
-<const/frameSeconds=measuredFrameSeconds ?? ASSUMED_FRAME_SECONDS>
-// Seconds of source video between two captured frames. Speed deliberately
-// doesn't enter into it: which frames get captured is a property of the source,
-// and speed only decides how long each one is shown for.
+// Speed doesn't enter into this: which frames get captured is a property of
+// the source, and speed only decides how long each one is shown for.
 <const/sourceStep=stride * frameSeconds>
-<const/targetSpeed=2 ** speedExponent>
-// The GIF can only hold a whole number of hundredths per frame — in one 16-bit
-// field — so the speed that comes back out is whatever that rounding allows.
+// A GIF holds whole hundredths of a second per frame, in a 16-bit field, so the
+// speed that comes back out is whatever that rounding allows.
 <const/delay=clamp(
-  Math.round((sourceStep * 100) / targetSpeed),
+  Math.round((sourceStep * 100) / 2 ** speedExponent),
   MIN_DELAY,
   65535,
 )>
 <const/speed=(sourceStep * 100) / delay>
 <const/fps=100 / delay>
 <const/source=cropPixels(crop, naturalWidth, naturalHeight)>
-// The same computation the renderer will do, so what's promised below is what
-// gets encoded rather than two roundings that happen to agree.
+// The same call the renderer makes, so the size promised below is the size
+// encoded rather than two roundings that happen to agree.
 <const/output=outputSize(crop, naturalWidth, naturalHeight, requestedWidth)>
 <const/outWidth=output.width>
 <const/outHeight=output.height>
 
 <const/uncappedFrames=Math.max(1, Math.round((end - start) / sourceStep))>
 <const/frameCount=frameFit(end - start, sourceStep)>
-// `checkedValue` binds a plain string, so narrow it back once, here.
-<const/gifMode=mode as GifMode>
-<const/playedFrames=playedFrameCount(frameCount, gifMode)>
+<const/playedFrames=playedFrameCount(frameCount, mode)>
 <const/outputSeconds=(playedFrames * delay) / 100>
 <const/downloadName=`${fileName.replace(/\.[^.]+$/, "") || "clip"}.gif`>
 
@@ -160,8 +133,8 @@ static function formatBytes(bytes: number) {
   fileName = file.name;
   duration = 0;
   error = "";
-  // Don't let the previous video's frame rate stand in for this one's.
-  measuredFrameSeconds = undefined;
+  frameSeconds = ASSUMED_FRAME_SECONDS;
+  frameRateSource = "checking";
   videoUrl = URL.createObjectURL(file);
 }>
 
@@ -178,42 +151,38 @@ static function formatBytes(bytes: number) {
   previewSeek(video, time);
 }>
 
+<const/snapEnd(from: number, to: number, step: number) {
+  return Math.min(duration, from + frameFit(to - from, step) * step);
+}>
+
+// The start lands on any source frame; only the end is held to the sampling
+// stride, which is what keeps the two handles independent.
 <const/setStart(value: number) {
-  // The start lands on any source frame; only the end is held to the sampling
-  // stride, so the two handles stay independent.
-  const onFrame = Math.round(value / frameSeconds) * frameSeconds;
-  const next = clamp(onFrame, 0, Math.max(0, duration - sourceStep));
-  start = next;
-  // Pushed past the end? Take it along rather than refusing to move.
-  if (end < next + sourceStep) end = Math.min(duration, next + sourceStep);
-  seekTo(next);
+  start = clamp(
+    Math.round(value / frameSeconds) * frameSeconds,
+    0,
+    Math.max(0, duration - sourceStep),
+  );
+  if (end < start + sourceStep) end = Math.min(duration, start + sourceStep);
+  seekTo(start);
 }>
 
 <const/setEnd(value: number) {
-  const next = clamp(value, sourceStep, duration);
-  // Pushed past the start? Take it along rather than refusing to move.
-  const nextStart = Math.min(start, Math.max(0, next - sourceStep));
-  const snapped = snapEnd(nextStart, next, sourceStep, duration);
-  start = nextStart;
-  end = snapped;
-  seekTo(snapped);
+  if (value < start + sourceStep) start = Math.max(0, value - sourceStep);
+  end = snapEnd(start, value, sourceStep);
+  seekTo(end);
 }>
 
-// Both of these move the frame grid underneath the trim, so pull the end back
-// onto it. The start is only re-snapped when the grid itself changed.
-<const/setStride(value: string) {
-  strideChoice = value;
-  end = snapEnd(start, end, +value * frameSeconds, duration);
+<const/setStride(value: number) {
+  stride = value;
+  end = snapEnd(start, end, stride * frameSeconds);
 }>
 
-<const/applyFrameSeconds(seconds: number | null) {
-  measuredFrameSeconds = seconds;
-  const next = seconds ?? ASSUMED_FRAME_SECONDS;
-  // Both derived from the values on the way in — a state write isn't
-  // guaranteed to read back within the same handler.
-  const nextStart = Math.round(start / next) * next;
-  end = snapEnd(nextStart, end, stride * next, duration);
-  start = nextStart;
+<const/applyFrameSeconds(measured: number | null) {
+  frameRateSource = measured === null ? "assumed" : "measured";
+  frameSeconds = measured ?? ASSUMED_FRAME_SECONDS;
+  start = Math.round(start / frameSeconds) * frameSeconds;
+  end = snapEnd(start, end, stride * frameSeconds);
 }>
 
 <const/beginDrag(event: PointerEvent, el: HTMLElement, handle: Handle) {
@@ -260,15 +229,13 @@ static function formatBytes(bytes: number) {
   );
 }>
 
-// Hands the GIF to the system share sheet, where iOS offers "Save Image" and
-// writes it straight to the camera roll — the download folder detour is what
-// this is here to skip.
+// iOS offers "Save Image" on the sheet, which writes to the camera roll and
+// skips the downloads-folder detour.
 <const/shareResult() {
   const shared = result;
   if (!shared) return;
-  // Nothing awaited before this call: sharing needs the click's transient
-  // activation, and anything awaited in between can spend it.
-  // Files only, no title or text — iOS shares the text instead when given both.
+  // Nothing awaited first: sharing needs the click's transient activation.
+  // Files only — iOS shares the text instead when given both.
   navigator.share({ files: [shared.file] }).catch((thrown: unknown) => {
     // Dismissing the sheet rejects too, and that isn't a failure.
     if (thrown instanceof Error && thrown.name === "AbortError") return;
@@ -291,7 +258,7 @@ static function formatBytes(bytes: number) {
       frameSeconds,
       stride,
       delay,
-      mode: gifMode,
+      mode,
       frameCount,
       width: outWidth,
       dither,
@@ -306,8 +273,7 @@ static function formatBytes(bytes: number) {
       ...rendered,
       url: URL.createObjectURL(rendered.blob),
       file,
-      // Settled now rather than at click time: `canShare` needs no user
-      // gesture, and asking it costs nothing here.
+      // `canShare` needs no user gesture; `share` does.
       shareable: !!navigator.canShare?.({ files: [file] }),
     };
   } catch (thrown) {
@@ -318,15 +284,11 @@ static function formatBytes(bytes: number) {
   }
 }>
 
-<script>
-  // The preview plays at the export speed.
-  if (videoUrl) videoEl().playbackRate = speed;
-</script>
+<script>if (videoUrl) videoEl().playbackRate = speed;</script>
 
 <script>
   // Object URLs pin their blob until revoked, and a source video is routinely
-  // hundreds of megabytes. Replacements are revoked where they're replaced;
-  // these release whatever is still held when the page goes away.
+  // hundreds of megabytes.
   const url = videoUrl;
   if (url) $signal.onabort = () => URL.revokeObjectURL(url);
 </script>
@@ -338,15 +300,13 @@ static function formatBytes(bytes: number) {
 
 <script>
   // ...and repaints only at the export frame rate, so the preview stutters
-  // exactly the way the GIF will. The video underneath keeps playing smoothly;
-  // this samples it. Reruns whenever playback starts or the rate changes.
+  // exactly the way the GIF will, sampling the video playing underneath.
   const video = videoEl();
   const canvas = previewCanvas();
   const ctx = canvas.getContext("2d");
   if (playing && ctx && video.videoWidth) {
-    // Assigning either of these reallocates and clears the backing store even
-    // when the value is unchanged, and this effect reruns on every tick of the
-    // speed slider — so only assign when the size actually differs.
+    // Assigning either reallocates and clears the backing store even when the
+    // value is unchanged, and this reruns on every speed-slider tick.
     if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
     if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
     const draw = () => ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -434,9 +394,8 @@ static function formatBytes(bytes: number) {
             playing = false;
           }
           onTimeUpdate(e, el: HTMLVideoElement) {
-            // Only wrap around during playback. Without the paused check,
-            // scrubbing the end handle past `end` immediately yanked the
-            // preview back to `start`, which read as the video jittering.
+            // Only during playback: without this, scrubbing the end handle
+            // past `end` yanks the preview to `start` and reads as jitter.
             if (rendering || el.paused || el.currentTime < end) return;
             el.currentTime = start;
           }
@@ -529,8 +488,7 @@ static function formatBytes(bytes: number) {
     </section>
 
     <section>
-      <!-- Both sliders take any position: the handlers do the snapping, and a
-      step grid of their own would only fight it. -->
+      <!-- Any position: the handlers snap, and a step grid would fight it. -->
       <slider-row
         label="Start"
         min=0
@@ -562,14 +520,14 @@ static function formatBytes(bytes: number) {
         legend="Frames"
         name="stride"
         options=STRIDES
-        value=strideChoice
+        value=stride
         valueChange=setStride
       />
       <p class=styles.hint>
-        <if=measuredFrameSeconds != null>
+        <if=frameRateSource === "measured">
           Source is ${formatRate(1 / frameSeconds)}; every GIF frame is a real one.
         </if>
-        <else-if=measuredFrameSeconds === null>
+        <else-if=frameRateSource === "assumed">
           This browser won't say what the source's frame rate is, so it's
           assumed to be ${formatRate(1 / frameSeconds)}.
         </else-if>
@@ -603,12 +561,7 @@ static function formatBytes(bytes: number) {
       </slider-row>
       <chip-group legend="Playback" name="mode" options=MODES value:=mode/>
 
-      <chip-group
-        legend="Colors"
-        name="colors"
-        options=PALETTES
-        value:=colorsChoice
-      />
+      <chip-group legend="Colors" name="colors" options=PALETTES value:=colors/>
 
       <label class=styles.check>
         <input type="checkbox" checked:=dither>

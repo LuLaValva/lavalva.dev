@@ -7,7 +7,6 @@ export interface Input {
   step: number | string;
   value: number;
   valueChange: (value: number) => void;
-  /** What the readout shows — often a derived value, not the bound one. */
   content: Marko.Body;
 }
 
@@ -18,10 +17,7 @@ export interface Input {
     min=input.min
     max=input.max
     step=input.step
-    value=input.value
-    valueChange(next) {
-      input.valueChange(+next);
-    }
+    value:parseFloat:=input.value
   >
   <output>
     <${input.content}/>

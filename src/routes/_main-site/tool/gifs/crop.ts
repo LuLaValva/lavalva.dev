@@ -11,15 +11,12 @@ export type Handle = "move" | Corner;
 
 export const HANDLES: Corner[] = ["nw", "ne", "sw", "se"];
 
-/** The whole frame — the starting crop, and what "reset" goes back to. */
 export const FULL_CROP: Crop = { x: 0, y: 0, width: 1, height: 1 };
 
 /** Smallest crop the drag handles will let you make, as a fraction. */
 const MIN_SIZE = 0.05;
 
-/** Narrowest GIF worth offering; anything less is unreadable. */
 export const MIN_OUTPUT_WIDTH = 80;
-/** Beyond this a GIF is enormous for what it is, whatever the source. */
 const MAX_OUTPUT_WIDTH = 720;
 
 export function clamp(value: number, min: number, max: number) {
@@ -41,11 +38,8 @@ export function cropPixels(
 }
 
 /**
- * The GIF's pixel size for a given crop and requested width.
- *
- * Both the page (to say what it is about to make) and the renderer (to actually
- * make it) go through here, so the promised size is the produced size by
- * construction rather than by two copies of the same rounding agreeing.
+ * Both the page (to say what it is about to make) and the renderer (to make it)
+ * go through here, so the promised size is the produced size by construction.
  */
 export function outputSize(
   crop: Crop,
@@ -59,10 +53,8 @@ export function outputSize(
   return { width, height: Math.max(1, Math.round((width * sh) / sw)), limit };
 }
 
-/**
- * Applies a pointer drag to a crop rect. `dx`/`dy` are the pointer's total
- * movement since the drag started, as a fraction of the video's displayed size.
- */
+/** `dx`/`dy` are a delta against the crop passed in, as a fraction of the
+ * video's displayed size — a pointer's travel, or a keyboard nudge. */
 export function dragCrop(crop: Crop, handle: Handle, dx: number, dy: number) {
   if (handle === "move") {
     return {

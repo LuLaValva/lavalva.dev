@@ -3,7 +3,7 @@
 
 /** Pixels sampled across every frame to build the shared palette. */
 const MAX_SAMPLES = 40_000;
-/** Largest code the LZW table can hold before it has to be reset. */
+/** Largest code the LZW table holds before it has to be reset. */
 const LZW_MAX_CODE = 4096;
 
 class ByteBuffer {
@@ -14,7 +14,6 @@ class ByteBuffer {
     return this.len;
   }
 
-  /** A copy of everything written since `from` — see the frame cache below. */
   since(from: number) {
     return this.bytes.slice(from, this.len);
   }
@@ -33,7 +32,7 @@ class ByteBuffer {
     this.bytes[this.len++] = value;
   }
 
-  /** Little-endian 16 bit, which is the only multi-byte order GIF uses. */
+  /** Little-endian, the only multi-byte order GIF uses. */
   short(value: number) {
     this.ensure(2);
     this.bytes[this.len++] = value & 0xff;
@@ -55,11 +54,10 @@ class ByteBuffer {
   }
 }
 
-/** Maps an arbitrary color to its closest palette entry, memoized per 5-bit
- * RGB cell so a long video costs at most 32768 nearest-color searches. */
+/** Closest palette entry for a color, memoized per 5-bit RGB cell so a long
+ * video costs at most 32768 searches. */
 class PaletteMap {
   private cache = new Int16Array(1 << 15).fill(-1);
-  /** Public so dithering can read back the color it matched against. */
   readonly palette: Uint8Array;
 
   constructor(palette: Uint8Array) {
@@ -100,8 +98,7 @@ function buildPalette(frames: Uint8ClampedArray[], maxColors: number) {
 
   for (const frame of frames) {
     const pixels = frame.length >> 2;
-    // Step straight to the pixels being kept. `seen` carries the running
-    // position across frames so the stride stays even over the whole clip.
+    // `seen` carries across frames so the stride stays even over the clip.
     for (let p = (stride - (seen % stride)) % stride; p < pixels; p += stride) {
       const from = p << 2;
       const to = count * 3;
@@ -131,8 +128,8 @@ function medianCut(samples: Uint8Array, count: number, maxColors: number) {
   const order = new Uint32Array(count);
   for (let i = 0; i < count; i++) order[i] = i;
 
-  // Measured once, when the box is made: a split only ever reorders `order`
-  // inside the box being split, so no other box's extent can change.
+  // Measured once, when the box is made: a split only reorders `order` within
+  // the box being split, so no other box's extent can change.
   const measure = (lo: number, hi: number): Box => {
     let channel = 0;
     let spread = -1;
@@ -204,11 +201,8 @@ function clamp255(value: number) {
   return value < 0 ? 0 : value > 255 ? 255 : value;
 }
 
-/**
- * Buffers every frame needs, allocated once per encode. A long clip would
- * otherwise churn tens of megabytes of short-lived arrays through the worker's
- * heap during the phase that is already the slowest.
- */
+/** Allocated once per encode; a long clip would otherwise churn tens of
+ * megabytes of short-lived arrays through the worker's heap. */
 class FrameScratch {
   readonly indices: Uint8Array;
   /** Floyd-Steinberg only ever spills error onto the current and next row. */
@@ -245,8 +239,7 @@ function ditherFrame(
   const palette = map.palette;
   let current = scratch.current;
   let next = scratch.next;
-  // Reused across frames, so the incoming error has to be cleared; `next` is
-  // zeroed per row below.
+  // Reused across frames; `next` is zeroed per row below.
   current.fill(0);
 
   for (let y = 0; y < height; y++) {
@@ -294,15 +287,12 @@ function ditherFrame(
 }
 
 /**
- * The LZW dictionary, as a flat array rather than a `Map`.
- *
- * It is probed once per pixel of every frame — millions of times per render —
- * and the key is already a bounded integer, so a direct index beats hashing.
- * Clearing walks the keys actually written instead of the whole array, which
- * matters because the table resets every time it fills.
+ * Probed once per pixel of every frame, and the key is already a bounded
+ * integer, so a flat array beats a `Map`. Clearing walks the keys actually
+ * written, because the table resets every time it fills.
  */
 class LzwTable {
-  /** `(prefix << 8) | next` → code + 1, leaving 0 to mean "not present". */
+  /** `(prefix << 8) | next` -> code + 1, leaving 0 to mean "not present". */
   private slots = new Int32Array(LZW_MAX_CODE << 8);
   private written = new Uint32Array(LZW_MAX_CODE);
   private count = 0;
@@ -418,9 +408,8 @@ export function encodeGif(
   const scratch = new FrameScratch(width, height);
   const table = new LzwTable();
 
-  // Ping-pong replays the same frame objects, and a frame's blocks depend on
-  // nothing but its pixels and the delay, so a repeat is a byte-for-byte copy
-  // of what was already written. Only worth remembering when there are repeats.
+  // A frame's blocks depend on nothing but its pixels and the delay, so a
+  // repeated frame (ping-pong) is a byte-for-byte copy of the first one.
   const encoded =
     frames.length === new Set(frames).size
       ? null

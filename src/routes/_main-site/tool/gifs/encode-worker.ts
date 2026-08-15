@@ -5,8 +5,7 @@ export interface EncodeRequest {
   options: Omit<GifOptions, "onProgress">;
 }
 
-/** The whole protocol, in one place, so both ends agree by type rather than by
- * two lists of string literals that happen to match. */
+/** Both ends agree by type rather than by two lists of string literals. */
 export type EncodeResponse =
   | { type: "progress"; fraction: number }
   | { type: "done"; bytes: Uint8Array<ArrayBuffer> }

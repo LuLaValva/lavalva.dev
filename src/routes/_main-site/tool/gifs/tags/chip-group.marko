@@ -1,14 +1,14 @@
 import styles from "../gif.module.css";
 
-export interface Input {
+export interface Input<T extends string | number> {
   legend: string;
-  /** Also the radio group's name, so the options are mutually exclusive. */
   name: string;
-  options: { value: string; label: string }[];
-  value: string;
-  valueChange: (value: string) => void;
+  options: { value: T; label: string }[];
+  value: T;
+  valueChange: (value: T) => void;
 }
 
+// Radios carry strings; the round trip back to the caller's type stays here.
 <fieldset class=styles.chips>
   <legend>${input.legend}</legend>
   <for|option| of=input.options by="value">
@@ -16,10 +16,11 @@ export interface Input {
       <input
         type="radio"
         name=input.name
-        value=option.value
-        checkedValue=input.value
-        checkedValueChange(next: string) {
-          input.valueChange(next);
+        value=String(option.value)
+        checkedValue=String(input.value)
+        checkedValueChange(picked: string) {
+          const match = input.options.find((o) => String(o.value) === picked);
+          if (match) input.valueChange(match.value);
         }
       >
       <span>${option.label}</span>
