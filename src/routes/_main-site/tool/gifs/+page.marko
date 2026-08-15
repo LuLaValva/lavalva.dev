@@ -98,7 +98,13 @@ static function formatBytes(bytes: number) {
 <let/statusText="">
 <let/progress=0>
 <let/error="">
-<let/result=null as (RenderResult & { url: string }) | null>
+// `file` is kept alongside the blob because sharing has to happen inside the
+// click that asked for it, with nothing awaited in between.
+<let/result=(
+  null as
+    | (RenderResult & { url: string; file: File; shareable: boolean })
+    | null
+)>
 
 <const/colors=+colorsChoice>
 <const/stride=+strideChoice>
@@ -261,6 +267,22 @@ static function formatBytes(bytes: number) {
   crop = dragCrop(crop, handle, dx, dy);
 }>
 
+// Hands the GIF to the system share sheet, where iOS offers "Save Image" and
+// writes it straight to the camera roll — the download folder detour is what
+// this is here to skip.
+<const/shareResult() {
+  const shared = result;
+  if (!shared) return;
+  // Nothing awaited before this call: sharing needs the click's transient
+  // activation, and anything awaited in between can spend it.
+  // Files only, no title or text — iOS shares the text instead when given both.
+  navigator.share({ files: [shared.file] }).catch((thrown: unknown) => {
+    // Dismissing the sheet rejects too, and that isn't a failure.
+    if (thrown instanceof Error && thrown.name === "AbortError") return;
+    error = "This browser wouldn't hand the file to the share sheet.";
+  });
+}>
+
 // An arrow, not `async onClick()` — prettier-plugin-marko drops the `async`
 // keyword off a method-shorthand handler and the await stops compiling.
 <const/startRender=async () => {
@@ -287,7 +309,15 @@ static function formatBytes(bytes: number) {
       },
     });
     if (result) URL.revokeObjectURL(result.url);
-    result = { ...rendered, url: URL.createObjectURL(rendered.blob) };
+    const file = new File([rendered.blob], downloadName, { type: "image/gif" });
+    result = {
+      ...rendered,
+      url: URL.createObjectURL(rendered.blob),
+      file,
+      // Settled now rather than at click time: `canShare` needs no user
+      // gesture, and asking it costs nothing here.
+      shareable: !!navigator.canShare?.({ files: [file] }),
+    };
   } catch (thrown) {
     error = thrown instanceof Error ? thrown.message : "Rendering failed.";
   } finally {
@@ -670,14 +700,32 @@ static function formatBytes(bytes: number) {
           height=result.height
         >
         <p class=styles.meta>
-          <a class=styles.download href=result.url download=downloadName>
-            Download ${downloadName}
-          </a>
+          <span class=styles.actions>
+            <a class=styles.download href=result.url download=downloadName>
+              Download
+            </a>
+            <if=result.shareable>
+              <button
+                class=[styles.link, styles.download]
+                onClick() {
+                  shareResult();
+                }
+              >
+                Share
+              </button>
+            </if>
+          </span>
           <span>
             ${result.width}×${result.height} · ${result.frames} frames ·
             ${formatBytes(result.blob.size)}
           </span>
         </p>
+        <if=result.shareable>
+          <p class=styles.hint>
+            Share opens the system sheet — on iOS, “Save Image” there puts the
+            GIF straight in your camera roll.
+          </p>
+        </if>
       </section>
     </if>
   </show>
