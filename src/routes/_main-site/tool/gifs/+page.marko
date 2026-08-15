@@ -1,15 +1,19 @@
 import styles from "./gif.module.css";
 import type { Corner, Crop, Handle } from "./crop";
-import type { GifMode, RenderResult } from "./video";
+import type { RenderResult } from "./video";
+import { type GifMode, playedFrameCount } from "./playback";
 // Not a `client import` — HANDLES is read while rendering, and a client-only
 // binding is undefined on the server, which renders the handles away entirely.
-import { HANDLES, clamp, dragCrop } from "./crop";
-client import {
-  detectFrameRate,
-  previewSeek,
-  primeVideo,
-  renderGif,
-} from "./video";
+import {
+  FULL_CROP,
+  HANDLES,
+  MIN_OUTPUT_WIDTH,
+  clamp,
+  cropPixels,
+  dragCrop,
+  outputSize,
+} from "./crop";
+client import { prepareVideo, previewSeek, renderGif } from "./video";
 
 // Enough for a few seconds of smooth motion without melting a phone.
 static const MAX_FRAMES = 240;
@@ -18,6 +22,12 @@ static const MIN_DELAY = 2;
 // Firefox has no way to report a video's frame rate; assume the most common one
 // so the tool still works there, just without exact frame boundaries.
 static const ASSUMED_FRAME_SECONDS = 1 / 30;
+static const ARROWS: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+};
 static const HANDLE_LABELS: Record<Corner, string> = {
   nw: "top left",
   ne: "top right",
@@ -26,22 +36,22 @@ static const HANDLE_LABELS: Record<Corner, string> = {
 };
 // Every output frame is a real source frame, so sampling is always a whole
 // fraction of the source's own rate — never an interpolation between frames.
-static const STRIDES: { value: number; label: string }[] = [
-  { value: 1, label: "All" },
-  { value: 2, label: "1/2" },
-  { value: 3, label: "1/3" },
-  { value: 4, label: "1/4" },
-  { value: 6, label: "1/6" },
+static const STRIDES = [
+  { value: "1", label: "All" },
+  { value: "2", label: "1/2" },
+  { value: "3", label: "1/3" },
+  { value: "4", label: "1/4" },
+  { value: "6", label: "1/6" },
 ];
 // Fewer colors means a smaller file; flat or screen-recorded footage barely
 // notices the drop, photographic footage does.
-static const PALETTES: { value: number; label: string }[] = [
-  { value: 256, label: "256" },
-  { value: 128, label: "128" },
-  { value: 64, label: "64" },
-  { value: 32, label: "32" },
+static const PALETTES = [
+  { value: "256", label: "256" },
+  { value: "128", label: "128" },
+  { value: "64", label: "64" },
+  { value: "32", label: "32" },
 ];
-static const MODES: { value: GifMode; label: string }[] = [
+static const MODES = [
   { value: "loop", label: "Loop" },
   { value: "pingpong", label: "Ping-pong" },
   { value: "once", label: "Once" },
@@ -51,6 +61,13 @@ static const MODES: { value: GifMode; label: string }[] = [
 // the encoder can be trusted with.
 static function frameFit(span: number, step: number) {
   return Math.min(MAX_FRAMES, Math.max(1, Math.round(span / step)));
+}
+
+// The end always sits on a frame boundary a whole number of steps from the
+// start. Every control that moves the grid — the end handle, the sampling
+// stride, a newly measured frame rate — puts it back through here.
+static function snapEnd(from: number, to: number, step: number, limit: number) {
+  return Math.min(limit, from + frameFit(to - from, step) * step);
 }
 
 static function formatRate(perSecond: number) {
@@ -79,12 +96,12 @@ static function formatBytes(bytes: number) {
 <let/end=0>
 <let/playing=false>
 
-<let/crop={ x: 0, y: 0, width: 1, height: 1 } as Crop>
+<let/crop=FULL_CROP as Crop>
 
-<let/frameSeconds=ASSUMED_FRAME_SECONDS>
-// "" until the measurement below has had its say — the answer takes a few
-// frames of playback to arrive, and claiming either way before then is a lie.
-<let/frameRateSource="">
+// undefined while the measurement is still running — it takes a few frames of
+// playback to arrive, and claiming either way before then is a lie. null once
+// the browser has been asked and had no answer.
+<let/measuredFrameSeconds=undefined as number | null | undefined>
 <let/strideChoice="1">
 // Speed rides an exponent so a drag covers 0.25× to 8× with the same relative
 // precision everywhere, instead of crawling at the bottom of the range.
@@ -108,6 +125,7 @@ static function formatBytes(bytes: number) {
 
 <const/colors=+colorsChoice>
 <const/stride=+strideChoice>
+<const/frameSeconds=measuredFrameSeconds ?? ASSUMED_FRAME_SECONDS>
 // Seconds of source video between two captured frames. Speed deliberately
 // doesn't enter into it: which frames get captured is a property of the source,
 // and speed only decides how long each one is shown for.
@@ -122,31 +140,28 @@ static function formatBytes(bytes: number) {
 )>
 <const/speed=(sourceStep * 100) / delay>
 <const/fps=100 / delay>
-<const/cropWidth=Math.max(1, Math.round(crop.width * naturalWidth))>
-<const/cropHeight=Math.max(1, Math.round(crop.height * naturalHeight))>
-<const/maxWidth=Math.max(80, Math.min(cropWidth, 720))>
-<const/outWidth=Math.min(requestedWidth, maxWidth)>
-<const/outHeight=Math.max(1, Math.round((outWidth * cropHeight) / cropWidth))>
+<const/source=cropPixels(crop, naturalWidth, naturalHeight)>
+// The same computation the renderer will do, so what's promised below is what
+// gets encoded rather than two roundings that happen to agree.
+<const/output=outputSize(crop, naturalWidth, naturalHeight, requestedWidth)>
+<const/outWidth=output.width>
+<const/outHeight=output.height>
 
 <const/uncappedFrames=Math.max(1, Math.round((end - start) / sourceStep))>
-<const/frameCount=Math.min(uncappedFrames, MAX_FRAMES)>
+<const/frameCount=frameFit(end - start, sourceStep)>
 // `checkedValue` binds a plain string, so narrow it back once, here.
 <const/gifMode=mode as GifMode>
-<const/playedFrames=(
-  mode === "pingpong" && frameCount > 2 ? frameCount * 2 - 2 : frameCount
-)>
+<const/playedFrames=playedFrameCount(frameCount, gifMode)>
 <const/outputSeconds=(playedFrames * delay) / 100>
 <const/downloadName=`${fileName.replace(/\.[^.]+$/, "") || "clip"}.gif`>
 
 <const/loadFile(file: File | undefined | null) {
   if (!file) return;
-  if (videoUrl) URL.revokeObjectURL(videoUrl);
   fileName = file.name;
   duration = 0;
   error = "";
   // Don't let the previous video's frame rate stand in for this one's.
-  frameRateSource = "";
-  frameSeconds = ASSUMED_FRAME_SECONDS;
+  measuredFrameSeconds = undefined;
   videoUrl = URL.createObjectURL(file);
 }>
 
@@ -178,8 +193,7 @@ static function formatBytes(bytes: number) {
   const next = clamp(value, sourceStep, duration);
   // Pushed past the start? Take it along rather than refusing to move.
   const nextStart = Math.min(start, Math.max(0, next - sourceStep));
-  const span = frameFit(next - nextStart, sourceStep) * sourceStep;
-  const snapped = Math.min(duration, nextStart + span);
+  const snapped = snapEnd(nextStart, next, sourceStep, duration);
   start = nextStart;
   end = snapped;
   seekTo(snapped);
@@ -189,18 +203,17 @@ static function formatBytes(bytes: number) {
 // onto it. The start is only re-snapped when the grid itself changed.
 <const/setStride(value: string) {
   strideChoice = value;
-  const step = +value * frameSeconds;
-  end = Math.min(duration, start + frameFit(end - start, step) * step);
+  end = snapEnd(start, end, +value * frameSeconds, duration);
 }>
 
 <const/applyFrameSeconds(seconds: number | null) {
-  frameRateSource = seconds === null ? "assumed" : "measured";
+  measuredFrameSeconds = seconds;
   const next = seconds ?? ASSUMED_FRAME_SECONDS;
-  frameSeconds = next;
-  const step = stride * next;
+  // Both derived from the values on the way in — a state write isn't
+  // guaranteed to read back within the same handler.
   const nextStart = Math.round(start / next) * next;
+  end = snapEnd(nextStart, end, stride * next, duration);
   start = nextStart;
-  end = Math.min(duration, nextStart + frameFit(end - nextStart, step) * step);
 }>
 
 <const/beginDrag(event: PointerEvent, el: HTMLElement, handle: Handle) {
@@ -212,59 +225,39 @@ static function formatBytes(bytes: number) {
   const origin = crop;
   el.setPointerCapture(event.pointerId);
 
-  const onMove = (moved: PointerEvent) => {
-    crop = dragCrop(
-      origin,
-      handle,
-      (moved.clientX - originX) / box.width,
-      (moved.clientY - originY) / box.height,
-    );
-  };
-  const onDone = () => {
-    el.removeEventListener("pointermove", onMove);
-    el.removeEventListener("pointerup", onDone);
-    el.removeEventListener("pointercancel", onDone);
-  };
-
-  el.addEventListener("pointermove", onMove);
-  el.addEventListener("pointerup", onDone);
-  el.addEventListener("pointercancel", onDone);
+  const stop = new AbortController();
+  el.addEventListener(
+    "pointermove",
+    (moved: PointerEvent) => {
+      crop = dragCrop(
+        origin,
+        handle,
+        (moved.clientX - originX) / box.width,
+        (moved.clientY - originY) / box.height,
+      );
+    },
+    { signal: stop.signal },
+  );
+  for (const ending of ["pointerup", "pointercancel"]) {
+    el.addEventListener(ending, () => stop.abort(), { signal: stop.signal });
+  }
 }>
 
 <const/nudge(event: KeyboardEvent, handle: Handle) {
+  const arrow = ARROWS[event.key];
+  if (!arrow) return;
   // Alt holds it to a single source pixel; the crop is stored as a fraction,
   // so one pixel is a different step on each axis.
-  const stepX = event.altKey
-    ? 1 / Math.max(1, naturalWidth)
-    : event.shiftKey
-      ? 0.1
-      : 0.01;
-  const stepY = event.altKey
-    ? 1 / Math.max(1, naturalHeight)
-    : event.shiftKey
-      ? 0.1
-      : 0.01;
-  let dx = 0;
-  let dy = 0;
-  switch (event.key) {
-    case "ArrowLeft":
-      dx = -stepX;
-      break;
-    case "ArrowRight":
-      dx = stepX;
-      break;
-    case "ArrowUp":
-      dy = -stepY;
-      break;
-    case "ArrowDown":
-      dy = stepY;
-      break;
-    default:
-      return;
-  }
+  const step = (natural: number) =>
+    event.altKey ? 1 / Math.max(1, natural) : event.shiftKey ? 0.1 : 0.01;
   // Also stops alt+arrow from triggering browser history navigation.
   event.preventDefault();
-  crop = dragCrop(crop, handle, dx, dy);
+  crop = dragCrop(
+    crop,
+    handle,
+    arrow[0] * step(naturalWidth),
+    arrow[1] * step(naturalHeight),
+  );
 }>
 
 // Hands the GIF to the system share sheet, where iOS offers "Save Image" and
@@ -296,7 +289,7 @@ static function formatBytes(bytes: number) {
       crop,
       start,
       frameSeconds,
-      sourceStep,
+      stride,
       delay,
       mode: gifMode,
       frameCount,
@@ -308,7 +301,6 @@ static function formatBytes(bytes: number) {
         progress = fraction;
       },
     });
-    if (result) URL.revokeObjectURL(result.url);
     const file = new File([rendered.blob], downloadName, { type: "image/gif" });
     result = {
       ...rendered,
@@ -332,6 +324,19 @@ static function formatBytes(bytes: number) {
 </script>
 
 <script>
+  // Object URLs pin their blob until revoked, and a source video is routinely
+  // hundreds of megabytes. Replacements are revoked where they're replaced;
+  // these release whatever is still held when the page goes away.
+  const url = videoUrl;
+  if (url) $signal.onabort = () => URL.revokeObjectURL(url);
+</script>
+
+<script>
+  const url = result?.url;
+  if (url) $signal.onabort = () => URL.revokeObjectURL(url);
+</script>
+
+<script>
   // ...and repaints only at the export frame rate, so the preview stutters
   // exactly the way the GIF will. The video underneath keeps playing smoothly;
   // this samples it. Reruns whenever playback starts or the rate changes.
@@ -339,8 +344,11 @@ static function formatBytes(bytes: number) {
   const canvas = previewCanvas();
   const ctx = canvas.getContext("2d");
   if (playing && ctx && video.videoWidth) {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Assigning either of these reallocates and clears the backing store even
+    // when the value is unchanged, and this effect reruns on every tick of the
+    // speed slider — so only assign when the size actually differs.
+    if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
+    if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
     const draw = () => ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     draw();
     const timer = setInterval(draw, delay * 10);
@@ -404,7 +412,7 @@ static function formatBytes(bytes: number) {
           onLoadedMetadata(e, el: HTMLVideoElement) {
             naturalWidth = el.videoWidth;
             naturalHeight = el.videoHeight;
-            crop = { x: 0, y: 0, width: 1, height: 1 };
+            crop = FULL_CROP;
             requestedWidth = Math.min(360, el.videoWidth || 360);
             if (Number.isFinite(el.duration)) {
               applyDuration(el.duration);
@@ -413,10 +421,7 @@ static function formatBytes(bytes: number) {
               // once you seek past the end.
               el.currentTime = 1e101;
             }
-            primeVideo(el)
-              .then(() => detectFrameRate(el))
-              .then(applyFrameSeconds, () => applyFrameSeconds(null))
-              .finally(() => previewSeek(el, start));
+            prepareVideo(el, start).then(applyFrameSeconds);
           }
           onDurationChange(e, el: HTMLVideoElement) {
             applyDuration(el.duration);
@@ -511,11 +516,11 @@ static function formatBytes(bytes: number) {
       </p>
 
       <p class=styles.meta>
-        <span aria-live="polite">Crop ${cropWidth}×${cropHeight}</span>
+        <span aria-live="polite">Crop ${source.sw}×${source.sh}</span>
         <button
           class=styles.link
           onClick() {
-            crop = { x: 0, y: 0, width: 1, height: 1 };
+            crop = FULL_CROP;
           }
         >
           Reset crop
@@ -526,34 +531,26 @@ static function formatBytes(bytes: number) {
     <section>
       <!-- Both sliders take any position: the handlers do the snapping, and a
       step grid of their own would only fight it. -->
-      <label class=styles.slider>
-        <span>Start</span>
-        <input
-          type="range"
-          min="0"
-          max=duration
-          step="any"
-          value=start
-          valueChange(value) {
-            setStart(+value);
-          }
-        >
-        <output>${formatTime(start)}</output>
-      </label>
-      <label class=styles.slider>
-        <span>End</span>
-        <input
-          type="range"
-          min="0"
-          max=duration
-          step="any"
-          value=end
-          valueChange(value) {
-            setEnd(+value);
-          }
-        >
-        <output>${formatTime(end)}</output>
-      </label>
+      <slider-row
+        label="Start"
+        min=0
+        max=duration
+        step="any"
+        value=start
+        valueChange=setStart
+      >
+        ${formatTime(start)}
+      </slider-row>
+      <slider-row
+        label="End"
+        min=0
+        max=duration
+        step="any"
+        value=end
+        valueChange=setEnd
+      >
+        ${formatTime(end)}
+      </slider-row>
       <p class=styles.meta>
         <span>${frameCount} frames selected</span>
         <span>${formatTime(Math.max(0, end - start))} of source</span>
@@ -561,96 +558,57 @@ static function formatBytes(bytes: number) {
     </section>
 
     <section>
-      <fieldset class=styles.chips>
-        <legend>Frames</legend>
-        <for|option| of=STRIDES by="value">
-          <label class=styles.chip>
-            <input
-              type="radio"
-              name="stride"
-              value=String(option.value)
-              checkedValue=strideChoice
-              checkedValueChange(value: string) {
-                setStride(value);
-              }
-            >
-            <span>${option.label}</span>
-          </label>
-        </for>
-      </fieldset>
+      <chip-group
+        legend="Frames"
+        name="stride"
+        options=STRIDES
+        value=strideChoice
+        valueChange=setStride
+      />
       <p class=styles.hint>
-        <if=frameRateSource === "measured">
+        <if=measuredFrameSeconds != null>
           Source is ${formatRate(1 / frameSeconds)}; every GIF frame is a real one.
         </if>
-        <else-if=frameRateSource === "assumed">
+        <else-if=measuredFrameSeconds === null>
           This browser won't say what the source's frame rate is, so it's
           assumed to be ${formatRate(1 / frameSeconds)}.
         </else-if>
         <else>Checking the source's frame rate…</else>
       </p>
 
-      <label class=styles.slider>
-        <span>Speed</span>
-        <input
-          type="range"
-          min="-2"
-          max="3"
-          step="0.05"
-          value=speedExponent
-          valueChange(value) {
-            speedExponent = +value;
-          }
-        >
-        <output>${speed.toFixed(2)}×</output>
-      </label>
+      <slider-row
+        label="Speed"
+        min=-2
+        max=3
+        step=0.05
+        value=speedExponent
+        valueChange=(next) => (speedExponent = next)
+      >
+        ${speed.toFixed(2)}×
+      </slider-row>
       <p class=styles.hint>
         A GIF holds whole hundredths of a second per frame, so nearby speeds
         round to the same one.
       </p>
 
-      <label class=styles.slider>
-        <span>Width</span>
-        <input
-          type="range"
-          min="80"
-          max=maxWidth
-          step="10"
-          value=outWidth
-          valueChange(value) {
-            requestedWidth = +value;
-          }
-        >
-        <output>${outWidth}px</output>
-      </label>
-      <fieldset class=styles.chips>
-        <legend>Playback</legend>
-        <for|option| of=MODES by="value">
-          <label class=styles.chip>
-            <input
-              type="radio"
-              name="mode"
-              value=option.value
-              checkedValue:=mode
-            >
-            <span>${option.label}</span>
-          </label>
-        </for>
-      </fieldset>
+      <slider-row
+        label="Width"
+        min=MIN_OUTPUT_WIDTH
+        max=output.limit
+        step=10
+        value=outWidth
+        valueChange=(next) => (requestedWidth = next)
+      >
+        ${outWidth}px
+      </slider-row>
+      <chip-group legend="Playback" name="mode" options=MODES value:=mode/>
 
-      <fieldset class=styles.chips>
-        <legend>Colors</legend>
-        <for|option| of=PALETTES by="value">
-          <label class=styles.chip>
-            <input
-              type="radio"
-              name="colors"
-              value=String(option.value)
-              checkedValue:=colorsChoice
-            >
-            <span>${option.label}</span>
-          </label>
-        </for>
-      </fieldset>
+      <chip-group
+        legend="Colors"
+        name="colors"
+        options=PALETTES
+        value:=colorsChoice
+      />
 
       <label class=styles.check>
         <input type="checkbox" checked:=dither>

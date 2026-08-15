@@ -11,11 +11,52 @@ export type Handle = "move" | Corner;
 
 export const HANDLES: Corner[] = ["nw", "ne", "sw", "se"];
 
+/** The whole frame — the starting crop, and what "reset" goes back to. */
+export const FULL_CROP: Crop = { x: 0, y: 0, width: 1, height: 1 };
+
 /** Smallest crop the drag handles will let you make, as a fraction. */
 const MIN_SIZE = 0.05;
 
+/** Narrowest GIF worth offering; anything less is unreadable. */
+export const MIN_OUTPUT_WIDTH = 80;
+/** Beyond this a GIF is enormous for what it is, whatever the source. */
+const MAX_OUTPUT_WIDTH = 720;
+
 export function clamp(value: number, min: number, max: number) {
   return value < min ? min : value > max ? max : value;
+}
+
+/** A crop as whole source pixels — the rectangle to copy off the video. */
+export function cropPixels(
+  crop: Crop,
+  videoWidth: number,
+  videoHeight: number,
+) {
+  return {
+    sx: Math.round(crop.x * videoWidth),
+    sy: Math.round(crop.y * videoHeight),
+    sw: Math.max(1, Math.round(crop.width * videoWidth)),
+    sh: Math.max(1, Math.round(crop.height * videoHeight)),
+  };
+}
+
+/**
+ * The GIF's pixel size for a given crop and requested width.
+ *
+ * Both the page (to say what it is about to make) and the renderer (to actually
+ * make it) go through here, so the promised size is the produced size by
+ * construction rather than by two copies of the same rounding agreeing.
+ */
+export function outputSize(
+  crop: Crop,
+  videoWidth: number,
+  videoHeight: number,
+  requestedWidth: number,
+) {
+  const { sw, sh } = cropPixels(crop, videoWidth, videoHeight);
+  const limit = Math.max(MIN_OUTPUT_WIDTH, Math.min(sw, MAX_OUTPUT_WIDTH));
+  const width = Math.max(1, Math.round(Math.min(requestedWidth, limit)));
+  return { width, height: Math.max(1, Math.round((width * sh) / sw)), limit };
 }
 
 /**

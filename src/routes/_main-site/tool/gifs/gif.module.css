@@ -49,19 +49,11 @@ body {
 }
 
 .armed {
-  border-color: light-dark(rgb(21, 96, 218), rgb(171, 212, 250));
+  border-color: var(--accent);
   background-color: light-dark(#0001, #fff1);
 }
 
 .pick {
-  input {
-    /* Keep it focusable, but let the label be the visible control. */
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
   span {
     display: inline-block;
     padding: 0.5rem 1rem;
@@ -74,10 +66,16 @@ body {
   &:focus-within span {
     background-color: light-dark(#0002, #fff3);
   }
+}
 
-  &:focus-within span {
-    outline: 2px solid currentColor;
-  }
+/* The real control in both cases is the label; the input stays focusable but
+   invisible rather than being hidden from assistive tech. */
+.pick input,
+.chip input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
 .hint {
@@ -151,6 +149,7 @@ body {
   z-index: 1;
   width: 1.25rem;
   height: 1.25rem;
+  --handle-inset: 2px;
   border: 2px solid white;
   border-radius: 0.2rem;
   background-color: #0006;
@@ -158,34 +157,52 @@ body {
 
 .moveArea:focus-visible,
 .handle:focus-visible {
-  outline: 3px solid light-dark(rgb(21, 96, 218), rgb(171, 212, 250));
+  outline: 3px solid var(--accent);
   outline-offset: -1px;
   background-color: #0008;
 }
 
-/* Anchored inside the box so the stage's overflow clip never eats them. */
-.nw {
-  left: 2px;
-  top: 2px;
-  cursor: nwse-resize;
-}
-
-.ne {
-  right: 2px;
-  top: 2px;
-  cursor: nesw-resize;
-}
-
+/* Anchored inside the box, by --handle-inset, so the stage's overflow clip
+   never eats them. */
+.nw,
 .sw {
-  left: 2px;
-  bottom: 2px;
+  left: var(--handle-inset);
+}
+
+.ne,
+.se {
+  right: var(--handle-inset);
+}
+
+.nw,
+.ne {
+  top: var(--handle-inset);
+}
+
+.sw,
+.se {
+  bottom: var(--handle-inset);
+}
+
+.nw,
+.se {
+  cursor: nwse-resize;
+}
+
+.ne,
+.sw {
   cursor: nesw-resize;
 }
 
-.se {
-  right: 2px;
-  bottom: 2px;
-  cursor: nwse-resize;
+/* One focus ring for everything in here. The crop handles opt out above —
+   they sit on top of video and need to be far louder. */
+.pick:focus-within span,
+.link:focus-visible,
+.play:focus-visible,
+.chip input:focus-visible + span,
+.render:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .meta {
@@ -202,11 +219,7 @@ body {
   all: unset;
   cursor: pointer;
   text-decoration: underline;
-  color: light-dark(rgb(21, 96, 218), rgb(171, 212, 250));
-
-  &:focus-visible {
-    outline: 2px solid currentColor;
-  }
+  color: var(--accent);
 }
 
 .slider {
@@ -249,11 +262,6 @@ body {
   &:hover {
     background-color: light-dark(#0002, #fff3);
   }
-
-  &:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
 }
 
 .chips {
@@ -274,14 +282,6 @@ body {
 .chip {
   cursor: pointer;
 
-  input {
-    /* Focusable, but the pill is what you see. */
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
   span {
     display: block;
     padding: 0.35rem 0.7rem;
@@ -295,14 +295,9 @@ body {
     background-color: light-dark(#0002, #fff2);
   }
 
-  input:focus-visible + span {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
-
   input:checked + span {
-    background-color: light-dark(rgb(21, 96, 218), rgb(171, 212, 250));
-    color: light-dark(white, black);
+    background-color: var(--accent);
+    color: var(--accent-contrast);
     font-weight: bold;
   }
 }
@@ -340,15 +335,10 @@ body {
   padding: 0.75rem 1rem;
   text-align: center;
   border-radius: 0.5rem;
-  background-color: light-dark(rgb(21, 96, 218), rgb(171, 212, 250));
-  color: light-dark(white, black);
+  background-color: var(--accent);
+  color: var(--accent-contrast);
   font-weight: bold;
   cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
 
   &:disabled {
     opacity: 0.5;

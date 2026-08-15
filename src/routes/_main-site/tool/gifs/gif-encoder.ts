@@ -10,6 +10,15 @@ class ByteBuffer {
   private bytes = new Uint8Array(1 << 16);
   private len = 0;
 
+  get length() {
+    return this.len;
+  }
+
+  /** A copy of everything written since `from` — see the frame cache below. */
+  since(from: number) {
+    return this.bytes.slice(from, this.len);
+  }
+
   private ensure(extra: number) {
     if (this.len + extra <= this.bytes.length) return;
     let size = this.bytes.length;
@@ -50,7 +59,8 @@ class ByteBuffer {
  * RGB cell so a long video costs at most 32768 nearest-color searches. */
 class PaletteMap {
   private cache = new Int16Array(1 << 15).fill(-1);
-  private palette: Uint8Array;
+  /** Public so dithering can read back the color it matched against. */
+  readonly palette: Uint8Array;
 
   constructor(palette: Uint8Array) {
     this.palette = palette;
@@ -90,8 +100,9 @@ function buildPalette(frames: Uint8ClampedArray[], maxColors: number) {
 
   for (const frame of frames) {
     const pixels = frame.length >> 2;
-    for (let p = 0; p < pixels; p++, seen++) {
-      if (seen % stride) continue;
+    // Step straight to the pixels being kept. `seen` carries the running
+    // position across frames so the stride stays even over the whole clip.
+    for (let p = (stride - (seen % stride)) % stride; p < pixels; p += stride) {
       const from = p << 2;
       const to = count * 3;
       samples[to] = frame[from];
@@ -99,6 +110,7 @@ function buildPalette(frames: Uint8ClampedArray[], maxColors: number) {
       samples[to + 2] = frame[from + 2];
       count++;
     }
+    seen += pixels;
   }
 
   return medianCut(samples, count, maxColors);
@@ -107,6 +119,9 @@ function buildPalette(frames: Uint8ClampedArray[], maxColors: number) {
 interface Box {
   lo: number;
   hi: number;
+  /** The channel this box is widest on, and by how much. */
+  channel: number;
+  spread: number;
 }
 
 function medianCut(samples: Uint8Array, count: number, maxColors: number) {
@@ -115,52 +130,54 @@ function medianCut(samples: Uint8Array, count: number, maxColors: number) {
   // Boxes are ranges over `order`, which gets sorted in place per split.
   const order = new Uint32Array(count);
   for (let i = 0; i < count; i++) order[i] = i;
-  const boxes: Box[] = [{ lo: 0, hi: count }];
+
+  // Measured once, when the box is made: a split only ever reorders `order`
+  // inside the box being split, so no other box's extent can change.
+  const measure = (lo: number, hi: number): Box => {
+    let channel = 0;
+    let spread = -1;
+    for (let c = 0; c < 3; c++) {
+      let min = 255;
+      let max = 0;
+      for (let i = lo; i < hi; i++) {
+        const value = samples[order[i] * 3 + c];
+        if (value < min) min = value;
+        if (value > max) max = value;
+      }
+      if (max - min > spread) {
+        spread = max - min;
+        channel = c;
+      }
+    }
+    return { lo, hi, channel, spread };
+  };
+
+  const boxes: Box[] = [measure(0, count)];
 
   while (boxes.length < maxColors) {
     let target = -1;
-    let targetChannel = 0;
     let bestScore = 0;
 
     for (let b = 0; b < boxes.length; b++) {
-      const { lo, hi } = boxes[b];
-      if (hi - lo < 2) continue;
-
-      let channel = 0;
-      let spread = -1;
-      for (let c = 0; c < 3; c++) {
-        let min = 255;
-        let max = 0;
-        for (let i = lo; i < hi; i++) {
-          const value = samples[order[i] * 3 + c];
-          if (value < min) min = value;
-          if (value > max) max = value;
-        }
-        if (max - min > spread) {
-          spread = max - min;
-          channel = c;
-        }
-      }
-
+      const box = boxes[b];
+      if (box.hi - box.lo < 2) continue;
       // Prefer boxes that are both wide and heavily populated.
-      const score = spread * (hi - lo);
+      const score = box.spread * (box.hi - box.lo);
       if (score > bestScore) {
         bestScore = score;
         target = b;
-        targetChannel = channel;
       }
     }
 
     if (target < 0) break; // every box is a single color already
 
-    const { lo, hi } = boxes[target];
-    const channel = targetChannel;
+    const { lo, hi, channel } = boxes[target];
     order
       .subarray(lo, hi)
       .sort((a, b) => samples[a * 3 + channel] - samples[b * 3 + channel]);
     const mid = (lo + hi) >> 1;
-    boxes[target] = { lo, hi: mid };
-    boxes.push({ lo: mid, hi });
+    boxes[target] = measure(lo, mid);
+    boxes.push(measure(mid, hi));
   }
 
   const palette = new Uint8Array(Math.max(2, boxes.length) * 3);
@@ -187,8 +204,30 @@ function clamp255(value: number) {
   return value < 0 ? 0 : value > 255 ? 255 : value;
 }
 
-function mapFrame(rgba: Uint8ClampedArray, map: PaletteMap) {
-  const indices = new Uint8Array(rgba.length >> 2);
+/**
+ * Buffers every frame needs, allocated once per encode. A long clip would
+ * otherwise churn tens of megabytes of short-lived arrays through the worker's
+ * heap during the phase that is already the slowest.
+ */
+class FrameScratch {
+  readonly indices: Uint8Array;
+  /** Floyd-Steinberg only ever spills error onto the current and next row. */
+  readonly current: Float32Array;
+  readonly next: Float32Array;
+
+  constructor(width: number, height: number) {
+    this.indices = new Uint8Array(width * height);
+    this.current = new Float32Array(width * 3);
+    this.next = new Float32Array(width * 3);
+  }
+}
+
+function mapFrame(
+  rgba: Uint8ClampedArray,
+  map: PaletteMap,
+  scratch: FrameScratch,
+) {
+  const indices = scratch.indices;
   for (let p = 0, i = 0; p < indices.length; p++, i += 4) {
     indices[p] = map.nearest(rgba[i], rgba[i + 1], rgba[i + 2]);
   }
@@ -199,14 +238,16 @@ function ditherFrame(
   rgba: Uint8ClampedArray,
   width: number,
   height: number,
-  palette: Uint8Array,
   map: PaletteMap,
+  scratch: FrameScratch,
 ) {
-  const indices = new Uint8Array(width * height);
-  const rowLength = width * 3;
-  // Floyd-Steinberg only ever spills error onto the current and next row.
-  let current = new Float32Array(rowLength);
-  let next = new Float32Array(rowLength);
+  const indices = scratch.indices;
+  const palette = map.palette;
+  let current = scratch.current;
+  let next = scratch.next;
+  // Reused across frames, so the incoming error has to be cleared; `next` is
+  // zeroed per row below.
+  current.fill(0);
 
   for (let y = 0; y < height; y++) {
     next.fill(0);
@@ -252,13 +293,47 @@ function ditherFrame(
   return indices;
 }
 
+/**
+ * The LZW dictionary, as a flat array rather than a `Map`.
+ *
+ * It is probed once per pixel of every frame — millions of times per render —
+ * and the key is already a bounded integer, so a direct index beats hashing.
+ * Clearing walks the keys actually written instead of the whole array, which
+ * matters because the table resets every time it fills.
+ */
+class LzwTable {
+  /** `(prefix << 8) | next` → code + 1, leaving 0 to mean "not present". */
+  private slots = new Int32Array(LZW_MAX_CODE << 8);
+  private written = new Uint32Array(LZW_MAX_CODE);
+  private count = 0;
+
+  get(key: number) {
+    return this.slots[key];
+  }
+
+  add(key: number, code: number) {
+    this.slots[key] = code + 1;
+    this.written[this.count++] = key;
+  }
+
+  clear() {
+    for (let i = 0; i < this.count; i++) this.slots[this.written[i]] = 0;
+    this.count = 0;
+  }
+}
+
 /** Variable-width LZW, written straight into the GIF's sub-block stream. */
-function lzwEncode(indices: Uint8Array, minCodeSize: number, out: ByteBuffer) {
+function lzwEncode(
+  indices: Uint8Array,
+  minCodeSize: number,
+  out: ByteBuffer,
+  table: LzwTable,
+) {
   const clearCode = 1 << minCodeSize;
   const endCode = clearCode + 1;
 
   let codeSize = minCodeSize + 1;
-  let table = new Map<number, number>();
+  table.clear();
   let nextCode = endCode + 1;
 
   let bits = 0;
@@ -290,20 +365,20 @@ function lzwEncode(indices: Uint8Array, minCodeSize: number, out: ByteBuffer) {
       const k = indices[i];
       const key = (prefix << 8) | k;
       const known = table.get(key);
-      if (known !== undefined) {
-        prefix = known;
+      if (known !== 0) {
+        prefix = known - 1;
         continue;
       }
 
       emit(prefix);
       if (nextCode === LZW_MAX_CODE) {
         emit(clearCode);
-        table = new Map();
+        table.clear();
         nextCode = endCode + 1;
         codeSize = minCodeSize + 1;
       } else {
         if (nextCode >= 1 << codeSize) codeSize++;
-        table.set(key, nextCode++);
+        table.add(key, nextCode++);
       }
       prefix = k;
     }
@@ -337,9 +412,19 @@ export function encodeGif(
   const { width, height, delay, loop, dither, colors: maxColors } = options;
   const palette = buildPalette(frames, maxColors);
   const colors = palette.length / 3;
-  const depth = Math.max(2, Math.ceil(Math.log2(Math.max(2, colors))));
+  const depth = Math.max(2, Math.ceil(Math.log2(colors)));
   const map = new PaletteMap(palette);
   const out = new ByteBuffer();
+  const scratch = new FrameScratch(width, height);
+  const table = new LzwTable();
+
+  // Ping-pong replays the same frame objects, and a frame's blocks depend on
+  // nothing but its pixels and the delay, so a repeat is a byte-for-byte copy
+  // of what was already written. Only worth remembering when there are repeats.
+  const encoded =
+    frames.length === new Set(frames).size
+      ? null
+      : new Map<Uint8ClampedArray, Uint8Array>();
 
   out.ascii("GIF89a");
   // Logical screen descriptor: global color table, 8-bit color resolution.
@@ -368,9 +453,17 @@ export function encodeGif(
   }
 
   for (let f = 0; f < frames.length; f++) {
+    const already = encoded?.get(frames[f]);
+    if (already) {
+      out.raw(already);
+      options.onProgress?.((f + 1) / frames.length);
+      continue;
+    }
+    const blockStart = out.length;
+
     const indices = dither
-      ? ditherFrame(frames[f], width, height, palette, map)
-      : mapFrame(frames[f], map);
+      ? ditherFrame(frames[f], width, height, map, scratch)
+      : mapFrame(frames[f], map, scratch);
 
     // Graphic control extension: disposal method 1 (leave in place).
     out.byte(0x21);
@@ -390,9 +483,10 @@ export function encodeGif(
     out.byte(0);
 
     out.byte(depth);
-    lzwEncode(indices, depth, out);
+    lzwEncode(indices, depth, out, table);
     out.byte(0);
 
+    encoded?.set(frames[f], out.since(blockStart));
     options.onProgress?.((f + 1) / frames.length);
   }
 

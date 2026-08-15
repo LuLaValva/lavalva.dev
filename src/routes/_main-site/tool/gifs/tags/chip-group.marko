@@ -1,0 +1,28 @@
+import styles from "../gif.module.css";
+
+export interface Input {
+  legend: string;
+  /** Also the radio group's name, so the options are mutually exclusive. */
+  name: string;
+  options: { value: string; label: string }[];
+  value: string;
+  valueChange: (value: string) => void;
+}
+
+<fieldset class=styles.chips>
+  <legend>${input.legend}</legend>
+  <for|option| of=input.options by="value">
+    <label class=styles.chip>
+      <input
+        type="radio"
+        name=input.name
+        value=option.value
+        checkedValue=input.value
+        checkedValueChange(next: string) {
+          input.valueChange(next);
+        }
+      >
+      <span>${option.label}</span>
+    </label>
+  </for>
+</fieldset>
