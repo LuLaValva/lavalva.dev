@@ -193,7 +193,7 @@ function seek(video: HTMLVideoElement, time: number) {
     video.addEventListener("seeked", settle(resolve), { signal: stop.signal });
     video.addEventListener(
       "error",
-      settle(() => reject(new Error("The browser could not seek this video"))),
+      settle(() => reject(new Error("Couldn't seek this video"))),
       { signal: stop.signal },
     );
     video.currentTime = time;
@@ -269,7 +269,7 @@ export async function renderGif(request: RenderRequest): Promise<RenderResult> {
   const videoWidth = video.videoWidth;
   const videoHeight = video.videoHeight;
   if (!videoWidth || !videoHeight) {
-    throw new Error("This video hasn't reported its dimensions yet");
+    throw new Error("This video hasn't reported its size yet");
   }
 
   const { sx, sy, sw, sh } = cropPixels(crop, videoWidth, videoHeight);

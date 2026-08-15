@@ -236,7 +236,7 @@ static function formatBytes(bytes: number) {
   navigator.share({ files: [shared.file] }).catch((thrown: unknown) => {
     // Dismissing rejects too. Not a failure.
     if (thrown instanceof Error && thrown.name === "AbortError") return;
-    error = "This browser wouldn't hand the file to the share sheet.";
+    error = "Couldn't open the share sheet.";
   });
 }>
 
@@ -314,10 +314,7 @@ static function formatBytes(bytes: number) {
 
 <main class=styles.page>
   <h1>GIF Editor</h1>
-  <p class=styles.lede>
-    Trim, crop and export a clip as a GIF. Everything happens in this tab — your
-    video is never uploaded.
-  </p>
+  <p class=styles.lede>Video to GIF, without leaving this tab.</p>
 
   <section
     class=[
@@ -349,7 +346,7 @@ static function formatBytes(bytes: number) {
       >
       <span>${videoUrl ? "Choose a different video" : "Choose a video"}</span>
     </label>
-    <p class=styles.hint>${fileName || "…or drop one here"}</p>
+    <p class=styles.hint>${fileName || "or drop one here"}</p>
   </section>
 
   <if=error>
@@ -396,7 +393,7 @@ static function formatBytes(bytes: number) {
             el.currentTime = start;
           }
           onError() {
-            error = "This browser can't play that video file.";
+            error = "Can't play that video.";
           }
         />
 
@@ -416,7 +413,7 @@ static function formatBytes(bytes: number) {
           <button
             class=styles.moveArea
             type="button"
-            aria-label="Crop region: drag to move it, or use the arrow keys"
+            aria-label="Crop region: drag, or use arrow keys"
             onPointerDown(e: PointerEvent, el: HTMLElement) {
               beginDrag(e, el, "move");
             }
@@ -428,7 +425,7 @@ static function formatBytes(bytes: number) {
             <button
               class=[styles.handle, styles[handle]]
               type="button"
-              aria-label=`Crop ${HANDLE_LABELS[handle]} corner: drag, or use the arrow keys`
+              aria-label=`Crop ${HANDLE_LABELS[handle]} corner: drag, or use arrow keys`
               onPointerDown(e: PointerEvent, el: HTMLElement) {
                 beginDrag(e, el, handle);
               }
@@ -467,7 +464,7 @@ static function formatBytes(bytes: number) {
 
     <section>
       <p class=styles.hint>
-        Drag the box or corners; arrow keys nudge (shift bigger, alt one pixel).
+        Drag the box or its corners. Arrows nudge, shift bigger, alt one pixel.
       </p>
 
       <p class=styles.meta>
@@ -506,8 +503,9 @@ static function formatBytes(bytes: number) {
         ${formatTime(end)}
       </slider-row>
       <p class=styles.meta>
-        <span>${frameCount} frames selected</span>
-        <span>${formatTime(Math.max(0, end - start))} of source</span>
+        <span>
+          ${frameCount} frames · ${formatTime(Math.max(0, end - start))}
+        </span>
       </p>
     </section>
 
@@ -521,13 +519,12 @@ static function formatBytes(bytes: number) {
       />
       <p class=styles.hint>
         <if=frameRateSource === "measured">
-          Source is ${formatRate(1 / frameSeconds)}; every GIF frame is a real one.
+          Source: ${formatRate(1 / frameSeconds)}
         </if>
         <else-if=frameRateSource === "assumed">
-          This browser won't say what the source's frame rate is, so it's
-          assumed to be ${formatRate(1 / frameSeconds)}.
+          Source rate unknown here. Assuming ${formatRate(1 / frameSeconds)}.
         </else-if>
-        <else>Checking the source's frame rate…</else>
+        <else>Reading frame rate…</else>
       </p>
 
       <slider-row
@@ -541,8 +538,7 @@ static function formatBytes(bytes: number) {
         ${speed.toFixed(2)}×
       </slider-row>
       <p class=styles.hint>
-        A GIF holds whole hundredths of a second per frame, so nearby speeds
-        round to the same one.
+        Delays are whole hundredths, so nearby speeds round together.
       </p>
 
       <slider-row
@@ -561,20 +557,16 @@ static function formatBytes(bytes: number) {
 
       <label class=styles.check>
         <input type="checkbox" checked:=dither>
-        <span>Dither — smoother gradients, slightly larger file</span>
+        <span>Dither: smoother gradients, bigger file</span>
       </label>
     </section>
 
     <section>
       <p class=styles.summary>
-        ${outWidth}×${outHeight}, ${playedFrames} frames at ${formatRate(fps)} — ${
-          outputSeconds.toFixed(2)
-        }s of GIF
+        ${outWidth}×${outHeight} · ${playedFrames} frames · ${formatRate(fps)} ·
+        ${outputSeconds.toFixed(2)}s
         <if=(uncappedFrames > MAX_FRAMES)>
-          <em>
-            — capped at ${MAX_FRAMES} captured frames, so the clip will cut
-            short. Trim it, or sample fewer frames.
-          </em>
+          <em>— capped at ${MAX_FRAMES}; trim, or sample fewer.</em>
         </if>
       </p>
 
@@ -598,11 +590,10 @@ static function formatBytes(bytes: number) {
 
     <if=result>
       <section>
-        <h2>Result</h2>
         <img
           class=styles.result
           src=result.url
-          alt="the rendered gif"
+          alt="the rendered GIF"
           width=result.width
           height=result.height
         >
@@ -629,8 +620,7 @@ static function formatBytes(bytes: number) {
         </p>
         <if=result.shareable>
           <p class=styles.hint>
-            Share opens the system sheet — on iOS, “Save Image” there puts the
-            GIF straight in your camera roll.
+            “Save Image” on the sheet goes to your photos.
           </p>
         </if>
       </section>
