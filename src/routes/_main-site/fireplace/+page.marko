@@ -1,0 +1,343 @@
+import {
+  attach,
+  connectLamp,
+  readState,
+  supported,
+  writeState,
+  STATE_LEN,
+} from "./ble";
+import { compile, type Compiled } from "./expr";
+import { PRESETS } from "./presets";
+import styles from "./flow.module.css";
+
+// The program is sampled every animation frame, but frames only stream to
+// the lamp this often. writeWithoutResponse comfortably sustains this; the
+// latest-wins queue below absorbs hiccups.
+static const SEND_MS = 40;
+// `t` counts one per streamed frame regardless of which loop is stepping.
+static const FRAMES_PER_MS = 1 / SEND_MS;
+static const SAVE_KEY = "fireplace-exprs";
+static const CHANNELS = ["r", "g", "b", "w"] as const;
+
+// The interpreter runtime lives at module scope, outside Marko's reactive
+// graph, so the hidden-tab loop below can never lose it to a re-render:
+// worker ticks reach it through plain function calls. Reactive state is
+// mirrored in every visible frame (and at connect/disconnect, the only
+// mutations that can happen while hidden).
+static interface Runtime {
+  fns: (Compiled | null)[];
+  char: BluetoothRemoteGATTCharacteristic | null;
+  on: boolean;
+  brightness: number;
+  bytes: number[];
+  err: string;
+  clock: { t: number; last: number; sent: number };
+  inFlight: { busy: boolean; again: boolean };
+}
+
+static const rt: Runtime = {
+  fns: [null, null, null, null],
+  char: null,
+  on: true,
+  brightness: 1,
+  bytes: [],
+  err: "",
+  clock: { t: 0, last: 0, sent: 0 },
+  inFlight: { busy: false, again: false },
+};
+
+// GATT rejects overlapping operations, so writes are queued latest-wins: at
+// most one in flight, and edits made meanwhile collapse into a single
+// follow-up write of the newest bytes.
+static function sendRt() {
+  const char = rt.char;
+  if (!char || rt.bytes.length !== STATE_LEN) return;
+  if (rt.inFlight.busy) {
+    rt.inFlight.again = true;
+    return;
+  }
+  rt.inFlight.busy = true;
+  (async () => {
+    do {
+      rt.inFlight.again = false;
+      try {
+        await writeState(char, rt.bytes);
+        rt.err = "";
+      } catch (e: unknown) {
+        rt.err = String(e);
+      }
+    } while (rt.inFlight.again);
+    rt.inFlight.busy = false;
+  })();
+}
+
+static function setBytesRt(edits: [number, number][]) {
+  for (const [i, v] of edits) rt.bytes[i] = v;
+  sendRt();
+}
+
+// One interpreter step: advance the frame counter by the wall-clock delta,
+// evaluate the four channel expressions, and stream a frame out if one is
+// due (at most every SEND_MS, and only while connected and powered on).
+// dt is clamped so a gap between steps doesn't fast-forward the program.
+// The lamp's firmware modes are ignored: frames go out as solid-color
+// (mode 0) writes to color slot 1; mode 3/4 is still used as the power
+// toggle (PROTOCOL.md).
+static function tick(): number[] {
+  const now = performance.now();
+  const dt = Math.min(100, now - rt.clock.last);
+  rt.clock.last = now;
+  rt.clock.t += dt * FRAMES_PER_MS;
+  const rgbw = rt.fns.map((f) => {
+    if (!f) return 0;
+    const v = Math.round(f(rt.clock.t));
+    return Number.isFinite(v) ? Math.max(0, Math.min(255, v)) : 0;
+  });
+  // The margin keeps metronome ticks (spaced exactly SEND_MS apart, with
+  // jitter both ways) from losing every other frame to the throttle.
+  if (rt.char && rt.on && now - rt.clock.sent >= SEND_MS - 5) {
+    rt.clock.sent = now;
+    const [r, g, b, w] = rgbw.map((v) => Math.round(v * rt.brightness));
+    setBytesRt([
+      [0, 0],
+      [1, r],
+      [2, g],
+      [3, b],
+      [4, w],
+    ]);
+  }
+  return rgbw;
+}
+
+<let/ok=true>
+<let/lamp=null as Awaited<ReturnType<typeof connectLamp>> | null>
+<let/deviceName="">
+<let/err="">
+<let/on=true>
+<let/sources=[...PRESETS[0].channels] as string[]>
+<let/errs=["", "", "", ""]>
+<let/preview=[0, 0, 0, 0]>
+<let/brightness=1>
+<let/frame=0>
+
+// Compiling happens once per edit, into the runtime the loops read from;
+// a channel that doesn't parse keeps its error and outputs 0.
+<const/apply(srcs: string[]) {
+  sources = srcs;
+  errs = srcs.map((src, i) => {
+    try {
+      rt.fns[i] = compile(src);
+      return "";
+    } catch (e: unknown) {
+      rt.fns[i] = null;
+      return e instanceof Error ? e.message : String(e);
+    }
+  });
+}>
+
+<script>
+  ok = supported();
+  let initial = [...PRESETS[0].channels] as string[];
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "");
+    if (
+      Array.isArray(saved) &&
+      saved.length === 4 &&
+      saved.every((s) => typeof s === "string")
+    ) {
+      initial = saved;
+    }
+  } catch {}
+  apply(initial);
+</script>
+
+// The visible-tab event loop: Marko batches renders to animation frames, so
+// a script that bumps its own dependency re-runs once per frame. Each frame
+// mirrors reactive state into the runtime, steps the interpreter, and
+// paints the preview swatch.
+<script>frame++;</script>
+<script>
+  frame;
+  rt.on = on;
+  rt.brightness = brightness;
+  rt.char = lamp?.char ?? null;
+  preview = tick();
+  err = rt.err;
+</script>
+
+// The hidden-tab event loop: rAF stops entirely and page timers throttle to
+// ~1/minute in a hidden tab, but dedicated-worker timers don't. The worker
+// is a bare metronome (Bluetooth isn't exposed in workers) ticking the
+// module-scope runtime directly, whenever rAF isn't already doing so.
+<script>
+  const worker = new Worker(
+    URL.createObjectURL(
+      new Blob([`setInterval(() => postMessage(0), ${SEND_MS});`], {
+        type: "text/javascript",
+      }),
+    ),
+  );
+  worker.onmessage = () => {
+    if (document.hidden) tick();
+  };
+  $signal.onabort = () => worker.terminate();
+</script>
+
+// The lamp only allows one central at a time and drops connections freely,
+// so hold it like a regular paired device: auto-reconnect until the user
+// explicitly disconnects.
+<const/wants={ connected: false }>
+
+// Connection changes write to `rt` as well as reactive state because they
+// can fire from a hidden tab, where the mirroring frame loop is stopped.
+<const/onDisconnected(device: BluetoothDevice) {
+  lamp = null;
+  rt.char = null;
+  (async () => {
+    for (let tries = 0; wants.connected && tries < 5; tries++) {
+      try {
+        const char = await attach(device);
+        deviceName = device.name || device.id;
+        rt.bytes = await readState(char);
+        rt.char = char;
+        lamp = { device, char };
+        rt.err = "";
+        return;
+      } catch (e: unknown) {
+        rt.err = `reconnecting… (${String(e)})`;
+        await new Promise((r) => setTimeout(r, 1000 * (tries + 1)));
+      }
+    }
+    wants.connected = false;
+  })();
+}>
+
+<const/doConnect() {
+  connectLamp()
+    .then(async (l) => {
+      wants.connected = true;
+      l.device.addEventListener("gattserverdisconnected", () => {
+        if (wants.connected) onDisconnected(l.device);
+      });
+      deviceName = l.device.name || l.device.id;
+      rt.bytes = await readState(l.char);
+      rt.char = l.char;
+      lamp = l;
+      rt.err = "";
+    })
+    .catch((e: unknown) => (rt.err = String(e)));
+}>
+
+<h1>Fireplace</h1>
+
+<if=!ok>
+  <p>Web Bluetooth isn't available here (needs Chromium + HTTPS/localhost).</p>
+</if>
+
+<p>
+  <if=lamp>
+    Connected: ${deviceName}
+    <button onClick() {
+      wants.connected = false;
+      lamp?.device.gatt?.disconnect();
+      lamp = null;
+      rt.char = null;
+    }>
+      Disconnect
+    </button>
+    <button onClick() {
+      on = !on;
+      rt.on = on;
+      setBytesRt([[0, (on ? 4 : 3) << 4]]);
+    }>
+      ${on ? "Turn off" : "Turn on"}
+    </button>
+  </if>
+  <else>
+    <button
+      disabled=!ok
+      onClick() {
+        doConnect();
+      }
+    >
+      Connect
+    </button>
+    (the program below runs either way)
+  </else>
+</p>
+
+<div class=styles.toolbar>
+  <span
+    class=styles.swatch
+    title="live output"
+    style=`background:rgb(${preview[0]},${preview[1]},${preview[2]})`
+  />
+  <label>
+    brightness:
+    <input
+      type="range"
+      min="0.05"
+      max="1"
+      step="0.05"
+      value=String(brightness)
+      valueChange(v) {
+        brightness = +v;
+      }
+    >
+  </label>
+  <label>
+    preset:
+    <select
+      value=""
+      valueChange(v) {
+        const preset = PRESETS.find((p) => p.name === v);
+        if (preset) apply([...preset.channels]);
+      }
+    >
+      <option value="" disabled>load…</option>
+      <for|p| of=PRESETS>
+        <option value=p.name>${p.name}</option>
+      </for>
+    </select>
+  </label>
+  <button onClick() {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(sources));
+  }>
+    Save
+  </button>
+</div>
+
+<div class=styles.fields>
+  <for|name, i| of=CHANNELS>
+    <label class=styles.exprRow>
+      <span class=styles.channel>${name} =</span>
+      <input
+        class=styles.exprInput
+        type="text"
+        spellcheck="false"
+        autocomplete="off"
+        value=sources[i]
+        valueChange(v) {
+          apply(sources.toSpliced(i, 1, v));
+        }
+      >
+    </label>
+    <if=errs[i]>
+      <p class=styles.exprError>${errs[i]}</p>
+    </if>
+  </for>
+</div>
+
+<p class=styles.hint>
+  Each channel is an expression in <code>t</code> (frames, 25/second) → 0–255.
+  Functions: <code>sin</code> <code>cos</code> <code>tan</code>${" "}
+  <code>noise(value, type = perlin, seed = 0)</code> — types <code>perlin</code>
+  (smooth) and <code>white</code> (random per whole step of <code>value</code>). Operators
+  <code>+ - * / % ^</code>.
+</p>
+
+<if=err>
+  <p><code>${err}</code></p>
+</if>
+
+<home/>
