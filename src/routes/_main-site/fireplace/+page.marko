@@ -6,11 +6,15 @@ import {
   writeState,
   STATE_LEN,
 } from "./ble";
-import { PATTERNS } from "./patterns";
+import { evalGraph, freshMemory, type Graph } from "./flow";
+import { PRESETS } from "./presets";
+import styles from "./flow.module.css";
 
-// How often pattern frames stream to the lamp. writeWithoutResponse
-// comfortably sustains this; the latest-wins queue below absorbs hiccups.
-static const FRAME_MS = 40;
+// The program is sampled every animation frame, but frames only stream to
+// the lamp this often. writeWithoutResponse comfortably sustains this; the
+// latest-wins queue below absorbs hiccups.
+static const SEND_MS = 40;
+static const SAVE_KEY = "fireplace-graph";
 
 <let/ok=true>
 <let/lamp=null as Awaited<ReturnType<typeof connectLamp>> | null>
@@ -18,12 +22,20 @@ static const FRAME_MS = 40;
 <let/bytes=[] as number[]>
 <let/err="">
 <let/on=true>
-// -1 is manual control; otherwise an index into PATTERNS.
-<let/patternIdx=0>
-<let/speed=1>
+<let/graph=PRESETS[0].graph as Graph>
+<let/preview=[0, 0, 0, 0]>
 <let/brightness=1>
+<let/frame=0>
 
-<script>ok = supported();</script>
+<script>
+  ok = supported();
+  const saved = localStorage.getItem(SAVE_KEY);
+  if (saved) {
+    try {
+      graph = JSON.parse(saved) as Graph;
+    } catch {}
+  }
+</script>
 
 // GATT rejects overlapping operations, so writes are queued latest-wins: at
 // most one in flight, and edits made meanwhile collapse into a single
@@ -59,9 +71,9 @@ static const FRAME_MS = 40;
   send();
 }>
 
-// This page ignores the firmware's built-in gradient/flash/strobe modes —
-// patterns are computed here and streamed as solid-color (mode 0) writes to
-// color slot 1. Mode 3/4 is still used as the power toggle (PROTOCOL.md).
+// The lamp's firmware modes are ignored: programs are sampled here and
+// streamed as solid-color (mode 0) writes to color slot 1. Mode 3/4 is
+// still used as the power toggle (PROTOCOL.md).
 <const/setColor(r: number, g: number, b: number, w: number) {
   setBytes([
     [0, 0],
@@ -72,27 +84,36 @@ static const FRAME_MS = 40;
   ]);
 }>
 
-// Pattern time advances by wall-clock delta × speed, so changing speed or
-// restarting the effect never jumps the phase.
-<const/clock={ phase: 0, last: 0 }>
+<const/clock={ t: 0, last: 0, sent: 0 }>
+<const/mem=freshMemory()>
 
+// The core event loop: Marko batches renders to animation frames, so a
+// script that bumps its own dependency re-runs once per frame.
+<script>frame++;</script>
+
+// The interpreter runs every frame so the preview swatch stays smooth with
+// no lamp nearby; a frame only streams out at most every SEND_MS, and only
+// while connected and powered on. dt is clamped so a backgrounded tab
+// (rAF stops) doesn't fast-forward the program on return.
 <script>
-  if (lamp && on && patternIdx >= 0) {
-    clock.last = performance.now();
-    const pattern = PATTERNS[patternIdx];
-    const timer = setInterval(() => {
-      const now = performance.now();
-      clock.phase += ((now - clock.last) / 1000) * speed;
-      clock.last = now;
-      const [r, g, b, w] = pattern.at(clock.phase);
-      setColor(
-        Math.round(r * brightness),
-        Math.round(g * brightness),
-        Math.round(b * brightness),
-        Math.round(w * brightness),
-      );
-    }, FRAME_MS);
-    return () => clearInterval(timer);
+  frame;
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - clock.last) / 1000);
+  clock.last = now;
+  clock.t += dt;
+  const rgbw = evalGraph(graph, { t: clock.t, dt }, mem).map((v) =>
+    Math.round(v * 255),
+  );
+  preview = rgbw;
+  if (lamp && on && now - clock.sent >= SEND_MS) {
+    clock.sent = now;
+    const [r, g, b, w] = rgbw;
+    setColor(
+      Math.round(r * brightness),
+      Math.round(g * brightness),
+      Math.round(b * brightness),
+      Math.round(w * brightness),
+    );
   }
 </script>
 
@@ -139,18 +160,14 @@ static const FRAME_MS = 40;
     .catch((e: unknown) => (err = String(e)));
 }>
 
-<const/hex2(n: number) {
-  return n.toString(16).padStart(2, "0");
-}>
-
 <h1>Fireplace</h1>
 
 <if=!ok>
   <p>Web Bluetooth isn't available here (needs Chromium + HTTPS/localhost).</p>
 </if>
 
-<if=lamp && bytes.length === STATE_LEN>
-  <p>
+<p>
+  <if=lamp && bytes.length === STATE_LEN>
     Connected: ${deviceName}
     <button onClick() {
       wants.connected = false;
@@ -160,93 +177,14 @@ static const FRAME_MS = 40;
     }>
       Disconnect
     </button>
-  </p>
-  <p>
     <button onClick() {
       on = !on;
       setBytes([[0, (on ? 4 : 3) << 4]]);
     }>
       ${on ? "Turn off" : "Turn on"}
     </button>
-    <label>
-      pattern:
-      <select
-        value=String(patternIdx)
-        valueChange(v) {
-          patternIdx = +v;
-        }
-      >
-        <option value="-1">manual</option>
-        <for|p, i| of=PATTERNS>
-          <option value=String(i)>${p.name}</option>
-        </for>
-      </select>
-    </label>
-  </p>
-  <p>
-    <label>
-      brightness:
-      <input
-        type="range"
-        min="0.05"
-        max="1"
-        step="0.05"
-        value=String(brightness)
-        valueChange(v) {
-          brightness = +v;
-        }
-      >
-    </label>
-    <if=patternIdx >= 0>
-      <label>
-        speed:
-        <input
-          type="range"
-          min="0.25"
-          max="4"
-          step="0.25"
-          value=String(speed)
-          valueChange(v) {
-            speed = +v;
-          }
-        >
-        ${speed}×
-      </label>
-    </if>
-  </p>
-  <if=patternIdx < 0>
-    <p>
-      color:
-      <input
-        type="color"
-        value=`#${hex2(bytes[1])}${hex2(bytes[2])}${hex2(bytes[3])}`
-        valueChange(v) {
-          const m = /^#(..)(..)(..)$/.exec(v);
-          if (m)
-            setColor(
-              parseInt(m[1], 16),
-              parseInt(m[2], 16),
-              parseInt(m[3], 16),
-              bytes[4],
-            );
-        }
-      >
-      white:
-      <input
-        type="range"
-        min="0"
-        max="255"
-        value=String(bytes[4])
-        valueChange(v) {
-          setBytes([[4, +v]]);
-        }
-      >
-      ${bytes[4]}
-    </p>
   </if>
-</if>
-<else>
-  <p>
+  <else>
     <button
       disabled=!ok
       onClick() {
@@ -255,8 +193,63 @@ static const FRAME_MS = 40;
     >
       Connect
     </button>
-  </p>
-</else>
+    (the editor below runs either way)
+  </else>
+</p>
+
+<div class=styles.toolbar>
+  <span
+    class=styles.swatch
+    title="live output"
+    style=`background:rgb(${preview[0]},${preview[1]},${preview[2]})`
+  />
+  <label>
+    brightness:
+    <input
+      type="range"
+      min="0.05"
+      max="1"
+      step="0.05"
+      value=String(brightness)
+      valueChange(v) {
+        brightness = +v;
+      }
+    >
+  </label>
+  <label>
+    preset:
+    <select
+      value=""
+      valueChange(v) {
+        const preset = PRESETS.find((p) => p.name === v);
+        if (preset) graph = preset.graph;
+      }
+    >
+      <option value="" disabled>load…</option>
+      <for|p| of=PRESETS>
+        <option value=p.name>${p.name}</option>
+      </for>
+    </select>
+  </label>
+  <button onClick() {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(graph));
+  }>
+    Save
+  </button>
+  <button onClick() {
+    // For promoting a saved program into presets.ts.
+    navigator.clipboard.writeText(JSON.stringify(graph));
+  }>
+    Copy JSON
+  </button>
+</div>
+
+<node-editor
+  graph=graph
+  graphChange(g: Graph) {
+    graph = g;
+  }
+/>
 
 <if=err>
   <p><code>${err}</code></p>
