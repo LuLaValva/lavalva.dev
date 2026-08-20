@@ -120,8 +120,9 @@ static function tick(): number[] {
 <let/brightness=1>
 <let/frame=0>
 
-// Compiling happens once per edit, into the runtime the loops read from;
-// a channel that doesn't parse keeps its error and outputs 0.
+// Wholesale loads (presets, saved state): compile everything into the
+// runtime the loops read from; a channel that doesn't parse keeps its
+// error and outputs 0.
 <const/apply(srcs: string[]) {
   sources = srcs;
   errs = srcs.map((src, i) => {
@@ -133,6 +134,18 @@ static function tick(): number[] {
       return e instanceof Error ? e.message : String(e);
     }
   });
+}>
+
+// Typing only edits the draft; a channel commits on blur or Enter, and
+// only a draft that parses replaces the running expression — an invalid
+// one shows its error while the previous program keeps playing.
+<const/commit(i: number) {
+  try {
+    rt.fns[i] = compile(sources[i]);
+    errs = errs.toSpliced(i, 1, "");
+  } catch (e: unknown) {
+    errs = errs.toSpliced(i, 1, e instanceof Error ? e.message : String(e));
+  }
 }>
 
 <script>
@@ -318,7 +331,13 @@ static function tick(): number[] {
         autocomplete="off"
         value=sources[i]
         valueChange(v) {
-          apply(sources.toSpliced(i, 1, v));
+          sources = sources.toSpliced(i, 1, v);
+        }
+        onBlur() {
+          commit(i);
+        }
+        onKeyDown(e: KeyboardEvent) {
+          if (e.key === "Enter") commit(i);
         }
       >
     </label>
