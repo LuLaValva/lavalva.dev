@@ -16,10 +16,98 @@ import styles from "./flow.module.css";
 static const SEND_MS = 40;
 static const SAVE_KEY = "fireplace-graph";
 
+// The interpreter runtime lives at module scope, outside Marko's reactive
+// graph, so the hidden-tab loop below can never lose it to a re-render:
+// worker ticks reach it through plain function calls. Reactive state is
+// mirrored in every visible frame (and at connect/disconnect, the only
+// mutations that can happen while hidden).
+static interface Runtime {
+  graph: Graph;
+  char: BluetoothRemoteGATTCharacteristic | null;
+  on: boolean;
+  brightness: number;
+  bytes: number[];
+  err: string;
+  clock: { t: number; last: number; sent: number };
+  mem: ReturnType<typeof freshMemory>;
+  inFlight: { busy: boolean; again: boolean };
+}
+
+static const rt: Runtime = {
+  graph: PRESETS[0].graph,
+  char: null,
+  on: true,
+  brightness: 1,
+  bytes: [],
+  err: "",
+  clock: { t: 0, last: 0, sent: 0 },
+  mem: freshMemory(),
+  inFlight: { busy: false, again: false },
+};
+
+// GATT rejects overlapping operations, so writes are queued latest-wins: at
+// most one in flight, and edits made meanwhile collapse into a single
+// follow-up write of the newest bytes.
+static function sendRt() {
+  const char = rt.char;
+  if (!char || rt.bytes.length !== STATE_LEN) return;
+  if (rt.inFlight.busy) {
+    rt.inFlight.again = true;
+    return;
+  }
+  rt.inFlight.busy = true;
+  (async () => {
+    do {
+      rt.inFlight.again = false;
+      try {
+        await writeState(char, rt.bytes);
+        rt.err = "";
+      } catch (e: unknown) {
+        rt.err = String(e);
+      }
+    } while (rt.inFlight.again);
+    rt.inFlight.busy = false;
+  })();
+}
+
+static function setBytesRt(edits: [number, number][]) {
+  for (const [i, v] of edits) rt.bytes[i] = v;
+  sendRt();
+}
+
+// One interpreter step: advance program time by the wall-clock delta,
+// evaluate, and stream a frame out if one is due (at most every SEND_MS,
+// and only while connected and powered on). dt is clamped so a gap between
+// steps doesn't fast-forward the program. The lamp's firmware modes are
+// ignored: frames go out as solid-color (mode 0) writes to color slot 1;
+// mode 3/4 is still used as the power toggle (PROTOCOL.md).
+static function tick(): number[] {
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - rt.clock.last) / 1000);
+  rt.clock.last = now;
+  rt.clock.t += dt;
+  const rgbw = evalGraph(rt.graph, { t: rt.clock.t, dt }, rt.mem).map((v) =>
+    Math.round(v * 255),
+  );
+  // The margin keeps metronome ticks (spaced exactly SEND_MS apart, with
+  // jitter both ways) from losing every other frame to the throttle.
+  if (rt.char && rt.on && now - rt.clock.sent >= SEND_MS - 5) {
+    rt.clock.sent = now;
+    const [r, g, b, w] = rgbw.map((v) => Math.round(v * rt.brightness));
+    setBytesRt([
+      [0, 0],
+      [1, r],
+      [2, g],
+      [3, b],
+      [4, w],
+    ]);
+  }
+  return rgbw;
+}
+
 <let/ok=true>
 <let/lamp=null as Awaited<ReturnType<typeof connectLamp>> | null>
 <let/deviceName="">
-<let/bytes=[] as number[]>
 <let/err="">
 <let/on=true>
 <let/graph=PRESETS[0].graph as Graph>
@@ -37,84 +125,37 @@ static const SAVE_KEY = "fireplace-graph";
   }
 </script>
 
-// GATT rejects overlapping operations, so writes are queued latest-wins: at
-// most one in flight, and edits made meanwhile collapse into a single
-// follow-up write of the newest bytes.
-<const/inFlight={ busy: false, again: false }>
-
-<const/send() {
-  const l = lamp;
-  if (!l || bytes.length !== STATE_LEN) return;
-  if (inFlight.busy) {
-    inFlight.again = true;
-    return;
-  }
-  inFlight.busy = true;
-  (async () => {
-    do {
-      inFlight.again = false;
-      try {
-        await writeState(l.char, bytes);
-        err = "";
-      } catch (e: unknown) {
-        err = String(e);
-      }
-    } while (inFlight.again);
-    inFlight.busy = false;
-  })();
-}>
-
-<const/setBytes(edits: [number, number][]) {
-  let next = bytes;
-  for (const [i, v] of edits) next = next.toSpliced(i, 1, v);
-  bytes = next;
-  send();
-}>
-
-// The lamp's firmware modes are ignored: programs are sampled here and
-// streamed as solid-color (mode 0) writes to color slot 1. Mode 3/4 is
-// still used as the power toggle (PROTOCOL.md).
-<const/setColor(r: number, g: number, b: number, w: number) {
-  setBytes([
-    [0, 0],
-    [1, r],
-    [2, g],
-    [3, b],
-    [4, w],
-  ]);
-}>
-
-<const/clock={ t: 0, last: 0, sent: 0 }>
-<const/mem=freshMemory()>
-
-// The core event loop: Marko batches renders to animation frames, so a
-// script that bumps its own dependency re-runs once per frame.
+// The visible-tab event loop: Marko batches renders to animation frames, so
+// a script that bumps its own dependency re-runs once per frame. Each frame
+// mirrors reactive state into the runtime, steps the interpreter, and
+// paints the preview swatch.
 <script>frame++;</script>
-
-// The interpreter runs every frame so the preview swatch stays smooth with
-// no lamp nearby; a frame only streams out at most every SEND_MS, and only
-// while connected and powered on. dt is clamped so a backgrounded tab
-// (rAF stops) doesn't fast-forward the program on return.
 <script>
   frame;
-  const now = performance.now();
-  const dt = Math.min(0.1, (now - clock.last) / 1000);
-  clock.last = now;
-  clock.t += dt;
-  const rgbw = evalGraph(graph, { t: clock.t, dt }, mem).map((v) =>
-    Math.round(v * 255),
+  rt.graph = graph;
+  rt.on = on;
+  rt.brightness = brightness;
+  rt.char = lamp?.char ?? null;
+  preview = tick();
+  err = rt.err;
+</script>
+
+// The hidden-tab event loop: rAF stops entirely and page timers throttle to
+// ~1/minute in a hidden tab, but dedicated-worker timers don't. The worker
+// is a bare metronome (Bluetooth isn't exposed in workers) ticking the
+// module-scope runtime directly, whenever rAF isn't already doing so.
+<script>
+  const worker = new Worker(
+    URL.createObjectURL(
+      new Blob([`setInterval(() => postMessage(0), ${SEND_MS});`], {
+        type: "text/javascript",
+      }),
+    ),
   );
-  preview = rgbw;
-  if (lamp && on && now - clock.sent >= SEND_MS) {
-    clock.sent = now;
-    const [r, g, b, w] = rgbw;
-    setColor(
-      Math.round(r * brightness),
-      Math.round(g * brightness),
-      Math.round(b * brightness),
-      Math.round(w * brightness),
-    );
-  }
+  worker.onmessage = () => {
+    if (document.hidden) tick();
+  };
+  $signal.onabort = () => worker.terminate();
 </script>
 
 // The lamp only allows one central at a time and drops connections freely,
@@ -122,26 +163,27 @@ static const SAVE_KEY = "fireplace-graph";
 // explicitly disconnects.
 <const/wants={ connected: false }>
 
+// Connection changes write to `rt` as well as reactive state because they
+// can fire from a hidden tab, where the mirroring frame loop is stopped.
 <const/onDisconnected(device: BluetoothDevice) {
   lamp = null;
+  rt.char = null;
   (async () => {
     for (let tries = 0; wants.connected && tries < 5; tries++) {
       try {
         const char = await attach(device);
         deviceName = device.name || device.id;
-        bytes = await readState(char);
+        rt.bytes = await readState(char);
+        rt.char = char;
         lamp = { device, char };
-        err = "";
+        rt.err = "";
         return;
       } catch (e: unknown) {
-        err = `reconnecting… (${String(e)})`;
+        rt.err = `reconnecting… (${String(e)})`;
         await new Promise((r) => setTimeout(r, 1000 * (tries + 1)));
       }
     }
-    if (wants.connected) {
-      wants.connected = false;
-      bytes = [];
-    }
+    wants.connected = false;
   })();
 }>
 
@@ -153,11 +195,12 @@ static const SAVE_KEY = "fireplace-graph";
         if (wants.connected) onDisconnected(l.device);
       });
       deviceName = l.device.name || l.device.id;
-      bytes = await readState(l.char);
+      rt.bytes = await readState(l.char);
+      rt.char = l.char;
       lamp = l;
-      err = "";
+      rt.err = "";
     })
-    .catch((e: unknown) => (err = String(e)));
+    .catch((e: unknown) => (rt.err = String(e)));
 }>
 
 <h1>Fireplace</h1>
@@ -167,19 +210,20 @@ static const SAVE_KEY = "fireplace-graph";
 </if>
 
 <p>
-  <if=lamp && bytes.length === STATE_LEN>
+  <if=lamp>
     Connected: ${deviceName}
     <button onClick() {
       wants.connected = false;
       lamp?.device.gatt?.disconnect();
       lamp = null;
-      bytes = [];
+      rt.char = null;
     }>
       Disconnect
     </button>
     <button onClick() {
       on = !on;
-      setBytes([[0, (on ? 4 : 3) << 4]]);
+      rt.on = on;
+      setBytesRt([[0, (on ? 4 : 3) << 4]]);
     }>
       ${on ? "Turn off" : "Turn on"}
     </button>
