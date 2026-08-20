@@ -6,7 +6,7 @@ import {
   writeState,
   STATE_LEN,
 } from "./ble";
-import { evalGraph, freshMemory, type Graph } from "./flow";
+import { compile, type Compiled } from "./expr";
 import { PRESETS } from "./presets";
 import styles from "./flow.module.css";
 
@@ -14,7 +14,10 @@ import styles from "./flow.module.css";
 // the lamp this often. writeWithoutResponse comfortably sustains this; the
 // latest-wins queue below absorbs hiccups.
 static const SEND_MS = 40;
-static const SAVE_KEY = "fireplace-graph";
+// `t` counts one per streamed frame regardless of which loop is stepping.
+static const FRAMES_PER_MS = 1 / SEND_MS;
+static const SAVE_KEY = "fireplace-exprs";
+static const CHANNELS = ["r", "g", "b", "w"] as const;
 
 // The interpreter runtime lives at module scope, outside Marko's reactive
 // graph, so the hidden-tab loop below can never lose it to a re-render:
@@ -22,26 +25,24 @@ static const SAVE_KEY = "fireplace-graph";
 // mirrored in every visible frame (and at connect/disconnect, the only
 // mutations that can happen while hidden).
 static interface Runtime {
-  graph: Graph;
+  fns: (Compiled | null)[];
   char: BluetoothRemoteGATTCharacteristic | null;
   on: boolean;
   brightness: number;
   bytes: number[];
   err: string;
   clock: { t: number; last: number; sent: number };
-  mem: ReturnType<typeof freshMemory>;
   inFlight: { busy: boolean; again: boolean };
 }
 
 static const rt: Runtime = {
-  graph: PRESETS[0].graph,
+  fns: [null, null, null, null],
   char: null,
   on: true,
   brightness: 1,
   bytes: [],
   err: "",
   clock: { t: 0, last: 0, sent: 0 },
-  mem: freshMemory(),
   inFlight: { busy: false, again: false },
 };
 
@@ -75,20 +76,23 @@ static function setBytesRt(edits: [number, number][]) {
   sendRt();
 }
 
-// One interpreter step: advance program time by the wall-clock delta,
-// evaluate, and stream a frame out if one is due (at most every SEND_MS,
-// and only while connected and powered on). dt is clamped so a gap between
-// steps doesn't fast-forward the program. The lamp's firmware modes are
-// ignored: frames go out as solid-color (mode 0) writes to color slot 1;
-// mode 3/4 is still used as the power toggle (PROTOCOL.md).
+// One interpreter step: advance the frame counter by the wall-clock delta,
+// evaluate the four channel expressions, and stream a frame out if one is
+// due (at most every SEND_MS, and only while connected and powered on).
+// dt is clamped so a gap between steps doesn't fast-forward the program.
+// The lamp's firmware modes are ignored: frames go out as solid-color
+// (mode 0) writes to color slot 1; mode 3/4 is still used as the power
+// toggle (PROTOCOL.md).
 static function tick(): number[] {
   const now = performance.now();
-  const dt = Math.min(0.1, (now - rt.clock.last) / 1000);
+  const dt = Math.min(100, now - rt.clock.last);
   rt.clock.last = now;
-  rt.clock.t += dt;
-  const rgbw = evalGraph(rt.graph, { t: rt.clock.t, dt }, rt.mem).map((v) =>
-    Math.round(v * 255),
-  );
+  rt.clock.t += dt * FRAMES_PER_MS;
+  const rgbw = rt.fns.map((f) => {
+    if (!f) return 0;
+    const v = Math.round(f(rt.clock.t));
+    return Number.isFinite(v) ? Math.max(0, Math.min(255, v)) : 0;
+  });
   // The margin keeps metronome ticks (spaced exactly SEND_MS apart, with
   // jitter both ways) from losing every other frame to the throttle.
   if (rt.char && rt.on && now - rt.clock.sent >= SEND_MS - 5) {
@@ -110,19 +114,41 @@ static function tick(): number[] {
 <let/deviceName="">
 <let/err="">
 <let/on=true>
-<let/graph=PRESETS[0].graph as Graph>
+<let/sources=[...PRESETS[0].channels] as string[]>
+<let/errs=["", "", "", ""]>
 <let/preview=[0, 0, 0, 0]>
 <let/brightness=1>
 <let/frame=0>
 
+// Compiling happens once per edit, into the runtime the loops read from;
+// a channel that doesn't parse keeps its error and outputs 0.
+<const/apply(srcs: string[]) {
+  sources = srcs;
+  errs = srcs.map((src, i) => {
+    try {
+      rt.fns[i] = compile(src);
+      return "";
+    } catch (e: unknown) {
+      rt.fns[i] = null;
+      return e instanceof Error ? e.message : String(e);
+    }
+  });
+}>
+
 <script>
   ok = supported();
-  const saved = localStorage.getItem(SAVE_KEY);
-  if (saved) {
-    try {
-      graph = JSON.parse(saved) as Graph;
-    } catch {}
-  }
+  let initial = [...PRESETS[0].channels] as string[];
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "");
+    if (
+      Array.isArray(saved) &&
+      saved.length === 4 &&
+      saved.every((s) => typeof s === "string")
+    ) {
+      initial = saved;
+    }
+  } catch {}
+  apply(initial);
 </script>
 
 // The visible-tab event loop: Marko batches renders to animation frames, so
@@ -132,7 +158,6 @@ static function tick(): number[] {
 <script>frame++;</script>
 <script>
   frame;
-  rt.graph = graph;
   rt.on = on;
   rt.brightness = brightness;
   rt.char = lamp?.char ?? null;
@@ -237,7 +262,7 @@ static function tick(): number[] {
     >
       Connect
     </button>
-    (the editor below runs either way)
+    (the program below runs either way)
   </else>
 </p>
 
@@ -266,7 +291,7 @@ static function tick(): number[] {
       value=""
       valueChange(v) {
         const preset = PRESETS.find((p) => p.name === v);
-        if (preset) graph = preset.graph;
+        if (preset) apply([...preset.channels]);
       }
     >
       <option value="" disabled>load…</option>
@@ -276,24 +301,40 @@ static function tick(): number[] {
     </select>
   </label>
   <button onClick() {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(graph));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(sources));
   }>
     Save
   </button>
-  <button onClick() {
-    // For promoting a saved program into presets.ts.
-    navigator.clipboard.writeText(JSON.stringify(graph));
-  }>
-    Copy JSON
-  </button>
 </div>
 
-<node-editor
-  graph=graph
-  graphChange(g: Graph) {
-    graph = g;
-  }
-/>
+<div class=styles.fields>
+  <for|name, i| of=CHANNELS>
+    <label class=styles.exprRow>
+      <span class=styles.channel>${name} =</span>
+      <input
+        class=styles.exprInput
+        type="text"
+        spellcheck="false"
+        autocomplete="off"
+        value=sources[i]
+        valueChange(v) {
+          apply(sources.toSpliced(i, 1, v));
+        }
+      >
+    </label>
+    <if=errs[i]>
+      <p class=styles.exprError>${errs[i]}</p>
+    </if>
+  </for>
+</div>
+
+<p class=styles.hint>
+  Each channel is an expression in <code>t</code> (frames, 25/second) → 0–255.
+  Functions: <code>sin</code> <code>cos</code> <code>tan</code>${" "}
+  <code>noise(seed, value, type = perlin)</code> — types <code>perlin</code>
+  (smooth) and <code>white</code> (random per whole step of <code>value</code>). Operators
+  <code>+ - * / % ^</code>.
+</p>
 
 <if=err>
   <p><code>${err}</code></p>
