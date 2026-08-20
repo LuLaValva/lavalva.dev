@@ -3,7 +3,7 @@
 //
 //   variables   t                      current frame (25 per second)
 //   functions   sin(x) cos(x) tan(x)   radians
-//               noise(seed, value, type = perlin)
+//               noise(value, type = perlin, seed = 0)
 //                 perlin — smooth wandering noise in [0, 1] over `value`
 //                 white  — a random-looking constant in [0, 1] per whole
 //                          step of `value`; quantized, good for strobes
@@ -149,10 +149,9 @@ export function compile(src: string): Compiled {
       }
       if (tk.text === "noise") {
         expectOp("(");
-        const seed = expr();
-        expectOp(",");
         const value = expr();
         let kind = NOISE.perlin;
+        let seed: Compiled = () => 0;
         if (takeOp(",")) {
           const name = tokens[pos];
           if (name?.kind !== "ident" || !NOISE[name.text]) {
@@ -162,6 +161,7 @@ export function compile(src: string): Compiled {
           }
           pos++;
           kind = NOISE[name.text];
+          if (takeOp(",")) seed = expr();
         }
         expectOp(")");
         return (t) => kind(seed(t), value(t));

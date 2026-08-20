@@ -10,10 +10,10 @@ export const PRESETS: Preset[] = [
   {
     name: "Hearth",
     channels: [
-      "160 + 90 * noise(1, t/6)",
-      "20 + 60 * noise(1, t/6)^2",
+      "160 + 90 * noise(t/6)",
+      "20 + 60 * noise(t/6)^2",
       "0",
-      "5 + 15 * noise(1, t/6)",
+      "5 + 15 * noise(t/6)",
     ],
   },
   {
@@ -23,16 +23,16 @@ export const PRESETS: Preset[] = [
   {
     name: "Disco",
     channels: [
-      "255 * noise(1, t/12, white)",
-      "255 * noise(2, t/12, white)",
-      "255 * noise(3, t/12, white)",
+      "255 * noise(t/12, white, 1)",
+      "255 * noise(t/12, white, 2)",
+      "255 * noise(t/12, white, 3)",
       "0",
     ],
   },
   {
     name: "Plasma",
     channels: [
-      "150 + 100 * sin(t/50 + noise(4, t/60) * 3)",
+      "150 + 100 * sin(t/50 + noise(t/60, perlin, 4) * 3)",
       "60 + 60 * sin(t/50 + 2)",
       "90 + 80 * sin(t/33)",
       "0",
