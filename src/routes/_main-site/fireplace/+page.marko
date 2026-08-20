@@ -1,0 +1,265 @@
+import {
+  attach,
+  connectLamp,
+  readState,
+  supported,
+  writeState,
+  STATE_LEN,
+} from "./ble";
+import { PATTERNS } from "./patterns";
+
+// How often pattern frames stream to the lamp. writeWithoutResponse
+// comfortably sustains this; the latest-wins queue below absorbs hiccups.
+static const FRAME_MS = 40;
+
+<let/ok=true>
+<let/lamp=null as Awaited<ReturnType<typeof connectLamp>> | null>
+<let/deviceName="">
+<let/bytes=[] as number[]>
+<let/err="">
+<let/on=true>
+// -1 is manual control; otherwise an index into PATTERNS.
+<let/patternIdx=0>
+<let/speed=1>
+<let/brightness=1>
+
+<script>ok = supported();</script>
+
+// GATT rejects overlapping operations, so writes are queued latest-wins: at
+// most one in flight, and edits made meanwhile collapse into a single
+// follow-up write of the newest bytes.
+<const/inFlight={ busy: false, again: false }>
+
+<const/send() {
+  const l = lamp;
+  if (!l || bytes.length !== STATE_LEN) return;
+  if (inFlight.busy) {
+    inFlight.again = true;
+    return;
+  }
+  inFlight.busy = true;
+  (async () => {
+    do {
+      inFlight.again = false;
+      try {
+        await writeState(l.char, bytes);
+        err = "";
+      } catch (e: unknown) {
+        err = String(e);
+      }
+    } while (inFlight.again);
+    inFlight.busy = false;
+  })();
+}>
+
+<const/setBytes(edits: [number, number][]) {
+  let next = bytes;
+  for (const [i, v] of edits) next = next.toSpliced(i, 1, v);
+  bytes = next;
+  send();
+}>
+
+// This page ignores the firmware's built-in gradient/flash/strobe modes —
+// patterns are computed here and streamed as solid-color (mode 0) writes to
+// color slot 1. Mode 3/4 is still used as the power toggle (PROTOCOL.md).
+<const/setColor(r: number, g: number, b: number, w: number) {
+  setBytes([
+    [0, 0],
+    [1, r],
+    [2, g],
+    [3, b],
+    [4, w],
+  ]);
+}>
+
+// Pattern time advances by wall-clock delta × speed, so changing speed or
+// restarting the effect never jumps the phase.
+<const/clock={ phase: 0, last: 0 }>
+
+<script>
+  if (lamp && on && patternIdx >= 0) {
+    clock.last = performance.now();
+    const pattern = PATTERNS[patternIdx];
+    const timer = setInterval(() => {
+      const now = performance.now();
+      clock.phase += ((now - clock.last) / 1000) * speed;
+      clock.last = now;
+      const [r, g, b, w] = pattern.at(clock.phase);
+      setColor(
+        Math.round(r * brightness),
+        Math.round(g * brightness),
+        Math.round(b * brightness),
+        Math.round(w * brightness),
+      );
+    }, FRAME_MS);
+    return () => clearInterval(timer);
+  }
+</script>
+
+// The lamp only allows one central at a time and drops connections freely,
+// so hold it like a regular paired device: auto-reconnect until the user
+// explicitly disconnects.
+<const/wants={ connected: false }>
+
+<const/onDisconnected(device: BluetoothDevice) {
+  lamp = null;
+  (async () => {
+    for (let tries = 0; wants.connected && tries < 5; tries++) {
+      try {
+        const char = await attach(device);
+        deviceName = device.name || device.id;
+        bytes = await readState(char);
+        lamp = { device, char };
+        err = "";
+        return;
+      } catch (e: unknown) {
+        err = `reconnecting… (${String(e)})`;
+        await new Promise((r) => setTimeout(r, 1000 * (tries + 1)));
+      }
+    }
+    if (wants.connected) {
+      wants.connected = false;
+      bytes = [];
+    }
+  })();
+}>
+
+<const/doConnect() {
+  connectLamp()
+    .then(async (l) => {
+      wants.connected = true;
+      l.device.addEventListener("gattserverdisconnected", () => {
+        if (wants.connected) onDisconnected(l.device);
+      });
+      deviceName = l.device.name || l.device.id;
+      bytes = await readState(l.char);
+      lamp = l;
+      err = "";
+    })
+    .catch((e: unknown) => (err = String(e)));
+}>
+
+<const/hex2(n: number) {
+  return n.toString(16).padStart(2, "0");
+}>
+
+<h1>Fireplace</h1>
+
+<if=!ok>
+  <p>Web Bluetooth isn't available here (needs Chromium + HTTPS/localhost).</p>
+</if>
+
+<if=lamp && bytes.length === STATE_LEN>
+  <p>
+    Connected: ${deviceName}
+    <button onClick() {
+      wants.connected = false;
+      lamp?.device.gatt?.disconnect();
+      lamp = null;
+      bytes = [];
+    }>
+      Disconnect
+    </button>
+  </p>
+  <p>
+    <button onClick() {
+      on = !on;
+      setBytes([[0, (on ? 4 : 3) << 4]]);
+    }>
+      ${on ? "Turn off" : "Turn on"}
+    </button>
+    <label>
+      pattern:
+      <select
+        value=String(patternIdx)
+        valueChange(v) {
+          patternIdx = +v;
+        }
+      >
+        <option value="-1">manual</option>
+        <for|p, i| of=PATTERNS>
+          <option value=String(i)>${p.name}</option>
+        </for>
+      </select>
+    </label>
+  </p>
+  <p>
+    <label>
+      brightness:
+      <input
+        type="range"
+        min="0.05"
+        max="1"
+        step="0.05"
+        value=String(brightness)
+        valueChange(v) {
+          brightness = +v;
+        }
+      >
+    </label>
+    <if=patternIdx >= 0>
+      <label>
+        speed:
+        <input
+          type="range"
+          min="0.25"
+          max="4"
+          step="0.25"
+          value=String(speed)
+          valueChange(v) {
+            speed = +v;
+          }
+        >
+        ${speed}×
+      </label>
+    </if>
+  </p>
+  <if=patternIdx < 0>
+    <p>
+      color:
+      <input
+        type="color"
+        value=`#${hex2(bytes[1])}${hex2(bytes[2])}${hex2(bytes[3])}`
+        valueChange(v) {
+          const m = /^#(..)(..)(..)$/.exec(v);
+          if (m)
+            setColor(
+              parseInt(m[1], 16),
+              parseInt(m[2], 16),
+              parseInt(m[3], 16),
+              bytes[4],
+            );
+        }
+      >
+      white:
+      <input
+        type="range"
+        min="0"
+        max="255"
+        value=String(bytes[4])
+        valueChange(v) {
+          setBytes([[4, +v]]);
+        }
+      >
+      ${bytes[4]}
+    </p>
+  </if>
+</if>
+<else>
+  <p>
+    <button
+      disabled=!ok
+      onClick() {
+        doConnect();
+      }
+    >
+      Connect
+    </button>
+  </p>
+</else>
+
+<if=err>
+  <p><code>${err}</code></p>
+</if>
+
+<home/>

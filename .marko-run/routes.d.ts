@@ -15,10 +15,11 @@ declare module "@marko/run" {
 		"/blog/airline-food": [L1, L2, P4];
 		"/bucket-list": [L1, P5];
 		"/contact": [L1, P6];
-		"/game": [L1, P7];
-		"/tool": [L1, P8];
-		"/tool/gifs": [L1, P9];
-		"/game/reduce": [L3, P10];
+		"/fireplace": [L1, P7];
+		"/game": [L1, P8];
+		"/tool": [L1, P9];
+		"/tool/gif": [L1, P10];
+		"/game/reduce": [L3, P11];
 	}> {}
 }
 
@@ -33,7 +34,7 @@ declare module "../src/routes/_main-site/+layout.marko" {
   /** @deprecated use `Run` namespace instead */
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = $.Routes["/" | "/about" | "/blog" | "/blog/airline-food" | "/bucket-list" | "/contact" | "/game" | "/tool" | "/tool/gifs"];
+    export type Route = $.Routes["/" | "/about" | "/blog" | "/blog/airline-food" | "/bucket-list" | "/contact" | "/fireplace" | "/game" | "/tool" | "/tool/gif"];
     export type Context = Run.Context;
     export type Handler = $.HandlerLike<Route>;
     export type GET = $.HandlerLike<Route, "GET">;
@@ -232,11 +233,34 @@ declare module "../src/routes/_main-site/contact/+page.marko" {
   }
 }
 
-type P7 = $.Template<"P7", typeof import("../src/routes/_main-site/game/+page.marko")>;
-declare module "../src/routes/_main-site/game/+page.marko" {
+type P7 = $.Template<"P7", typeof import("../src/routes/_main-site/fireplace/+page.marko")>;
+declare module "../src/routes/_main-site/fireplace/+page.marko" {
   const Run: $.Namespace<P7>;
   namespace Run {
     type Context = $.ContextForFile<P7> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    export type Route = $.Routes["/fireplace"];
+    export type Context = Run.Context;
+    export type Handler = $.HandlerLike<Route>;
+    export type GET = $.HandlerLike<Route, "GET">;
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    export type POST = $.HandlerLike<Route, "POST">;
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+  }
+}
+
+type P8 = $.Template<"P8", typeof import("../src/routes/_main-site/game/+page.marko")>;
+declare module "../src/routes/_main-site/game/+page.marko" {
+  const Run: $.Namespace<P8>;
+  namespace Run {
+    type Context = $.ContextForFile<P8> & Marko.Global;
   }
 
   /** @deprecated use `Run` namespace instead */
@@ -255,11 +279,11 @@ declare module "../src/routes/_main-site/game/+page.marko" {
   }
 }
 
-type P8 = $.Template<"P8", typeof import("../src/routes/_main-site/tool/+page.marko")>;
+type P9 = $.Template<"P9", typeof import("../src/routes/_main-site/tool/+page.marko")>;
 declare module "../src/routes/_main-site/tool/+page.marko" {
-  const Run: $.Namespace<P8>;
+  const Run: $.Namespace<P9>;
   namespace Run {
-    type Context = $.ContextForFile<P8> & Marko.Global;
+    type Context = $.ContextForFile<P9> & Marko.Global;
   }
 
   /** @deprecated use `Run` namespace instead */
@@ -278,17 +302,17 @@ declare module "../src/routes/_main-site/tool/+page.marko" {
   }
 }
 
-type P9 = $.Template<"P9", typeof import("../src/routes/_main-site/tool/gifs/+page.marko")>;
-declare module "../src/routes/_main-site/tool/gifs/+page.marko" {
-  const Run: $.Namespace<P9>;
+type P10 = $.Template<"P10", typeof import("../src/routes/_main-site/tool/gif/+page.marko")>;
+declare module "../src/routes/_main-site/tool/gif/+page.marko" {
+  const Run: $.Namespace<P10>;
   namespace Run {
-    type Context = $.ContextForFile<P9> & Marko.Global;
+    type Context = $.ContextForFile<P10> & Marko.Global;
   }
 
   /** @deprecated use `Run` namespace instead */
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
-    export type Route = $.Routes["/tool/gifs"];
+    export type Route = $.Routes["/tool/gif"];
     export type Context = Run.Context;
     export type Handler = $.HandlerLike<Route>;
     export type GET = $.HandlerLike<Route, "GET">;
@@ -301,11 +325,11 @@ declare module "../src/routes/_main-site/tool/gifs/+page.marko" {
   }
 }
 
-type P10 = $.Template<"P10", typeof import("../src/routes/game/reduce/+page.marko")>;
+type P11 = $.Template<"P11", typeof import("../src/routes/game/reduce/+page.marko")>;
 declare module "../src/routes/game/reduce/+page.marko" {
-  const Run: $.Namespace<P10>;
+  const Run: $.Namespace<P11>;
   namespace Run {
-    type Context = $.ContextForFile<P10> & Marko.Global;
+    type Context = $.ContextForFile<P11> & Marko.Global;
   }
 
   /** @deprecated use `Run` namespace instead */
