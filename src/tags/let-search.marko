@@ -1,25 +1,24 @@
-// A <let> whose value lives in the URL search params, one string per key:
-// read on mount (`default` wins unless every key is present), written back
-// through history.replaceState on assignment. Server render, being
-// prerendered, always uses `default`.
+// A <let> whose value lives in one URL search param: read on mount (the
+// value attribute is the default), written back through
+// history.replaceState on assignment. Server render, being prerendered,
+// always uses the default.
 export interface Input {
-  keys: readonly string[];
-  default: string[];
+  key: string;
+  value: string;
 }
 
-<let/value=input.default>
+<let/value=input.value>
 
 <script>
-  const params = new URLSearchParams(location.search);
-  const fromUrl = input.keys.map((k) => params.get(k));
-  if (fromUrl.every((v) => v !== null)) value = fromUrl as string[];
+  const param = new URLSearchParams(location.search).get(input.key);
+  if (param !== null) value = param;
 </script>
 
 <return=value
-  valueChange(next: string[]) {
+  valueChange(next: string) {
     value = next;
     const params = new URLSearchParams(location.search);
-    input.keys.forEach((k, i) => params.set(k, next[i]));
+    params.set(input.key, next);
     history.replaceState(null, "", `?${params}${location.hash}`);
   }
 >

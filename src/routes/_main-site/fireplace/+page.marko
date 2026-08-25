@@ -11,8 +11,6 @@ import {
 } from "./lamp";
 import styles from "./fireplace.module.css";
 
-static const CHANNELS = ["r", "g", "b", "w"] as const;
-
 <let/ok=true>
 <let/device=null as BluetoothDevice | null>
 <let/on=true>
@@ -20,14 +18,17 @@ static const CHANNELS = ["r", "g", "b", "w"] as const;
 <let/preview=[0, 0, 0, 0]>
 <let/frame=0>
 
-// The program is shareable and survives reload: every assignment to
-// `sources` lands in ?r=…&g=…&b=…&w=….
-<let-search/sources keys=CHANNELS default=[...PRESETS[0].channels]/>
+// The program is shareable and survives reload: every commit lands in
+// ?r=…&g=…&b=…&w=….
+<let-search/r=(PRESETS[0].channels[0]) key="r"/>
+<let-search/g=(PRESETS[0].channels[1]) key="g"/>
+<let-search/b=(PRESETS[0].channels[2]) key="b"/>
+<let-search/w=(PRESETS[0].channels[3]) key="w"/>
 
 <script>ok = supported();</script>
 
 <script>
-  rt.fns = sources.map((src) => {
+  rt.fns = [r, g, b, w].map((src) => {
     try {
       return compile(src);
     } catch {
@@ -103,7 +104,7 @@ static const CHANNELS = ["r", "g", "b", "w"] as const;
       value=""
       valueChange(v) {
         const preset = PRESETS.find((p) => p.name === v);
-        if (preset) sources = [...preset.channels];
+        if (preset) [r, g, b, w] = preset.channels;
       }
     >
       <option value="" disabled>load…</option>
@@ -115,15 +116,10 @@ static const CHANNELS = ["r", "g", "b", "w"] as const;
 </div>
 
 <div class=styles.fields>
-  <for|name, i| of=CHANNELS>
-    <expr-input
-      name=name
-      value=sources[i]
-      valueChange(src) {
-        sources = sources.toSpliced(i, 1, src);
-      }
-    />
-  </for>
+  <expr-input name="r" value:=r/>
+  <expr-input name="g" value:=g/>
+  <expr-input name="b" value:=b/>
+  <expr-input name="w" value:=w/>
 </div>
 
 <div class=styles.hint>
