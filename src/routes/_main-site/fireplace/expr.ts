@@ -1,5 +1,5 @@
 // The fireplace expression language: each lamp channel (r, g, b, w) is one
-// arithmetic expression evaluated every frame to a 0–255 value.
+// arithmetic expression evaluated every frame to a 0–1 value.
 //
 //   variables   t                      current frame (25 per second)
 //   functions   sin(x) cos(x) tan(x)   radians

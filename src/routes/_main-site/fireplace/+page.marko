@@ -88,10 +88,13 @@ static function tick(): number[] {
   const dt = Math.min(100, now - rt.clock.last);
   rt.clock.last = now;
   rt.clock.t += dt * FRAMES_PER_MS;
+  // Channels evaluate in 0-1 and map to the lamp's byte range here.
   const rgbw = rt.fns.map((f) => {
     if (!f) return 0;
-    const v = Math.round(f(rt.clock.t));
-    return Number.isFinite(v) ? Math.max(0, Math.min(255, v)) : 0;
+    const v = f(rt.clock.t);
+    return Number.isFinite(v)
+      ? Math.round(Math.max(0, Math.min(1, v)) * 255)
+      : 0;
   });
   // The margin keeps metronome ticks (spaced exactly SEND_MS apart, with
   // jitter both ways) from losing every other frame to the throttle.
@@ -348,7 +351,7 @@ static function tick(): number[] {
 </div>
 
 <p class=styles.hint>
-  Each channel is an expression in <code>t</code> (frames, 25/second) → 0–255.
+  Each channel is an expression in <code>t</code> (frames, 25/second) → 0–1.
   Functions: <code>sin</code> <code>cos</code> <code>tan</code>${" "}
   <code>noise(value, type = perlin, seed = 0)</code> — types <code>perlin</code>
   (smooth) and <code>white</code> (random per whole step of <code>value</code>). Operators
