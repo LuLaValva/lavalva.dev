@@ -171,30 +171,22 @@ async function advertisementSeen(device: BluetoothDevice, signal: AbortSignal) {
 
 let silent: AbortController | null = null;
 
-// Chooser-free reattach to an already-granted lamp; needs no gesture. The
-// lamp can take a while to resume advertising after a dropped connection,
-// so keep the watch alive across a few attach attempts.
+// Chooser-free reattach to an already-granted lamp; needs no gesture.
 export async function reconnect(onChange: OnChange) {
   const device = await grantedDevice();
   if (!device) return false;
   const abort = (silent = new AbortController());
   try {
-    const seen = advertisementSeen(device, abort.signal);
-    for (let tries = 0; tries < 3 && !abort.signal.aborted; tries++) {
-      await withTimeout(seen, 10000).catch(() => {});
-      if (abort.signal.aborted) return false;
-      try {
-        await withTimeout(attach(device), 8000);
-        hold(device, onChange);
-        return true;
-      } catch (e: unknown) {
-        device.gatt?.disconnect();
-        console.log(
-          `fireplace: silent reconnect attempt ${tries + 1} failed`,
-          e,
-        );
-      }
-    }
+    await withTimeout(advertisementSeen(device, abort.signal), 10000).catch(
+      () => {},
+    );
+    if (abort.signal.aborted) return false;
+    await withTimeout(attach(device), 8000);
+    hold(device, onChange);
+    return true;
+  } catch (e: unknown) {
+    device.gatt?.disconnect();
+    console.log("fireplace: silent reconnect failed", e);
     return false;
   } finally {
     abort.abort();
