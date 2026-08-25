@@ -134,25 +134,61 @@ function hold(device: BluetoothDevice, onChange: OnChange) {
   onChange(device);
 }
 
-// Chooser-free reattach to an already-granted lamp; needs no gesture.
-export async function reconnect(onChange: OnChange) {
+function withTimeout<T>(promise: Promise<T>, ms: number) {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms),
+    ),
+  ]);
+}
+
+async function grantedDevice() {
   try {
     const known = (await navigator.bluetooth.getDevices?.()) ?? [];
-    const device = known.find((d) => d.name === NAME);
-    if (!device) return false;
-    await Promise.race([
-      attach(device),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), 4000),
+    return known.find((d) => d.name === NAME) ?? known[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Chrome connects to a granted device only after seeing it advertise.
+async function waitForAdvertisement(
+  device: BluetoothDevice,
+  signal: AbortSignal,
+) {
+  if (!device.watchAdvertisements) return;
+  const seen = new Promise<void>((resolve) =>
+    device.addEventListener("advertisementreceived", () => resolve(), {
+      once: true,
+      signal,
+    }),
+  );
+  await device.watchAdvertisements({ signal });
+  await withTimeout(seen, 8000);
+}
+
+// Chooser-free reattach to an already-granted lamp; needs no gesture.
+export async function reconnect(onChange: OnChange) {
+  const device = await grantedDevice();
+  if (!device) return false;
+  const abort = new AbortController();
+  try {
+    await waitForAdvertisement(device, abort.signal).catch((e: unknown) =>
+      console.log(
+        "fireplace: advertisement watch failed, connecting anyway",
+        e,
       ),
-    ]).catch((e) => {
-      device.gatt?.disconnect();
-      throw e;
-    });
+    );
+    await withTimeout(attach(device), 8000);
     hold(device, onChange);
     return true;
-  } catch {
+  } catch (e: unknown) {
+    device.gatt?.disconnect();
+    console.log("fireplace: silent reconnect failed", e);
     return false;
+  } finally {
+    abort.abort();
   }
 }
 
