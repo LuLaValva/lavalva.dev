@@ -89,10 +89,11 @@ export function tick(): number[] {
   return rgbw;
 }
 
-// rAF stops and page timers throttle to ~1/minute in a hidden tab; timers
-// in a dedicated worker don't. Bluetooth isn't exposed in workers, so the
-// worker is a bare metronome ticking the main thread. Returns a stop.
-export function metronome() {
+// The one event loop, visible or not: rAF stops and page timers throttle
+// to ~1/minute in a hidden tab, but timers in a dedicated worker don't.
+// Bluetooth isn't exposed in workers, so the worker is a bare metronome
+// ticking the main thread. Returns a stop.
+export function metronome(onTick: (rgbw: number[]) => void) {
   const worker = new Worker(
     URL.createObjectURL(
       new Blob([`setInterval(() => postMessage(0), ${SEND_MS})`], {
@@ -100,9 +101,7 @@ export function metronome() {
       }),
     ),
   );
-  worker.onmessage = () => {
-    if (document.hidden) tick();
-  };
+  worker.onmessage = () => onTick(tick());
   return () => worker.terminate();
 }
 

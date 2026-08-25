@@ -7,7 +7,6 @@ import {
   rt,
   setBytes,
   supported,
-  tick,
 } from "./lamp";
 import styles from "./fireplace.module.css";
 
@@ -16,7 +15,6 @@ import styles from "./fireplace.module.css";
 <let/on=true>
 <let/err="">
 <let/preview=[0, 0, 0, 0]>
-<let/frame=0>
 
 // The program is shareable and survives reload: every commit lands in
 // ?r=…&g=…&b=…&w=….
@@ -37,17 +35,12 @@ import styles from "./fireplace.module.css";
   });
 </script>
 
-// Marko batches renders to animation frames, so a script bumping its own
-// dependency runs once per frame: the visible-tab event loop. The
-// metronome keeps ticking rt while the tab is hidden.
-<script>frame++;</script>
 <script>
-  frame;
-  rt.on = on;
-  preview = tick();
-  err = rt.err;
+  $signal.onabort = metronome((rgbw) => {
+    preview = rgbw;
+    err = rt.err;
+  });
 </script>
-<script>$signal.onabort = metronome();</script>
 
 <h1>Fireplace</h1>
 
