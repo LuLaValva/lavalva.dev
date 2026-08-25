@@ -153,10 +153,7 @@ async function grantedDevice() {
 }
 
 // Chrome connects to a granted device only after seeing it advertise.
-async function waitForAdvertisement(
-  device: BluetoothDevice,
-  signal: AbortSignal,
-) {
+async function advertisementSeen(device: BluetoothDevice, signal: AbortSignal) {
   if (!device.watchAdvertisements) return;
   const seen = new Promise<void>((resolve) =>
     device.addEventListener("advertisementreceived", () => resolve(), {
@@ -164,36 +161,49 @@ async function waitForAdvertisement(
       signal,
     }),
   );
-  await device.watchAdvertisements({ signal });
-  await withTimeout(seen, 8000);
+  await device
+    .watchAdvertisements({ signal })
+    .catch((e: unknown) =>
+      console.log("fireplace: advertisement watch failed", e),
+    );
+  return seen;
 }
 
-// Chooser-free reattach to an already-granted lamp; needs no gesture.
+let silent: AbortController | null = null;
+
+// Chooser-free reattach to an already-granted lamp; needs no gesture. The
+// lamp can take a while to resume advertising after a dropped connection,
+// so keep the watch alive across a few attach attempts.
 export async function reconnect(onChange: OnChange) {
   const device = await grantedDevice();
   if (!device) return false;
-  const abort = new AbortController();
+  const abort = (silent = new AbortController());
   try {
-    await waitForAdvertisement(device, abort.signal).catch((e: unknown) =>
-      console.log(
-        "fireplace: advertisement watch failed, connecting anyway",
-        e,
-      ),
-    );
-    await withTimeout(attach(device), 8000);
-    hold(device, onChange);
-    return true;
-  } catch (e: unknown) {
-    device.gatt?.disconnect();
-    console.log("fireplace: silent reconnect failed", e);
+    const seen = advertisementSeen(device, abort.signal);
+    for (let tries = 0; tries < 3 && !abort.signal.aborted; tries++) {
+      await withTimeout(seen, 10000).catch(() => {});
+      if (abort.signal.aborted) return false;
+      try {
+        await withTimeout(attach(device), 8000);
+        hold(device, onChange);
+        return true;
+      } catch (e: unknown) {
+        device.gatt?.disconnect();
+        console.log(
+          `fireplace: silent reconnect attempt ${tries + 1} failed`,
+          e,
+        );
+      }
+    }
     return false;
   } finally {
     abort.abort();
+    silent = null;
   }
 }
 
 export async function connect(onChange: OnChange) {
-  if (await reconnect(onChange)) return;
+  silent?.abort();
   const device = await navigator.bluetooth.requestDevice({
     filters: [{ name: NAME }, { services: [SERVICE] }],
     optionalServices: [SERVICE],
