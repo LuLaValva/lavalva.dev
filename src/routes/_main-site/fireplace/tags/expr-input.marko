@@ -1,0 +1,52 @@
+import { compile } from "../expr";
+import styles from "../fireplace.module.css";
+
+export interface Input {
+  name: string;
+  value: string;
+  valueChange: (src: string) => void;
+}
+
+static function errorIn(src: string) {
+  try {
+    compile(src);
+    return "";
+  } catch (e: unknown) {
+    return e instanceof Error ? e.message : String(e);
+  }
+}
+
+<let/draft=null as string | null>
+<let/draftErr="">
+
+<const/commit() {
+  const src = draft ?? input.value;
+  draftErr = errorIn(src);
+  if (!draftErr) {
+    draft = null;
+    input.valueChange(src);
+  }
+}>
+
+<label class=styles.exprRow>
+  <span class=styles.channel>${input.name} =</span>
+  <input
+    class=styles.exprInput
+    type="text"
+    spellcheck="false"
+    autocomplete="off"
+    value=draft ?? input.value
+    valueChange(v) {
+      draft = v;
+    }
+    onBlur() {
+      commit();
+    }
+    onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Enter") commit();
+    }
+  >
+</label>
+<if=draftErr || errorIn(input.value)>
+  <p class=styles.exprError>${draftErr || errorIn(input.value)}</p>
+</if>

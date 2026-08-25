@@ -11,16 +11,17 @@
     "start": "node --enable-source-maps ./dist/index.mjs"
   },
   "dependencies": {
-    "immer": "^11.1.4",
-    "marko": "^6.3.36",
+    "immer": "^11.1.18",
+    "marko": "^6.3.45",
     "roving-tabindex": "^0.3.3"
   },
   "devDependencies": {
-    "@marko/run": "^0.11.9",
-    "@marko/run-adapter-static": "^2.0.9",
+    "@marko/run": "^0.11.12",
+    "@marko/run-adapter-static": "^2.0.10",
     "@marko/type-check": "^3.2.0",
-    "prettier": "^3.8.1",
-    "prettier-plugin-marko": "^4.0.8",
+    "@types/web-bluetooth": "^0.0.21",
+    "prettier": "^3.9.6",
+    "prettier-plugin-marko": "^4.1.0",
     "prettier-plugin-packagejson": "^3.0.2"
   }
 }

@@ -1,0 +1,20 @@
+export interface Input {
+  key: string;
+  value: string;
+}
+
+<let/value=input.value>
+
+<script>
+  const param = new URLSearchParams(location.search).get(input.key);
+  if (param !== null) value = param;
+</script>
+
+<return=value
+  valueChange(next: string) {
+    value = next;
+    const params = new URLSearchParams(location.search);
+    params.set(input.key, next);
+    history.replaceState(null, "", `?${params}${location.hash}`);
+  }
+>
