@@ -8,13 +8,8 @@ export interface Preset {
 
 export const PRESETS: Preset[] = [
   {
-    name: "Hearth",
-    channels: [
-      "0.63 + 0.35 * noise(t/6)",
-      "0.08 + 0.24 * noise(t/6)^2",
-      "0",
-      "0.02 + 0.06 * noise(t/6)",
-    ],
+    name: "Fire",
+    channels: ["1", "0", "0", "noise(t/13) + noise(t/2) / 10 + 0.05"],
   },
   {
     name: "Breathe",

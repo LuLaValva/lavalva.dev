@@ -16,7 +16,6 @@ import styles from "./flow.module.css";
 static const SEND_MS = 40;
 // `t` counts one per streamed frame regardless of which loop is stepping.
 static const FRAMES_PER_MS = 1 / SEND_MS;
-static const SAVE_KEY = "fireplace-exprs";
 static const CHANNELS = ["r", "g", "b", "w"] as const;
 
 // The interpreter runtime lives at module scope, outside Marko's reactive
@@ -28,7 +27,6 @@ static interface Runtime {
   fns: (Compiled | null)[];
   char: BluetoothRemoteGATTCharacteristic | null;
   on: boolean;
-  brightness: number;
   bytes: number[];
   err: string;
   clock: { t: number; last: number; sent: number };
@@ -39,7 +37,6 @@ static const rt: Runtime = {
   fns: [null, null, null, null],
   char: null,
   on: true,
-  brightness: 1,
   bytes: [],
   err: "",
   clock: { t: 0, last: 0, sent: 0 },
@@ -71,6 +68,16 @@ static function sendRt() {
   })();
 }
 
+// The program lives in the URL fragment (#r=…&g=…&b=…&w=…), so a
+// program is shareable and survives reload with no storage. A static
+// function taking the sources keeps apply() free of reactive reads —
+// otherwise the init script that calls it re-runs on every edit.
+static function syncUrl(srcs: string[]) {
+  const params = new URLSearchParams();
+  CHANNELS.forEach((c, i) => params.set(c, srcs[i]));
+  history.replaceState(null, "", `#${params}`);
+}
+
 static function setBytesRt(edits: [number, number][]) {
   for (const [i, v] of edits) rt.bytes[i] = v;
   sendRt();
@@ -100,7 +107,7 @@ static function tick(): number[] {
   // jitter both ways) from losing every other frame to the throttle.
   if (rt.char && rt.on && now - rt.clock.sent >= SEND_MS - 5) {
     rt.clock.sent = now;
-    const [r, g, b, w] = rgbw.map((v) => Math.round(v * rt.brightness));
+    const [r, g, b, w] = rgbw;
     setBytesRt([
       [0, 0],
       [1, r],
@@ -120,10 +127,9 @@ static function tick(): number[] {
 <let/sources=[...PRESETS[0].channels] as string[]>
 <let/errs=["", "", "", ""]>
 <let/preview=[0, 0, 0, 0]>
-<let/brightness=1>
 <let/frame=0>
 
-// Wholesale loads (presets, saved state): compile everything into the
+// Wholesale loads (presets, the URL): compile everything into the
 // runtime the loops read from; a channel that doesn't parse keeps its
 // error and outputs 0.
 <const/apply(srcs: string[]) {
@@ -137,6 +143,7 @@ static function tick(): number[] {
       return e instanceof Error ? e.message : String(e);
     }
   });
+  syncUrl(srcs);
 }>
 
 // Typing only edits the draft; a channel commits on blur or Enter, and
@@ -146,6 +153,7 @@ static function tick(): number[] {
   try {
     rt.fns[i] = compile(sources[i]);
     errs = errs.toSpliced(i, 1, "");
+    syncUrl(sources);
   } catch (e: unknown) {
     errs = errs.toSpliced(i, 1, e instanceof Error ? e.message : String(e));
   }
@@ -153,18 +161,13 @@ static function tick(): number[] {
 
 <script>
   ok = supported();
-  let initial = [...PRESETS[0].channels] as string[];
-  try {
-    const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "");
-    if (
-      Array.isArray(saved) &&
-      saved.length === 4 &&
-      saved.every((s) => typeof s === "string")
-    ) {
-      initial = saved;
-    }
-  } catch {}
-  apply(initial);
+  const params = new URLSearchParams(location.hash.slice(1));
+  const fromUrl = CHANNELS.map((c) => params.get(c));
+  apply(
+    fromUrl.every((s) => s !== null)
+      ? (fromUrl as string[])
+      : [...PRESETS[0].channels],
+  );
 </script>
 
 // The visible-tab event loop: Marko batches renders to animation frames, so
@@ -175,7 +178,6 @@ static function tick(): number[] {
 <script>
   frame;
   rt.on = on;
-  rt.brightness = brightness;
   rt.char = lamp?.char ?? null;
   preview = tick();
   err = rt.err;
@@ -250,9 +252,9 @@ static function tick(): number[] {
   <p>Web Bluetooth isn't available here (needs Chromium + HTTPS/localhost).</p>
 </if>
 
-<p>
+<p class=styles.controls>
   <if=lamp>
-    Connected: ${deviceName}
+    <span>Connected: ${deviceName}</span>
     <button onClick() {
       wants.connected = false;
       lamp?.device.gatt?.disconnect();
@@ -285,22 +287,14 @@ static function tick(): number[] {
 <div class=styles.toolbar>
   <span
     class=styles.swatch
-    title="live output"
+    title="rgb output"
     style=`background:rgb(${preview[0]},${preview[1]},${preview[2]})`
   />
-  <label>
-    brightness:
-    <input
-      type="range"
-      min="0.05"
-      max="1"
-      step="0.05"
-      value=String(brightness)
-      valueChange(v) {
-        brightness = +v;
-      }
-    >
-  </label>
+  <span
+    class=styles.swatch
+    title="white output"
+    style=`background:rgb(${preview[3]},${preview[3]},${preview[3]})`
+  />
   <label>
     preset:
     <select
@@ -316,11 +310,6 @@ static function tick(): number[] {
       </for>
     </select>
   </label>
-  <button onClick() {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(sources));
-  }>
-    Save
-  </button>
 </div>
 
 <div class=styles.fields>
@@ -350,13 +339,18 @@ static function tick(): number[] {
   </for>
 </div>
 
-<p class=styles.hint>
-  Each channel is an expression in <code>t</code> (frames, 25/second) → 0–1.
-  Functions: <code>sin</code> <code>cos</code> <code>tan</code>${" "}
-  <code>noise(value, type = perlin, seed = 0)</code> — types <code>perlin</code>
-  (smooth) and <code>white</code> (random per whole step of <code>value</code>). Operators
-  <code>+ - * / % ^</code>.
-</p>
+<div class=styles.hint>
+  available functions:
+  <ul>
+    <li><code>t</code> = current frame</li>
+    <li><code>sin(x)</code>, <code>cos(x)</code>, <code>tan(x)</code></li>
+    <li>
+      <code>noise(value, type = perlin, seed = 0)</code> — type
+      <code>perlin</code> or <code>white</code>
+    </li>
+    <li><code>+ - * / % ^ ( )</code></li>
+  </ul>
+</div>
 
 <if=err>
   <p><code>${err}</code></p>
