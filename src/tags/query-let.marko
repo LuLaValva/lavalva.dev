@@ -1,0 +1,26 @@
+// A <let> whose value lives in the URL fragment: one string per key in
+// `keys`, read from `#k=…&k=…` params on mount (all keys must be present,
+// otherwise `default` wins), and written back through history.replaceState
+// on every assignment — so the state is shareable and survives reload.
+// The fragment never reaches the server, so server render uses `default`.
+export interface Input {
+  keys: readonly string[];
+  default: string[];
+}
+
+<let/value=input.default>
+
+<script>
+  const params = new URLSearchParams(location.hash.slice(1));
+  const fromUrl = input.keys.map((k) => params.get(k));
+  if (fromUrl.every((v) => v !== null)) value = fromUrl as string[];
+</script>
+
+<return=value
+  valueChange(next: string[]) {
+    value = next;
+    const params = new URLSearchParams(location.hash.slice(1));
+    input.keys.forEach((k, i) => params.set(k, next[i]));
+    history.replaceState(null, "", `#${params}`);
+  }
+>

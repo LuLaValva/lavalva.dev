@@ -68,16 +68,6 @@ static function sendRt() {
   })();
 }
 
-// The program lives in the URL fragment (#r=…&g=…&b=…&w=…), so a
-// program is shareable and survives reload with no storage. A static
-// function taking the sources keeps apply() free of reactive reads —
-// otherwise the init script that calls it re-runs on every edit.
-static function syncUrl(srcs: string[]) {
-  const params = new URLSearchParams();
-  CHANNELS.forEach((c, i) => params.set(c, srcs[i]));
-  history.replaceState(null, "", `#${params}`);
-}
-
 static function setBytesRt(edits: [number, number][]) {
   for (const [i, v] of edits) rt.bytes[i] = v;
   sendRt();
@@ -124,50 +114,68 @@ static function tick(): number[] {
 <let/deviceName="">
 <let/err="">
 <let/on=true>
-<let/sources=[...PRESETS[0].channels] as string[]>
-<let/errs=["", "", "", ""]>
+// The program lives in the URL fragment (#r=…&g=…&b=…&w=…), so it is
+// shareable and survives reload; <query-let> keeps that in sync
+// declaratively — every assignment to `sources` lands in the URL.
+<query-let/sources keys=CHANNELS default=[...PRESETS[0].channels]/>
+
+// Textboxes edit an overlay of uncommitted drafts on top of the committed
+// program; committing or loading a preset clears it.
+<let/edits=null as string[] | null>
+<let/draftErrs=["", "", "", ""]>
+<const/drafts=edits ?? sources>
+
+// The committed program's parse errors derive declaratively; a channel
+// that doesn't parse (say, from a hand-mangled URL) carries its error and
+// outputs 0. The compiled closures themselves are built in the (client-
+// only) script below — functions can't cross the server render.
+<const/parseErrs=sources.map((src) => {
+  try {
+    compile(src);
+    return "";
+  } catch (e: unknown) {
+    return e instanceof Error ? e.message : String(e);
+  }
+})>
 <let/preview=[0, 0, 0, 0]>
 <let/frame=0>
-
-// Wholesale loads (presets, the URL): compile everything into the
-// runtime the loops read from; a channel that doesn't parse keeps its
-// error and outputs 0.
-<const/apply(srcs: string[]) {
-  sources = srcs;
-  errs = srcs.map((src, i) => {
-    try {
-      rt.fns[i] = compile(src);
-      return "";
-    } catch (e: unknown) {
-      rt.fns[i] = null;
-      return e instanceof Error ? e.message : String(e);
-    }
-  });
-  syncUrl(srcs);
-}>
 
 // Typing only edits the draft; a channel commits on blur or Enter, and
 // only a draft that parses replaces the running expression — an invalid
 // one shows its error while the previous program keeps playing.
 <const/commit(i: number) {
   try {
-    rt.fns[i] = compile(sources[i]);
-    errs = errs.toSpliced(i, 1, "");
-    syncUrl(sources);
+    compile(drafts[i]);
+    draftErrs = draftErrs.toSpliced(i, 1, "");
   } catch (e: unknown) {
-    errs = errs.toSpliced(i, 1, e instanceof Error ? e.message : String(e));
+    draftErrs = draftErrs.toSpliced(
+      i,
+      1,
+      e instanceof Error ? e.message : String(e),
+    );
+    return;
   }
+  const next = sources.toSpliced(i, 1, drafts[i]);
+  // Keep the overlay only if some other field still holds an
+  // uncommitted draft (possible after a failed Enter-commit there).
+  edits =
+    edits && edits.some((v, j) => j !== i && v !== next[j])
+      ? edits.toSpliced(i, 1, drafts[i])
+      : null;
+  sources = next;
 }>
 
+<script>ok = supported();</script>
+
+// The runtime executes whatever is committed, on mount and every edit.
 <script>
-  ok = supported();
-  const params = new URLSearchParams(location.hash.slice(1));
-  const fromUrl = CHANNELS.map((c) => params.get(c));
-  apply(
-    fromUrl.every((s) => s !== null)
-      ? (fromUrl as string[])
-      : [...PRESETS[0].channels],
-  );
+  rt.fns = sources.map((src) => {
+    try {
+      return compile(src);
+    } catch {
+      return null;
+    }
+  });
 </script>
 
 // The visible-tab event loop: Marko batches renders to animation frames, so
@@ -301,7 +309,11 @@ static function tick(): number[] {
       value=""
       valueChange(v) {
         const preset = PRESETS.find((p) => p.name === v);
-        if (preset) apply([...preset.channels]);
+        if (preset) {
+          sources = [...preset.channels];
+          edits = null;
+          draftErrs = ["", "", "", ""];
+        }
       }
     >
       <option value="" disabled>load…</option>
@@ -321,9 +333,9 @@ static function tick(): number[] {
         type="text"
         spellcheck="false"
         autocomplete="off"
-        value=sources[i]
+        value=drafts[i]
         valueChange(v) {
-          sources = sources.toSpliced(i, 1, v);
+          edits = drafts.toSpliced(i, 1, v);
         }
         onBlur() {
           commit(i);
@@ -333,8 +345,8 @@ static function tick(): number[] {
         }
       >
     </label>
-    <if=errs[i]>
-      <p class=styles.exprError>${errs[i]}</p>
+    <if=draftErrs[i] || parseErrs[i]>
+      <p class=styles.exprError>${draftErrs[i] || parseErrs[i]}</p>
     </if>
   </for>
 </div>
