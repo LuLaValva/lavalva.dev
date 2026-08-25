@@ -1,8 +1,7 @@
-// A <let> whose value lives in the URL search params: one string per key
-// in `keys`, read from `?k=…&k=…` on mount (all keys must be present,
-// otherwise `default` wins), and written back through history.replaceState
-// on every assignment — so the state is shareable and survives reload.
-// The site is prerendered, so server render always uses `default`.
+// A <let> whose value lives in the URL search params, one string per key:
+// read on mount (`default` wins unless every key is present), written back
+// through history.replaceState on assignment. Server render, being
+// prerendered, always uses `default`.
 export interface Input {
   keys: readonly string[];
   default: string[];

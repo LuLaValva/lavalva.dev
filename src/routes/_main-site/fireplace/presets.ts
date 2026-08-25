@@ -1,6 +1,3 @@
-// Preloaded programs: one expression per channel, mapped from 0–1.
-// See expr.ts for the language. `t` advances 25 per second.
-
 export interface Preset {
   name: string;
   channels: [r: string, g: string, b: string, w: string];

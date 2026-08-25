@@ -1,16 +1,7 @@
-// The fireplace expression language: each lamp channel (r, g, b, w) is one
-// arithmetic expression evaluated every frame to a 0–1 value.
-//
-//   variables   t                      current frame (25 per second)
-//   functions   sin(x) cos(x) tan(x)   radians
-//               noise(value, type = perlin, seed = 0)
-//                 perlin — smooth wandering noise in [0, 1] over `value`
-//                 white  — a random-looking constant in [0, 1] per whole
-//                          step of `value`; quantized, good for strobes
-//   operators   + - * / % ^ ( )        ^ is exponentiation, right-assoc
-//
-// Expressions compile to plain closures once per edit — no eval, and a
-// parse error surfaces immediately instead of at frame time.
+// The fireplace expression language: t, sin/cos/tan, noise(value, type =
+// perlin | white, seed = 0), and + - * / % ^. One expression per channel,
+// evaluated every frame to 0-1. Compiles to a plain closure — no eval, and
+// parse errors surface at edit time instead of frame time.
 
 export type Compiled = (t: number) => number;
 
