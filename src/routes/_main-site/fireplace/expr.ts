@@ -1,7 +1,5 @@
-// The fireplace expression language: t, sin/cos/tan, noise(value, type =
-// perlin | white, seed = 0), and + - * / % ^. One expression per channel,
-// evaluated every frame to 0-1. Compiles to a plain closure — no eval, and
-// parse errors surface at edit time instead of frame time.
+// t, sin/cos/tan, noise(value, type = perlin | white, seed = 0), + - * / % ^.
+// Compiles to a plain closure; parse errors surface at edit time.
 
 export type Compiled = (t: number) => number;
 

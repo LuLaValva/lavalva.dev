@@ -1,10 +1,7 @@
 /// <reference types="web-bluetooth" />
 import type { Compiled } from "./expr";
 
-// The "Fake Fire" lamp: UUIDs are fixed in firmware, the 20-byte state
-// packet and its quirks are documented in PROTOCOL.md. Its built-in modes
-// are ignored — programs stream as solid-color (mode 0) writes to color
-// slot 1, and mode 3/4 is the power toggle.
+// The "Fake Fire" BLE lamp. Byte format and quirks: PROTOCOL.md.
 const SERVICE = "8d96a001-0002-64c2-0001-9acc4838521c";
 const STATE_CHAR = "8d96b002-0002-64c2-0001-9acc4838521c";
 const STATE_LEN = 20;
@@ -14,9 +11,7 @@ export const SEND_MS = 40;
 export const supported = () =>
   typeof navigator !== "undefined" && !!navigator.bluetooth;
 
-// Everything both event loops touch lives in this module-scope singleton,
-// outside any framework state, so a re-render can never reset a running
-// program.
+// Runtime singleton, outside framework state so re-renders can't reset it.
 export const rt = {
   fns: [null, null, null, null] as (Compiled | null)[],
   on: true,
@@ -27,8 +22,7 @@ export const rt = {
   inFlight: { busy: false, again: false },
 };
 
-// GATT rejects overlapping operations, so writes queue latest-wins: at most
-// one in flight, and edits made meanwhile collapse into a single follow-up.
+// GATT rejects overlapping operations; writes queue latest-wins.
 function send() {
   const char = rt.char;
   if (!char || rt.bytes.length !== STATE_LEN) return;
@@ -59,9 +53,6 @@ export function setBytes(edits: [number, number][]) {
   send();
 }
 
-// One interpreter step. `t` counts frames (one per SEND_MS) from wall-clock
-// deltas, clamped so a gap between steps can't fast-forward the program;
-// channels evaluate in 0-1 and map to bytes here.
 export function tick(): number[] {
   const now = performance.now();
   const dt = Math.min(100, now - rt.clock.last);
@@ -73,8 +64,7 @@ export function tick(): number[] {
       ? Math.round(Math.max(0, Math.min(1, v)) * 255)
       : 0;
   });
-  // -5ms margin so metronome ticks spaced exactly SEND_MS apart don't lose
-  // every other frame to jitter.
+  // -5ms so ticks spaced exactly SEND_MS apart survive jitter
   if (rt.char && rt.on && now - rt.clock.sent >= SEND_MS - 5) {
     rt.clock.sent = now;
     const [r, g, b, w] = rgbw;
@@ -89,10 +79,7 @@ export function tick(): number[] {
   return rgbw;
 }
 
-// The one event loop, visible or not: rAF stops and page timers throttle
-// to ~1/minute in a hidden tab, but timers in a dedicated worker don't.
-// Bluetooth isn't exposed in workers, so the worker is a bare metronome
-// ticking the main thread. Returns a stop.
+// Worker timers keep firing in hidden tabs; rAF and page timers don't.
 export function metronome(onTick: (rgbw: number[]) => void) {
   const worker = new Worker(
     URL.createObjectURL(
@@ -118,9 +105,7 @@ async function attach(device: BluetoothDevice) {
   rt.char = char;
 }
 
-// The lamp allows one central at a time and drops connections freely, so
-// hold it like a regular paired device: reattach with backoff until
-// disconnect() is called. onChange reports the connected device or null.
+// The lamp drops connections freely; reattach until disconnect().
 export async function connect(
   onChange: (device: BluetoothDevice | null) => void,
 ) {

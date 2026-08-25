@@ -16,8 +16,6 @@ import styles from "./fireplace.module.css";
 <let/err="">
 <let/preview=[0, 0, 0, 0]>
 
-// The program is shareable and survives reload: every commit lands in
-// ?r=…&g=…&b=…&w=….
 <let-search/r=(PRESETS[0].channels[0]) key="r"/>
 <let-search/g=(PRESETS[0].channels[1]) key="g"/>
 <let-search/b=(PRESETS[0].channels[2]) key="b"/>
@@ -120,10 +118,7 @@ import styles from "./fireplace.module.css";
   <ul>
     <li><code>t</code> = current frame</li>
     <li><code>sin(x)</code>, <code>cos(x)</code>, <code>tan(x)</code></li>
-    <li>
-      <code>noise(value, type = perlin, seed = 0)</code> — type
-      <code>perlin</code> or <code>white</code>
-    </li>
+    <li><code>noise(value, type = perlin | white, seed = 0)</code></li>
     <li><code>+ - * / % ^ ( )</code></li>
   </ul>
 </div>
