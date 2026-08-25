@@ -114,10 +114,10 @@ static function tick(): number[] {
 <let/deviceName="">
 <let/err="">
 <let/on=true>
-// The program lives in the URL fragment (#r=…&g=…&b=…&w=…), so it is
-// shareable and survives reload; <query-let> keeps that in sync
-// declaratively — every assignment to `sources` lands in the URL.
-<query-let/sources keys=CHANNELS default=[...PRESETS[0].channels]/>
+// The program lives in the URL (?r=…&g=…&b=…&w=…), so it is shareable
+// and survives reload; <let-search> keeps that in sync declaratively —
+// every assignment to `sources` lands in the URL.
+<let-search/sources keys=CHANNELS default=[...PRESETS[0].channels]/>
 
 // Textboxes edit an overlay of uncommitted drafts on top of the committed
 // program; committing or loading a preset clears it.
