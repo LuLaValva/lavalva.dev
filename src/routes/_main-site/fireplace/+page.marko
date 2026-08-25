@@ -4,6 +4,7 @@ import {
   connect,
   disconnect,
   metronome,
+  reconnect,
   rt,
   setBytes,
   supported,
@@ -22,6 +23,8 @@ import styles from "./fireplace.module.css";
 <let-search/w=(PRESETS[0].channels[3]) key="w"/>
 
 <script>ok = supported();</script>
+
+<script>reconnect((d) => (device = d));</script>
 
 <script>
   rt.fns = [r, g, b, w].map((src) => {

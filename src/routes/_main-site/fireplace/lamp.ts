@@ -2,6 +2,7 @@
 import type { Compiled } from "./expr";
 
 // The "Fake Fire" BLE lamp. Byte format and quirks: PROTOCOL.md.
+const NAME = "Fake Fire";
 const SERVICE = "8d96a001-0002-64c2-0001-9acc4838521c";
 const STATE_CHAR = "8d96b002-0002-64c2-0001-9acc4838521c";
 const STATE_LEN = 20;
@@ -105,34 +106,64 @@ async function attach(device: BluetoothDevice) {
   rt.char = char;
 }
 
+type OnChange = (device: BluetoothDevice | null) => void;
+
 // The lamp drops connections freely; reattach until disconnect().
-export async function connect(
-  onChange: (device: BluetoothDevice | null) => void,
-) {
-  const device = await navigator.bluetooth.requestDevice({
-    acceptAllDevices: true,
-    optionalServices: [SERVICE],
-  });
-  device.addEventListener("gattserverdisconnected", async () => {
-    onChange(null);
-    rt.char = null;
-    for (let tries = 0; wanted && tries < 5; tries++) {
-      try {
-        await attach(device);
-        rt.err = "";
-        onChange(device);
-        return;
-      } catch (e: unknown) {
-        rt.err = `reconnecting… (${String(e)})`;
-        await new Promise((r) => setTimeout(r, 1000 * (tries + 1)));
+function hold(device: BluetoothDevice, onChange: OnChange) {
+  device.addEventListener(
+    "gattserverdisconnected",
+    async () => {
+      onChange(null);
+      rt.char = null;
+      for (let tries = 0; wanted && tries < 5; tries++) {
+        try {
+          await attach(device);
+          hold(device, onChange);
+          return;
+        } catch (e: unknown) {
+          rt.err = `reconnecting… (${String(e)})`;
+          await new Promise((r) => setTimeout(r, 1000 * (tries + 1)));
+        }
       }
-    }
-    wanted = false;
-  });
-  await attach(device);
+      wanted = false;
+    },
+    { once: true },
+  );
   wanted = true;
   rt.err = "";
   onChange(device);
+}
+
+// Chooser-free reattach to an already-granted lamp; needs no gesture.
+export async function reconnect(onChange: OnChange) {
+  try {
+    const known = (await navigator.bluetooth.getDevices?.()) ?? [];
+    const device = known.find((d) => d.name === NAME);
+    if (!device) return false;
+    await Promise.race([
+      attach(device),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 4000),
+      ),
+    ]).catch((e) => {
+      device.gatt?.disconnect();
+      throw e;
+    });
+    hold(device, onChange);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function connect(onChange: OnChange) {
+  if (await reconnect(onChange)) return;
+  const device = await navigator.bluetooth.requestDevice({
+    filters: [{ name: NAME }, { services: [SERVICE] }],
+    optionalServices: [SERVICE],
+  });
+  await attach(device);
+  hold(device, onChange);
 }
 
 export function disconnect(device: BluetoothDevice) {
