@@ -12,9 +12,9 @@ export const PRESETS: Preset[] = [
     name: "Color Fire",
     channels: [
       "noise(t/13) + noise(t/2) / 5 + 0.1",
-      "noise(t/13) / 5 + noise(t/3) / 5 + 0.05",
+      "noise(t/13) / 5 + noise(t/2, perlin, 1) / 5 + 0.05",
       "0",
-      "noise(t/13) / 10",
+      "0",
     ],
   },
   {
