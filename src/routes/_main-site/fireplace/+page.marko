@@ -33,15 +33,8 @@ import styles from "./fireplace.module.css";
 
 <script>reconnect((d) => (device = d));</script>
 
-<const/wants=[r, g, b, w].reduce(
-  (acc, src) => {
-    try {
-      for (const v of compile(src).uses) acc[v] = true;
-    } catch {}
-    return acc;
-  },
-  { s: false, m: false },
-)>
+<const/srcs=`${r} ${g} ${b} ${w}`>
+<const/wants={ s: /\bs\b/.test(srcs), m: /\bm\b/.test(srcs) }>
 
 <script>
   rt.fns = [r, g, b, w].map((src) => {
