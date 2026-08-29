@@ -62,6 +62,14 @@ export const PRESETS: Preset[] = [
     ],
   },
   {
+    name: "Loud Fire",
+    channels: ["1", "0.2", "0", "noise(t/13) * s + s^2"],
+  },
+  {
+    name: "Music Pulse",
+    channels: ["m^2", "0.05 * m", "m^4", "0"],
+  },
+  {
     name: "Glitch",
     channels: ["tan(t/50) % 1", "tan(t/50 + 1) % 1", "tan(t/50 + 2) % 1", "0"],
   },

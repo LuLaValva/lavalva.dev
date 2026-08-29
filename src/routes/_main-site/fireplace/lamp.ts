@@ -1,5 +1,6 @@
 /// <reference types="web-bluetooth" />
 import type { Compiled } from "./expr";
+import { mic, music } from "./audio";
 
 // The "Fake Fire" BLE lamp. Byte format and quirks: PROTOCOL.md.
 const NAME = "Fake Fire";
@@ -59,8 +60,9 @@ export function tick(): number[] {
   const dt = Math.min(100, now - rt.clock.last);
   rt.clock.last = now;
   rt.clock.t += dt / SEND_MS;
+  const env = { t: rt.clock.t, s: mic.level(), m: music.level() };
   const rgbw = rt.fns.map((f) => {
-    const v = f ? f(rt.clock.t) : 0;
+    const v = f ? f(env) : 0;
     return Number.isFinite(v)
       ? Math.round(Math.max(0, Math.min(1, v)) * 255)
       : 0;

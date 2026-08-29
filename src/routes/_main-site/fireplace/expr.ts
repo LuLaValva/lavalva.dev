@@ -1,7 +1,19 @@
-// t, sin/cos/tan, noise(value, type = perlin | white, seed = 0), + - * / % ^.
+// t/s/m, sin/cos/tan, noise(value, type = perlin | white, seed = 0), + - * / % ^.
 // Compiles to a plain closure; parse errors surface at edit time.
+// `uses` records which audio inputs the expression reads, so capture can
+// stay off until an expression actually needs it.
 
-export type Compiled = (t: number) => number;
+export interface Env {
+  t: number;
+  s: number;
+  m: number;
+}
+
+export type AudioVar = "s" | "m";
+
+type Fn = (env: Env) => number;
+
+export type Compiled = Fn & { uses: ReadonlySet<AudioVar> };
 
 function hash(n: number, seed: number) {
   const s = Math.sin(n * 127.1 + seed * 311.7 + 74.7) * 43758.5453;
@@ -55,6 +67,7 @@ function tokenize(src: string): Token[] {
 export function compile(src: string): Compiled {
   if (!src.trim()) throw new Error("empty expression");
   const tokens = tokenize(src);
+  const uses = new Set<AudioVar>();
   let pos = 0;
 
   const peek = () => tokens[pos];
@@ -74,45 +87,45 @@ export function compile(src: string): Compiled {
     }
   };
 
-  function expr(): Compiled {
+  function expr(): Fn {
     let left = term();
-    for (let op; (op = takeOp("+", "-")); ) {
+    for (let op; (op = takeOp("+", "-"));) {
       const l = left;
       const r = term();
-      left = op === "+" ? (t) => l(t) + r(t) : (t) => l(t) - r(t);
+      left = op === "+" ? (e) => l(e) + r(e) : (e) => l(e) - r(e);
     }
     return left;
   }
 
-  function term(): Compiled {
+  function term(): Fn {
     let left = factor();
-    for (let op; (op = takeOp("*", "/", "%")); ) {
+    for (let op; (op = takeOp("*", "/", "%"));) {
       const l = left;
       const r = factor();
       left =
         op === "*"
-          ? (t) => l(t) * r(t)
+          ? (e) => l(e) * r(e)
           : op === "/"
-            ? (t) => l(t) / r(t)
-            : (t) => l(t) % r(t);
+            ? (e) => l(e) / r(e)
+            : (e) => l(e) % r(e);
     }
     return left;
   }
 
-  function factor(): Compiled {
+  function factor(): Fn {
     if (takeOp("-")) {
       const operand = factor();
-      return (t) => -operand(t);
+      return (e) => -operand(e);
     }
     const base = primary();
     if (takeOp("^")) {
       const exp = factor();
-      return (t) => Math.pow(base(t), exp(t));
+      return (e) => Math.pow(base(e), exp(e));
     }
     return base;
   }
 
-  function primary(): Compiled {
+  function primary(): Fn {
     const tk = tokens[pos];
     if (!tk) throw new Error("unexpected end of expression");
     if (tk.kind === "num") {
@@ -128,19 +141,24 @@ export function compile(src: string): Compiled {
     }
     if (tk.kind === "ident") {
       pos++;
-      if (tk.text === "t") return (t) => t;
+      if (tk.text === "t") return (e) => e.t;
+      if (tk.text === "s" || tk.text === "m") {
+        const name = tk.text;
+        uses.add(name);
+        return (e) => e[name];
+      }
       const fn = FUNCS[tk.text];
       if (fn) {
         expectOp("(");
         const arg = expr();
         expectOp(")");
-        return (t) => fn(arg(t));
+        return (e) => fn(arg(e));
       }
       if (tk.text === "noise") {
         expectOp("(");
         const value = expr();
         let kind = NOISE.perlin;
-        let seed: Compiled = () => 0;
+        let seed: Fn = () => 0;
         if (takeOp(",")) {
           const name = tokens[pos];
           if (name?.kind !== "ident" || !NOISE[name.text]) {
@@ -153,7 +171,7 @@ export function compile(src: string): Compiled {
           if (takeOp(",")) seed = expr();
         }
         expectOp(")");
-        return (t) => kind(seed(t), value(t));
+        return (e) => kind(seed(e), value(e));
       }
       throw new Error(`unknown name "${tk.text}"`);
     }
@@ -164,5 +182,5 @@ export function compile(src: string): Compiled {
   if (pos < tokens.length) {
     throw new Error(`unexpected "${tokens[pos].text}"`);
   }
-  return compiled;
+  return Object.assign(compiled, { uses });
 }

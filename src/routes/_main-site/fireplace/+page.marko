@@ -1,4 +1,5 @@
 import { compile } from "./expr";
+import { mic, music, type AudioState } from "./audio";
 import { PRESETS } from "./presets";
 import {
   connect,
@@ -16,6 +17,11 @@ import styles from "./fireplace.module.css";
 <let/on=true>
 <let/err="">
 <let/preview=[0, 0, 0, 0]>
+<let/wantS=false>
+<let/wantM=false>
+<let/micState="off" as AudioState>
+<let/musicState="off" as AudioState>
+<let/audioErr="">
 
 <let-search/r=(PRESETS[0].channels[0]) key="r"/>
 <let-search/g=(PRESETS[0].channels[1]) key="g"/>
@@ -34,12 +40,31 @@ import styles from "./fireplace.module.css";
       return null;
     }
   });
+  wantS = rt.fns.some((f) => f?.uses.has("s"));
+  wantM = rt.fns.some((f) => f?.uses.has("m"));
+</script>
+
+// The mic needs no gesture, so it follows usage automatically; screen-share
+// audio for `m` must start from the button below. Both stop when unused.
+<script>
+  if (wantS) void mic.start();
+  else mic.stop();
+</script>
+<script>if (!wantM) music.stop();</script>
+<script>
+  $signal.onabort = () => {
+    mic.stop();
+    music.stop();
+  };
 </script>
 
 <script>
   $signal.onabort = metronome((rgbw) => {
     preview = rgbw;
     err = rt.err;
+    micState = mic.state;
+    musicState = music.state;
+    audioErr = mic.err || music.err;
   });
 </script>
 
@@ -116,10 +141,56 @@ import styles from "./fireplace.module.css";
   <expr-input name="w" value:=w/>
 </div>
 
+<if=wantS || wantM>
+  <p class=styles.audio>
+    <if=wantS>
+      <if=micState === "on"><span>mic (<code>s</code>): live</span></if>
+      <else>
+        <button
+          disabled=micState === "pending"
+          onClick() {
+            void mic.start();
+          }
+        >
+          enable microphone (<code>s</code>)
+        </button>
+      </else>
+    </if>
+    <if=wantM>
+      <if=musicState === "on">
+        <span>computer audio (<code>m</code>): live</span>
+        <button onClick() {
+          music.stop();
+        }>
+          stop sharing
+        </button>
+      </if>
+      <else>
+        <button
+          disabled=musicState === "pending"
+          onClick() {
+            void music.start();
+          }
+        >
+          share computer audio (<code>m</code>)
+        </button>
+      </else>
+    </if>
+    <if=audioErr><code>${audioErr}</code></if>
+  </p>
+</if>
+
 <div class=styles.hint>
   available functions:
   <ul>
     <li><code>t</code> = current frame</li>
+    <li>
+      <code>s</code> = sound level in the room, 0–1 (asks for the mic when used)
+    </li>
+    <li>
+      <code>m</code> = music level from this computer, 0–1 (share a tab or
+      screen with audio when used)
+    </li>
     <li><code>sin(x)</code>, <code>cos(x)</code>, <code>tan(x)</code></li>
     <li><code>noise(value, type = perlin | white, seed = 0)</code></li>
     <li><code>+ - * / % ^ ( )</code></li>
