@@ -68,7 +68,7 @@ function makeInput(getStream: () => Promise<MediaStream>) {
         sum += x * x;
       }
       const now = Math.min(1, Math.sqrt(sum / data.length) * 4);
-      smoothed = now > smoothed ? now : smoothed * 0.8 + now * 0.2;
+      smoothed = now > smoothed ? now : smoothed * 0.85 + now * 0.15;
       input.value = smoothed;
       return smoothed;
     },
