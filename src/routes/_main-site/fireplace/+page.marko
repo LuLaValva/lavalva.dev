@@ -17,7 +17,6 @@ import styles from "./fireplace.module.css";
 <let/on=true>
 <let/err="">
 <let/preview=[0, 0, 0, 0]>
-<let/wants={ s: false, m: false }>
 <let/audio={
   mic: "off" as AudioState,
   music: "off" as AudioState,
@@ -34,6 +33,16 @@ import styles from "./fireplace.module.css";
 
 <script>reconnect((d) => (device = d));</script>
 
+<const/wants=[r, g, b, w].reduce(
+  (acc, src) => {
+    try {
+      for (const v of compile(src).uses) acc[v] = true;
+    } catch {}
+    return acc;
+  },
+  { s: false, m: false },
+)>
+
 <script>
   rt.fns = [r, g, b, w].map((src) => {
     try {
@@ -42,10 +51,6 @@ import styles from "./fireplace.module.css";
       return null;
     }
   });
-  wants = {
-    s: rt.fns.some((f) => f?.uses.has("s")),
-    m: rt.fns.some((f) => f?.uses.has("m")),
-  };
 </script>
 
 // The mic needs no gesture, so it follows usage automatically; screen-share
