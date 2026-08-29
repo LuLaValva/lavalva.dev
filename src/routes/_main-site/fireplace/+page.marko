@@ -186,6 +186,111 @@ import styles from "./fireplace.module.css";
   </div>
 </show>
 
+<show=spaceId === "hwb">
+  <let-search/hh=(SPACES.hwb.presets[0].channels[0]) key="hh" active=spaceId === "hwb"/>
+  <let-search/hw=(SPACES.hwb.presets[0].channels[1]) key="hw" active=spaceId === "hwb"/>
+  <let-search/hb=(SPACES.hwb.presets[0].channels[2]) key="hb" active=spaceId === "hwb"/>
+  <script>
+    if (spaceId === "hwb") colorSrcs = [hh, hw, hb];
+  </script>
+  <div class=styles.fields>
+    <preset-select
+      presets=SPACES.hwb.presets
+      load(c) {
+        [hh, hw, hb, w] = c;
+      }
+    />
+    <expr-input name="h" value:=hh/>
+    <expr-input name="wh" value:=hw/>
+    <expr-input name="bl" value:=hb/>
+    <expr-input name="w" value:=w/>
+  </div>
+</show>
+
+<show=spaceId === "oklch">
+  <let-search/okl=(SPACES.oklch.presets[0].channels[0]) key="okl" active=spaceId === "oklch"/>
+  <let-search/okc=(SPACES.oklch.presets[0].channels[1]) key="okc" active=spaceId === "oklch"/>
+  <let-search/okh=(SPACES.oklch.presets[0].channels[2]) key="okh" active=spaceId === "oklch"/>
+  <script>
+    if (spaceId === "oklch") colorSrcs = [okl, okc, okh];
+  </script>
+  <div class=styles.fields>
+    <preset-select
+      presets=SPACES.oklch.presets
+      load(c) {
+        [okl, okc, okh, w] = c;
+      }
+    />
+    <expr-input name="l" value:=okl/>
+    <expr-input name="c" value:=okc/>
+    <expr-input name="h" value:=okh/>
+    <expr-input name="w" value:=w/>
+  </div>
+</show>
+
+<show=spaceId === "oklab">
+  <let-search/kl=(SPACES.oklab.presets[0].channels[0]) key="kl" active=spaceId === "oklab"/>
+  <let-search/ka=(SPACES.oklab.presets[0].channels[1]) key="ka" active=spaceId === "oklab"/>
+  <let-search/kb=(SPACES.oklab.presets[0].channels[2]) key="kb" active=spaceId === "oklab"/>
+  <script>
+    if (spaceId === "oklab") colorSrcs = [kl, ka, kb];
+  </script>
+  <div class=styles.fields>
+    <preset-select
+      presets=SPACES.oklab.presets
+      load(c) {
+        [kl, ka, kb, w] = c;
+      }
+    />
+    <expr-input name="l" value:=kl/>
+    <expr-input name="a" value:=ka/>
+    <expr-input name="b" value:=kb/>
+    <expr-input name="w" value:=w/>
+  </div>
+</show>
+
+<show=spaceId === "lch">
+  <let-search/cl=(SPACES.lch.presets[0].channels[0]) key="cl" active=spaceId === "lch"/>
+  <let-search/cc=(SPACES.lch.presets[0].channels[1]) key="cc" active=spaceId === "lch"/>
+  <let-search/ch=(SPACES.lch.presets[0].channels[2]) key="ch" active=spaceId === "lch"/>
+  <script>
+    if (spaceId === "lch") colorSrcs = [cl, cc, ch];
+  </script>
+  <div class=styles.fields>
+    <preset-select
+      presets=SPACES.lch.presets
+      load(c) {
+        [cl, cc, ch, w] = c;
+      }
+    />
+    <expr-input name="l" value:=cl/>
+    <expr-input name="c" value:=cc/>
+    <expr-input name="h" value:=ch/>
+    <expr-input name="w" value:=w/>
+  </div>
+</show>
+
+<show=spaceId === "lab">
+  <let-search/ll=(SPACES.lab.presets[0].channels[0]) key="ll" active=spaceId === "lab"/>
+  <let-search/la=(SPACES.lab.presets[0].channels[1]) key="la" active=spaceId === "lab"/>
+  <let-search/lb=(SPACES.lab.presets[0].channels[2]) key="lb" active=spaceId === "lab"/>
+  <script>
+    if (spaceId === "lab") colorSrcs = [ll, la, lb];
+  </script>
+  <div class=styles.fields>
+    <preset-select
+      presets=SPACES.lab.presets
+      load(c) {
+        [ll, la, lb, w] = c;
+      }
+    />
+    <expr-input name="l" value:=ll/>
+    <expr-input name="a" value:=la/>
+    <expr-input name="b" value:=lb/>
+    <expr-input name="w" value:=w/>
+  </div>
+</show>
+
 <if=wants.s || wants.m>
   <p class=styles.audio>
     <if=wants.s>
