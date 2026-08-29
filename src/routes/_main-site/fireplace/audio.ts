@@ -8,11 +8,26 @@ export type AudioState = "off" | "pending" | "on";
 // level() keeps nudging resume() until the browser lets it run.
 let ctx: AudioContext | null = null;
 
+// A-weighting: emphasize the mids/highs the ear hears as "loud" and
+// discount sub-bass rumble, which dominates raw RMS. Normalized to 1kHz.
+function aWeight(f: number) {
+  const f2 = f * f;
+  const ra =
+    (12194 ** 2 * f2 * f2) /
+    ((f2 + 20.6 ** 2) *
+      Math.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) *
+      (f2 + 12194 ** 2));
+  return ra / 0.7943; // Ra(1000Hz)
+}
+
 function makeInput(getStream: () => Promise<MediaStream>) {
   let stream: MediaStream | null = null;
   let analyser: AnalyserNode | null = null;
   let data: Uint8Array<ArrayBuffer> | null = null;
+  let weights: Float32Array | null = null;
   let smoothed = 0;
+  let lo = 0;
+  let hi = 0.1;
   let gen = 0;
 
   const input = {
@@ -34,8 +49,11 @@ function makeInput(getStream: () => Promise<MediaStream>) {
         void ctx.resume();
         analyser = ctx.createAnalyser();
         analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0.5;
         ctx.createMediaStreamSource(media).connect(analyser);
-        data = new Uint8Array(analyser.fftSize);
+        data = new Uint8Array(analyser.frequencyBinCount);
+        const hz = ctx.sampleRate / analyser.fftSize;
+        weights = Float32Array.from(data, (_, i) => aWeight((i + 0.5) * hz));
         // browser UI can end a share ("Stop sharing") without us asking
         for (const track of media.getTracks()) {
           track.addEventListener("ended", () => input.stop());
@@ -53,22 +71,36 @@ function makeInput(getStream: () => Promise<MediaStream>) {
       stream = null;
       analyser = null;
       data = null;
+      weights = null;
       smoothed = 0;
+      lo = 0;
+      hi = 0.1;
       input.value = 0;
       input.state = "off";
     },
-    // 0..1 loudness: RMS with fast attack / slow release so beats pulse.
+    // 0..1 loudness: A-weighted spectral energy (raw RMS over-counts bass
+    // and misses snares/vocals), auto-ranged to the last ~20s of dynamics
+    // so any track spans 0..1, with fast attack / slow release for pulse.
     level() {
-      if (!analyser || !data) return 0;
+      if (!analyser || !data || !weights) return 0;
       if (ctx?.state === "suspended") void ctx.resume();
-      analyser.getByteTimeDomainData(data);
+      analyser.getByteFrequencyData(data);
       let sum = 0;
-      for (const v of data) {
-        const x = (v - 128) / 128;
-        sum += x * x;
+      let wsum = 0;
+      for (let i = 0; i < data.length; i++) {
+        const a = data[i] / 255;
+        sum += weights[i] * a * a;
+        wsum += weights[i];
       }
-      const now = Math.min(1, Math.sqrt(sum / data.length) * 4);
-      smoothed = now > smoothed ? now : smoothed * 0.9 + now * 0.1;
+      const loud = Math.sqrt(sum / wsum);
+      lo += (loud - lo) * (loud < lo ? 0.05 : 0.002);
+      hi += (loud - hi) * (loud > hi ? 0.05 : 0.002);
+      // minimum span so silence doesn't get auto-gained into flicker
+      const now = Math.max(
+        0,
+        Math.min(1, (loud - lo) / Math.max(hi - lo, 0.03)),
+      );
+      smoothed = now > smoothed ? now : smoothed * 0.85 + now * 0.15;
       input.value = smoothed;
       return smoothed;
     },
