@@ -17,6 +17,7 @@ import styles from "./fireplace.module.css";
 <let/on=true>
 <let/err="">
 <let/preview=[0, 0, 0, 0]>
+<let/wants={ s: false, m: false }>
 <let/audio={
   mic: "off" as AudioState,
   music: "off" as AudioState,
@@ -33,25 +34,27 @@ import styles from "./fireplace.module.css";
 
 <script>reconnect((d) => (device = d));</script>
 
-<const/fns=[r, g, b, w].map((src) => {
-  try {
-    return compile(src);
-  } catch {
-    return null;
-  }
-})>
-<const/wantS=fns.some((f) => f?.uses.has("s"))>
-<const/wantM=fns.some((f) => f?.uses.has("m"))>
-
-<script>rt.fns = fns;</script>
+<script>
+  rt.fns = [r, g, b, w].map((src) => {
+    try {
+      return compile(src);
+    } catch {
+      return null;
+    }
+  });
+  wants = {
+    s: rt.fns.some((f) => f?.uses.has("s")),
+    m: rt.fns.some((f) => f?.uses.has("m")),
+  };
+</script>
 
 // The mic needs no gesture, so it follows usage automatically; screen-share
 // audio for `m` must start from the button below. Both stop when unused.
 <script>
-  if (wantS) void mic.start();
+  if (wants.s) void mic.start();
   else mic.stop();
 </script>
-<script>if (!wantM) music.stop();</script>
+<script>if (!wants.m) music.stop();</script>
 <script>
   $signal.onabort = () => {
     mic.stop();
@@ -146,9 +149,9 @@ import styles from "./fireplace.module.css";
   <expr-input name="w" value:=w/>
 </div>
 
-<if=wantS || wantM>
+<if=wants.s || wants.m>
   <p class=styles.audio>
-    <if=wantS>
+    <if=wants.s>
       <if=audio.mic === "on">
         <span>mic <code>s</code></span>
         <progress max=1 value=audio.s title=audio.s.toFixed(2)/>
@@ -164,7 +167,7 @@ import styles from "./fireplace.module.css";
         </button>
       </else>
     </if>
-    <if=wantM>
+    <if=wants.m>
       <if=audio.music === "on">
         <span>computer audio <code>m</code></span>
         <progress max=1 value=audio.m title=audio.m.toFixed(2)/>
