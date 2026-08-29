@@ -17,13 +17,13 @@ import styles from "./fireplace.module.css";
 <let/on=true>
 <let/err="">
 <let/preview=[0, 0, 0, 0]>
-<let/wantS=false>
-<let/wantM=false>
-<let/micState="off" as AudioState>
-<let/musicState="off" as AudioState>
-<let/audioErr="">
-<let/sLevel=0>
-<let/mLevel=0>
+<let/audio={
+  mic: "off" as AudioState,
+  music: "off" as AudioState,
+  err: "",
+  s: 0,
+  m: 0,
+}>
 
 <let-search/r=(PRESETS[0].channels[0]) key="r"/>
 <let-search/g=(PRESETS[0].channels[1]) key="g"/>
@@ -33,17 +33,17 @@ import styles from "./fireplace.module.css";
 
 <script>reconnect((d) => (device = d));</script>
 
-<script>
-  rt.fns = [r, g, b, w].map((src) => {
-    try {
-      return compile(src);
-    } catch {
-      return null;
-    }
-  });
-  wantS = rt.fns.some((f) => f?.uses.has("s"));
-  wantM = rt.fns.some((f) => f?.uses.has("m"));
-</script>
+<const/fns=[r, g, b, w].map((src) => {
+  try {
+    return compile(src);
+  } catch {
+    return null;
+  }
+})>
+<const/wantS=fns.some((f) => f?.uses.has("s"))>
+<const/wantM=fns.some((f) => f?.uses.has("m"))>
+
+<script>rt.fns = fns;</script>
 
 // The mic needs no gesture, so it follows usage automatically; screen-share
 // audio for `m` must start from the button below. Both stop when unused.
@@ -63,11 +63,13 @@ import styles from "./fireplace.module.css";
   $signal.onabort = metronome((rgbw) => {
     preview = rgbw;
     err = rt.err;
-    micState = mic.state;
-    musicState = music.state;
-    audioErr = mic.err || music.err;
-    sLevel = mic.value;
-    mLevel = music.value;
+    audio = {
+      mic: mic.state,
+      music: music.state,
+      err: mic.err || music.err,
+      s: mic.value,
+      m: music.value,
+    };
   });
 </script>
 
@@ -147,13 +149,13 @@ import styles from "./fireplace.module.css";
 <if=wantS || wantM>
   <p class=styles.audio>
     <if=wantS>
-      <if=micState === "on">
+      <if=audio.mic === "on">
         <span>mic <code>s</code></span>
-        <progress max=1 value=sLevel title=sLevel.toFixed(2)/>
+        <progress max=1 value=audio.s title=audio.s.toFixed(2)/>
       </if>
       <else>
         <button
-          disabled=micState === "pending"
+          disabled=audio.mic === "pending"
           onClick() {
             void mic.start();
           }
@@ -163,9 +165,9 @@ import styles from "./fireplace.module.css";
       </else>
     </if>
     <if=wantM>
-      <if=musicState === "on">
+      <if=audio.music === "on">
         <span>computer audio <code>m</code></span>
-        <progress max=1 value=mLevel title=mLevel.toFixed(2)/>
+        <progress max=1 value=audio.m title=audio.m.toFixed(2)/>
         <button onClick() {
           music.stop();
         }>
@@ -174,7 +176,7 @@ import styles from "./fireplace.module.css";
       </if>
       <else>
         <button
-          disabled=musicState === "pending"
+          disabled=audio.music === "pending"
           onClick() {
             void music.start();
           }
@@ -183,7 +185,7 @@ import styles from "./fireplace.module.css";
         </button>
       </else>
     </if>
-    <if=audioErr><code>${audioErr}</code></if>
+    <if=audio.err><code>${audio.err}</code></if>
   </p>
 </if>
 
