@@ -4,8 +4,11 @@
 
 export type AudioState = "off" | "pending" | "on";
 
+// Shared context; created without a gesture it may sit "suspended", so
+// level() keeps nudging resume() until the browser lets it run.
+let ctx: AudioContext | null = null;
+
 function makeInput(getStream: () => Promise<MediaStream>) {
-  let ctx: AudioContext | null = null;
   let stream: MediaStream | null = null;
   let analyser: AnalyserNode | null = null;
   let data: Uint8Array<ArrayBuffer> | null = null;
@@ -15,6 +18,7 @@ function makeInput(getStream: () => Promise<MediaStream>) {
   const input = {
     state: "off" as AudioState,
     err: "",
+    value: 0,
     async start() {
       if (input.state !== "off") return;
       input.state = "pending";
@@ -50,11 +54,13 @@ function makeInput(getStream: () => Promise<MediaStream>) {
       analyser = null;
       data = null;
       smoothed = 0;
+      input.value = 0;
       input.state = "off";
     },
     // 0..1 loudness: RMS with fast attack / slow release so beats pulse.
     level() {
       if (!analyser || !data) return 0;
+      if (ctx?.state === "suspended") void ctx.resume();
       analyser.getByteTimeDomainData(data);
       let sum = 0;
       for (const v of data) {
@@ -63,6 +69,7 @@ function makeInput(getStream: () => Promise<MediaStream>) {
       }
       const now = Math.min(1, Math.sqrt(sum / data.length) * 4);
       smoothed = now > smoothed ? now : smoothed * 0.9 + now * 0.1;
+      input.value = smoothed;
       return smoothed;
     },
   };

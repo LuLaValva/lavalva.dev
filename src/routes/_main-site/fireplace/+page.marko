@@ -22,6 +22,8 @@ import styles from "./fireplace.module.css";
 <let/micState="off" as AudioState>
 <let/musicState="off" as AudioState>
 <let/audioErr="">
+<let/sLevel=0>
+<let/mLevel=0>
 
 <let-search/r=(PRESETS[0].channels[0]) key="r"/>
 <let-search/g=(PRESETS[0].channels[1]) key="g"/>
@@ -65,6 +67,8 @@ import styles from "./fireplace.module.css";
     micState = mic.state;
     musicState = music.state;
     audioErr = mic.err || music.err;
+    sLevel = mic.value;
+    mLevel = music.value;
   });
 </script>
 
@@ -144,7 +148,9 @@ import styles from "./fireplace.module.css";
 <if=wantS || wantM>
   <p class=styles.audio>
     <if=wantS>
-      <if=micState === "on"><span>mic (<code>s</code>): live</span></if>
+      <if=micState === "on">
+        <span>mic <code>s</code> = <output>${sLevel.toFixed(2)}</output></span>
+      </if>
       <else>
         <button
           disabled=micState === "pending"
@@ -158,7 +164,9 @@ import styles from "./fireplace.module.css";
     </if>
     <if=wantM>
       <if=musicState === "on">
-        <span>computer audio (<code>m</code>): live</span>
+        <span>
+          computer audio <code>m</code> = <output>${mLevel.toFixed(2)}</output>
+        </span>
         <button onClick() {
           music.stop();
         }>
