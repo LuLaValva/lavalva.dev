@@ -1,6 +1,7 @@
 export interface Preset {
   name: string;
-  channels: [r: string, g: string, b: string, w: string];
+  // three color channels in the space's own terms, then the white channel
+  channels: [string, string, string, w: string];
 }
 
 export const PRESETS: Preset[] = [
@@ -72,5 +73,34 @@ export const PRESETS: Preset[] = [
   {
     name: "Glitch",
     channels: ["tan(t/50) % 1", "tan(t/50 + 1) % 1", "tan(t/50 + 2) % 1", "0"],
+  },
+];
+
+export const HSLW_PRESETS: Preset[] = [
+  {
+    name: "Fire",
+    channels: [
+      "0.02 + 0.04 * noise(t/13)",
+      "1",
+      "0.15 + 0.2 * noise(t/13) + 0.05 * noise(t/2)",
+      "noise(t/13) / 10 + 0.05",
+    ],
+  },
+  {
+    name: "Rainbow",
+    channels: ["t/150", "1", "0.35", "0"],
+  },
+  {
+    name: "Ocean",
+    channels: [
+      "0.55 + 0.05 * sin(t/40)",
+      "0.8",
+      "0.25 + 0.15 * noise(t/25)",
+      "0",
+    ],
+  },
+  {
+    name: "Music Hue",
+    channels: ["m / 2", "1", "0.5 * m^2", "0"],
   },
 ];

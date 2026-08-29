@@ -1,5 +1,6 @@
 /// <reference types="web-bluetooth" />
 import type { Compiled } from "./expr";
+import type { Space } from "./spaces";
 import { mic, music } from "./audio";
 
 // The "Fake Fire" BLE lamp. Byte format and quirks: PROTOCOL.md.
@@ -16,6 +17,7 @@ export const supported = () =>
 // Runtime singleton, outside framework state so re-renders can't reset it.
 export const rt = {
   fns: [null, null, null, null] as (Compiled | null)[],
+  toRGBW: (([r, g, b, w]) => [r, g, b, w]) as Space["toRGBW"],
   on: true,
   err: "",
   char: null as BluetoothRemoteGATTCharacteristic | null,
@@ -61,12 +63,13 @@ export function tick(): number[] {
   rt.clock.last = now;
   rt.clock.t += dt / SEND_MS;
   const env = { t: rt.clock.t, s: mic.level(), m: music.level() };
-  const rgbw = rt.fns.map((f) => {
+  const values = rt.fns.map((f) => {
     const v = f ? f(env) : 0;
-    return Number.isFinite(v)
-      ? Math.round(Math.max(0, Math.min(1, v)) * 255)
-      : 0;
+    return Number.isFinite(v) ? v : 0;
   });
+  const rgbw = rt.toRGBW(values).map((v) =>
+    Math.round(Math.max(0, Math.min(1, v)) * 255),
+  );
   // -5ms so ticks spaced exactly SEND_MS apart survive jitter
   if (rt.char && rt.on && now - rt.clock.sent >= SEND_MS - 5) {
     rt.clock.sent = now;
