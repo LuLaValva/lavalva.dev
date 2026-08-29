@@ -1,11 +1,5 @@
 import { compile } from "./expr";
-import {
-  ALGORITHMS,
-  mic,
-  music,
-  type Algorithm,
-  type AudioState,
-} from "./audio";
+import { mic, music, type AudioState } from "./audio";
 import { PRESETS } from "./presets";
 import {
   connect,
@@ -35,14 +29,6 @@ import styles from "./fireplace.module.css";
 <let-search/g=(PRESETS[0].channels[1]) key="g"/>
 <let-search/b=(PRESETS[0].channels[2]) key="b"/>
 <let-search/w=(PRESETS[0].channels[3]) key="w"/>
-<let-search/sAlg="rms" key="salg"/>
-<let-search/mAlg="rms" key="malg"/>
-
-<const/asAlgo=(v: string): Algorithm =>
-  (ALGORITHMS as readonly string[]).includes(v) ? (v as Algorithm) : "rms">
-<script>mic.algo = asAlgo(sAlg);</script>
-<script>music.algo = asAlgo(mAlg);</script>
-
 <script>ok = supported();</script>
 
 <script>reconnect((d) => (device = d));</script>
@@ -164,16 +150,6 @@ import styles from "./fireplace.module.css";
       <if=micState === "on">
         <span>mic <code>s</code></span>
         <progress max=1 value=sLevel title=sLevel.toFixed(2)/>
-        <select
-          value=asAlgo(sAlg)
-          valueChange(v) {
-            sAlg = v;
-          }
-        >
-          <for|a| of=ALGORITHMS>
-            <option value=a>${a}</option>
-          </for>
-        </select>
       </if>
       <else>
         <button
@@ -190,16 +166,6 @@ import styles from "./fireplace.module.css";
       <if=musicState === "on">
         <span>computer audio <code>m</code></span>
         <progress max=1 value=mLevel title=mLevel.toFixed(2)/>
-        <select
-          value=asAlgo(mAlg)
-          valueChange(v) {
-            mAlg = v;
-          }
-        >
-          <for|a| of=ALGORITHMS>
-            <option value=a>${a}</option>
-          </for>
-        </select>
         <button onClick() {
           music.stop();
         }>
