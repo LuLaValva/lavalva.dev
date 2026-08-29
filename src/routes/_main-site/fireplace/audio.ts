@@ -88,9 +88,15 @@ export const mic = makeInput(() =>
 
 export const music = makeInput(async () => {
   // Chrome requires video in the getDisplayMedia picker; drop it right away.
+  // The extra fields preselect "Entire Screen" with system audio where the
+  // platform supports it (macOS Chrome only offers audio on tab shares).
   const media = await navigator.mediaDevices.getDisplayMedia({
-    video: true,
+    video: { displaySurface: "monitor" },
     audio: true,
+    // @ts-expect-error Chrome-only picker hints, not yet in lib.dom
+    systemAudio: "include",
+    monitorTypeSurfaces: "include",
+    selfBrowserSurface: "exclude",
   });
   for (const track of media.getVideoTracks()) {
     track.stop();

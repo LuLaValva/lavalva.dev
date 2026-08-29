@@ -149,7 +149,8 @@ import styles from "./fireplace.module.css";
   <p class=styles.audio>
     <if=wantS>
       <if=micState === "on">
-        <span>mic <code>s</code> = <output>${sLevel.toFixed(2)}</output></span>
+        <span>mic <code>s</code></span>
+        <progress max=1 value=sLevel title=sLevel.toFixed(2)/>
       </if>
       <else>
         <button
@@ -164,9 +165,8 @@ import styles from "./fireplace.module.css";
     </if>
     <if=wantM>
       <if=musicState === "on">
-        <span>
-          computer audio <code>m</code> = <output>${mLevel.toFixed(2)}</output>
-        </span>
+        <span>computer audio <code>m</code></span>
+        <progress max=1 value=mLevel title=mLevel.toFixed(2)/>
         <button onClick() {
           music.stop();
         }>
