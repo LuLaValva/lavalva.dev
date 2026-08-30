@@ -29,36 +29,14 @@ import styles from "./fireplace.module.css";
 <const/spaceId=(space in SPACES ? space : "rgbw") as SpaceId>
 
 // White is a separate hardware channel shared by every space; the three
-// color channels live in per-space <show> blocks below, which publish the
-// active space's sources here.
+// color channels live in the per-space <space-editor>s below, and
+// colorSrcs picks the active editor's returned sources.
 <let-search/w=(SPACES.rgbw.presets[0].channels[3]) key="w"/>
-<let/colorSrcs=(SPACES.rgbw.presets[0].channels.slice(0, 3))>
 
 <script>ok = supported();</script>
 
 <script>reconnect((d) => (device = d));</script>
 
-<const/srcs=`${colorSrcs.join(" ")} ${w}`>
-<const/wants={ s: /\bs\b/.test(srcs), m: /\bm\b/.test(srcs) }>
-
-<script>
-  rt.fns = [...colorSrcs, w].map((src) => {
-    try {
-      return compile(src);
-    } catch {
-      return null;
-    }
-  });
-  rt.toCSS = SPACES[spaceId].css;
-</script>
-
-// The mic needs no gesture, so it follows usage automatically; screen-share
-// audio for `m` must start from the button below. Both stop when unused.
-<script>
-  if (wants.s) void mic.start();
-  else mic.stop();
-</script>
-<script>if (!wants.m) music.stop();</script>
 <script>
   $signal.onabort = () => {
     mic.stop();
@@ -144,152 +122,46 @@ import styles from "./fireplace.module.css";
   </label>
 </div>
 
-<show=spaceId === "rgbw">
-  <let-search/r=(SPACES.rgbw.presets[0].channels[0]) key="r" active=spaceId === "rgbw"/>
-  <let-search/g=(SPACES.rgbw.presets[0].channels[1]) key="g" active=spaceId === "rgbw"/>
-  <let-search/b=(SPACES.rgbw.presets[0].channels[2]) key="b" active=spaceId === "rgbw"/>
-  <script>
-    if (spaceId === "rgbw") colorSrcs = [r, g, b];
-  </script>
-  <div class=styles.fields>
-    <preset-select
-      presets=SPACES.rgbw.presets
-      load(c) {
-        [r, g, b, w] = c;
-      }
-    />
-    <expr-input name="r" value:=r/>
-    <expr-input name="g" value:=g/>
-    <expr-input name="b" value:=b/>
-    <expr-input name="w" value:=w/>
-  </div>
-</show>
+<space-editor/rgbwC space=SPACES.rgbw active=spaceId === "rgbw" w:=w/>
+<space-editor/hslwC space=SPACES.hslw active=spaceId === "hslw" w:=w/>
+<space-editor/hwbC space=SPACES.hwb active=spaceId === "hwb" w:=w/>
+<space-editor/oklchC space=SPACES.oklch active=spaceId === "oklch" w:=w/>
+<space-editor/oklabC space=SPACES.oklab active=spaceId === "oklab" w:=w/>
+<space-editor/lchC space=SPACES.lch active=spaceId === "lch" w:=w/>
+<space-editor/labC space=SPACES.lab active=spaceId === "lab" w:=w/>
 
-<show=spaceId === "hslw">
-  <let-search/h=(SPACES.hslw.presets[0].channels[0]) key="h" active=spaceId === "hslw"/>
-  <let-search/sat=(SPACES.hslw.presets[0].channels[1]) key="s" active=spaceId === "hslw"/>
-  <let-search/l=(SPACES.hslw.presets[0].channels[2]) key="l" active=spaceId === "hslw"/>
-  <script>
-    if (spaceId === "hslw") colorSrcs = [h, sat, l];
-  </script>
-  <div class=styles.fields>
-    <preset-select
-      presets=SPACES.hslw.presets
-      load(c) {
-        [h, sat, l, w] = c;
-      }
-    />
-    <expr-input name="h" value:=h/>
-    <expr-input name="s" value:=sat/>
-    <expr-input name="l" value:=l/>
-    <expr-input name="w" value:=w/>
-  </div>
-</show>
+<const/colorSrcs={
+  rgbw: rgbwC,
+  hslw: hslwC,
+  hwb: hwbC,
+  oklch: oklchC,
+  oklab: oklabC,
+  lch: lchC,
+  lab: labC,
+}[spaceId]>
 
-<show=spaceId === "hwb">
-  <let-search/hh=(SPACES.hwb.presets[0].channels[0]) key="hh" active=spaceId === "hwb"/>
-  <let-search/hw=(SPACES.hwb.presets[0].channels[1]) key="hw" active=spaceId === "hwb"/>
-  <let-search/hb=(SPACES.hwb.presets[0].channels[2]) key="hb" active=spaceId === "hwb"/>
-  <script>
-    if (spaceId === "hwb") colorSrcs = [hh, hw, hb];
-  </script>
-  <div class=styles.fields>
-    <preset-select
-      presets=SPACES.hwb.presets
-      load(c) {
-        [hh, hw, hb, w] = c;
-      }
-    />
-    <expr-input name="h" value:=hh/>
-    <expr-input name="wh" value:=hw/>
-    <expr-input name="bl" value:=hb/>
-    <expr-input name="w" value:=w/>
-  </div>
-</show>
 
-<show=spaceId === "oklch">
-  <let-search/okl=(SPACES.oklch.presets[0].channels[0]) key="okl" active=spaceId === "oklch"/>
-  <let-search/okc=(SPACES.oklch.presets[0].channels[1]) key="okc" active=spaceId === "oklch"/>
-  <let-search/okh=(SPACES.oklch.presets[0].channels[2]) key="okh" active=spaceId === "oklch"/>
-  <script>
-    if (spaceId === "oklch") colorSrcs = [okl, okc, okh];
-  </script>
-  <div class=styles.fields>
-    <preset-select
-      presets=SPACES.oklch.presets
-      load(c) {
-        [okl, okc, okh, w] = c;
-      }
-    />
-    <expr-input name="l" value:=okl/>
-    <expr-input name="c" value:=okc/>
-    <expr-input name="h" value:=okh/>
-    <expr-input name="w" value:=w/>
-  </div>
-</show>
+<const/srcs=`${colorSrcs.join(" ")} ${w}`>
+<const/wants={ s: /\bs\b/.test(srcs), m: /\bm\b/.test(srcs) }>
 
-<show=spaceId === "oklab">
-  <let-search/kl=(SPACES.oklab.presets[0].channels[0]) key="kl" active=spaceId === "oklab"/>
-  <let-search/ka=(SPACES.oklab.presets[0].channels[1]) key="ka" active=spaceId === "oklab"/>
-  <let-search/kb=(SPACES.oklab.presets[0].channels[2]) key="kb" active=spaceId === "oklab"/>
-  <script>
-    if (spaceId === "oklab") colorSrcs = [kl, ka, kb];
-  </script>
-  <div class=styles.fields>
-    <preset-select
-      presets=SPACES.oklab.presets
-      load(c) {
-        [kl, ka, kb, w] = c;
-      }
-    />
-    <expr-input name="l" value:=kl/>
-    <expr-input name="a" value:=ka/>
-    <expr-input name="b" value:=kb/>
-    <expr-input name="w" value:=w/>
-  </div>
-</show>
+<script>
+  rt.fns = [...colorSrcs, w].map((src) => {
+    try {
+      return compile(src);
+    } catch {
+      return null;
+    }
+  });
+  rt.toCSS = SPACES[spaceId].css;
+</script>
 
-<show=spaceId === "lch">
-  <let-search/cl=(SPACES.lch.presets[0].channels[0]) key="cl" active=spaceId === "lch"/>
-  <let-search/cc=(SPACES.lch.presets[0].channels[1]) key="cc" active=spaceId === "lch"/>
-  <let-search/ch=(SPACES.lch.presets[0].channels[2]) key="ch" active=spaceId === "lch"/>
-  <script>
-    if (spaceId === "lch") colorSrcs = [cl, cc, ch];
-  </script>
-  <div class=styles.fields>
-    <preset-select
-      presets=SPACES.lch.presets
-      load(c) {
-        [cl, cc, ch, w] = c;
-      }
-    />
-    <expr-input name="l" value:=cl/>
-    <expr-input name="c" value:=cc/>
-    <expr-input name="h" value:=ch/>
-    <expr-input name="w" value:=w/>
-  </div>
-</show>
-
-<show=spaceId === "lab">
-  <let-search/ll=(SPACES.lab.presets[0].channels[0]) key="ll" active=spaceId === "lab"/>
-  <let-search/la=(SPACES.lab.presets[0].channels[1]) key="la" active=spaceId === "lab"/>
-  <let-search/lb=(SPACES.lab.presets[0].channels[2]) key="lb" active=spaceId === "lab"/>
-  <script>
-    if (spaceId === "lab") colorSrcs = [ll, la, lb];
-  </script>
-  <div class=styles.fields>
-    <preset-select
-      presets=SPACES.lab.presets
-      load(c) {
-        [ll, la, lb, w] = c;
-      }
-    />
-    <expr-input name="l" value:=ll/>
-    <expr-input name="a" value:=la/>
-    <expr-input name="b" value:=lb/>
-    <expr-input name="w" value:=w/>
-  </div>
-</show>
+// The mic needs no gesture, so it follows usage automatically; screen-share
+// audio for `m` must start from the button below. Both stop when unused.
+<script>
+  if (wants.s) void mic.start();
+  else mic.stop();
+</script>
+<script>if (!wants.m) music.stop();</script>
 
 <if=wants.s || wants.m>
   <p class=styles.audio>
