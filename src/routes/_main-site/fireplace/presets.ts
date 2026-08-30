@@ -67,8 +67,8 @@ export const PRESETS: Preset[] = [
     channels: ["1", "0.2", "0", "noise(t/13) * s + s^2"],
   },
   {
-    name: "Music Pulse",
-    channels: ["m^2", "0.05 * m", "m^4", "0"],
+    name: "Sound Pulse",
+    channels: ["s^2", "0.05 * s", "s^4", "0"],
   },
   {
     name: "Glitch",
@@ -144,8 +144,8 @@ export const OKLCH_PRESETS: Preset[] = [
     channels: ["0.45 + 0.25 * sin(t/60)", "0.4", "0.65", "0"],
   },
   {
-    name: "Music Glow",
-    channels: ["0.75 * m", "1", "0.9 + m / 4", "0"],
+    name: "Sound Glow",
+    channels: ["0.75 * s", "1", "0.9 + s / 4", "0"],
   },
 ];
 

@@ -11,11 +11,11 @@
 // template scales to the space's native range.
 
 import {
-  HSLW_PRESETS,
-  HWB_PRESETS,
-  LAB_PRESETS,
-  LCH_PRESETS,
-  OKLAB_PRESETS,
+  // HSLW_PRESETS,
+  // HWB_PRESETS,
+  // LAB_PRESETS,
+  // LCH_PRESETS,
+  // OKLAB_PRESETS,
   OKLCH_PRESETS,
   PRESETS,
   type Preset,
@@ -38,21 +38,21 @@ export const SPACES = {
     presets: PRESETS,
     css: ([r, g, b]) => `rgb(${r * 255} ${g * 255} ${b * 255})`,
   },
-  hslw: {
-    channels: ["h", "s", "l"],
-    keys: ["h", "s", "l"],
-    label: "HSL",
-    presets: HSLW_PRESETS,
-    // hue in turns (wrapping), saturation and lightness 0..1
-    css: ([h, s, l]) => `hsl(${h}turn ${s * 100}% ${l * 100}%)`,
-  },
-  hwb: {
-    channels: ["h", "wh", "bl"],
-    keys: ["hh", "hw", "hb"],
-    label: "HWB",
-    presets: HWB_PRESETS,
-    css: ([h, wh, bl]) => `hwb(${h}turn ${wh * 100}% ${bl * 100}%)`,
-  },
+  // hslw: {
+  //   channels: ["h", "s", "l"],
+  //   keys: ["h", "s", "l"],
+  //   label: "HSL",
+  //   presets: HSLW_PRESETS,
+  //   // hue in turns (wrapping), saturation and lightness 0..1
+  //   css: ([h, s, l]) => `hsl(${h}turn ${s * 100}% ${l * 100}%)`,
+  // },
+  // hwb: {
+  //   channels: ["h", "wh", "bl"],
+  //   keys: ["hh", "hw", "hb"],
+  //   label: "HWB",
+  //   presets: HWB_PRESETS,
+  //   css: ([h, wh, bl]) => `hwb(${h}turn ${wh * 100}% ${bl * 100}%)`,
+  // },
   oklch: {
     channels: ["l", "c", "h"],
     keys: ["okl", "okc", "okh"],
@@ -60,27 +60,27 @@ export const SPACES = {
     presets: OKLCH_PRESETS,
     css: ([l, c, h]) => `oklch(${l} ${c * 0.4} ${h}turn)`,
   },
-  oklab: {
-    channels: ["l", "a", "b"],
-    keys: ["kl", "ka", "kb"],
-    label: "OKLab",
-    presets: OKLAB_PRESETS,
-    css: ([l, a, b]) => `oklab(${l} ${(a - 0.5) * 0.8} ${(b - 0.5) * 0.8})`,
-  },
-  lch: {
-    channels: ["l", "c", "h"],
-    keys: ["cl", "cc", "ch"],
-    label: "LCH",
-    presets: LCH_PRESETS,
-    css: ([l, c, h]) => `lch(${l * 100} ${c * 150} ${h}turn)`,
-  },
-  lab: {
-    channels: ["l", "a", "b"],
-    keys: ["ll", "la", "lb"],
-    label: "Lab",
-    presets: LAB_PRESETS,
-    css: ([l, a, b]) => `lab(${l * 100} ${(a - 0.5) * 250} ${(b - 0.5) * 250})`,
-  },
+  // oklab: {
+  //   channels: ["l", "a", "b"],
+  //   keys: ["kl", "ka", "kb"],
+  //   label: "OKLab",
+  //   presets: OKLAB_PRESETS,
+  //   css: ([l, a, b]) => `oklab(${l} ${(a - 0.5) * 0.8} ${(b - 0.5) * 0.8})`,
+  // },
+  // lch: {
+  //   channels: ["l", "c", "h"],
+  //   keys: ["cl", "cc", "ch"],
+  //   label: "LCH",
+  //   presets: LCH_PRESETS,
+  //   css: ([l, c, h]) => `lch(${l * 100} ${c * 150} ${h}turn)`,
+  // },
+  // lab: {
+  //   channels: ["l", "a", "b"],
+  //   keys: ["ll", "la", "lb"],
+  //   label: "Lab",
+  //   presets: LAB_PRESETS,
+  //   css: ([l, a, b]) => `lab(${l * 100} ${(a - 0.5) * 250} ${(b - 0.5) * 250})`,
+  // },
 } satisfies Record<string, Space>;
 
 export type SpaceId = keyof typeof SPACES;
