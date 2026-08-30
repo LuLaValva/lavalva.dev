@@ -60,6 +60,13 @@
   color: light-dark(#b3261e, #f2b8b5);
 }
 
+.audio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .hint {
   font-size: 0.85rem;
   opacity: 0.8;

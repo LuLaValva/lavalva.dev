@@ -1,5 +1,7 @@
 /// <reference types="web-bluetooth" />
 import type { Compiled } from "./expr";
+import type { Space } from "./spaces";
+import { mic, music } from "./audio";
 
 // The "Fake Fire" BLE lamp. Byte format and quirks: PROTOCOL.md.
 const NAME = "Fake Fire";
@@ -15,6 +17,8 @@ export const supported = () =>
 // Runtime singleton, outside framework state so re-renders can't reset it.
 export const rt = {
   fns: [null, null, null, null] as (Compiled | null)[],
+  toCSS: (([r, g, b]) =>
+    `rgb(${r * 255} ${g * 255} ${b * 255})`) as Space["css"],
   on: true,
   err: "",
   char: null as BluetoothRemoteGATTCharacteristic | null,
@@ -22,6 +26,23 @@ export const rt = {
   clock: { t: 0, last: 0, sent: 0 },
   inFlight: { busy: false, again: false },
 };
+
+// The browser's CSS engine converts any CSS-native color to sRGB bytes:
+// paint one canvas pixel with the color and read it back.
+let cctx: CanvasRenderingContext2D | null = null;
+
+function cssToRgb(color: string): [number, number, number] {
+  if (!cctx) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 1;
+    cctx = canvas.getContext("2d", { willReadFrequently: true })!;
+  }
+  cctx.fillStyle = "#000"; // invalid colors leave fillStyle unchanged
+  cctx.fillStyle = color;
+  cctx.fillRect(0, 0, 1, 1);
+  const [r, g, b] = cctx.getImageData(0, 0, 1, 1).data;
+  return [r, g, b];
+}
 
 // GATT rejects overlapping operations; writes queue latest-wins.
 function send() {
@@ -59,12 +80,15 @@ export function tick(): number[] {
   const dt = Math.min(100, now - rt.clock.last);
   rt.clock.last = now;
   rt.clock.t += dt / SEND_MS;
-  const rgbw = rt.fns.map((f) => {
-    const v = f ? f(rt.clock.t) : 0;
-    return Number.isFinite(v)
-      ? Math.round(Math.max(0, Math.min(1, v)) * 255)
-      : 0;
+  const env = { t: rt.clock.t, s: mic.level(), m: music.level() };
+  const [c0, c1, c2, wv] = rt.fns.map((f) => {
+    const v = f ? f(env) : 0;
+    return Number.isFinite(v) ? v : 0;
   });
+  const rgbw = [
+    ...cssToRgb(rt.toCSS([c0, c1, c2])),
+    Math.round(Math.max(0, Math.min(1, wv)) * 255),
+  ];
   // -5ms so ticks spaced exactly SEND_MS apart survive jitter
   if (rt.char && rt.on && now - rt.clock.sent >= SEND_MS - 5) {
     rt.clock.sent = now;

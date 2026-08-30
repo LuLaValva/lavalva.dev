@@ -1,0 +1,22 @@
+import type { Preset } from "../presets";
+
+export interface Input {
+  presets: Preset[];
+  load(channels: Preset["channels"]): void;
+}
+
+<label>
+  preset:
+  <select
+    value=""
+    valueChange(v) {
+      const preset = input.presets.find((p) => p.name === v);
+      if (preset) input.load(preset.channels);
+    }
+  >
+    <option value="" disabled>load…</option>
+    <for|p| of=input.presets>
+      <option value=p.name>${p.name}</option>
+    </for>
+  </select>
+</label>

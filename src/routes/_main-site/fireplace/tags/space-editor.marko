@@ -1,0 +1,35 @@
+// One color space's editor: owns its three channel <let-search>es (keys
+// in the URL only while active) and returns their sources. Stays mounted
+// when inactive so drafts survive switching spaces; only the UI hides.
+import type { Space } from "../spaces";
+import styles from "../fireplace.module.css";
+
+export interface Input {
+  space: Space;
+  active: boolean;
+  w: string;
+  wChange(w: string): void;
+}
+
+<const/{ space, active } = input>
+<let-search/c0=(space.presets[0].channels[0]) key=space.keys[0] active=active/>
+<let-search/c1=(space.presets[0].channels[1]) key=space.keys[1] active=active/>
+<let-search/c2=(space.presets[0].channels[2]) key=space.keys[2] active=active/>
+
+<show=active>
+  <div class=styles.fields>
+    <preset-select
+      presets=space.presets
+      load(c) {
+        [c0, c1, c2] = c;
+        input.wChange(c[3]);
+      }
+    />
+    <expr-input name=space.channels[0] value:=c0/>
+    <expr-input name=space.channels[1] value:=c1/>
+    <expr-input name=space.channels[2] value:=c2/>
+    <expr-input name="w" value=input.w valueChange=input.wChange/>
+  </div>
+</show>
+
+<return=[c0, c1, c2]>

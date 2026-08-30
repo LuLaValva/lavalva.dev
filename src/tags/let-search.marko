@@ -1,8 +1,10 @@
 export interface Input {
   key: string;
   value: string;
+  active?: boolean;
 }
 
+<const/active=input.active !== false>
 <let/value=input.value>
 
 <script>
@@ -10,11 +12,21 @@ export interface Input {
   if (param !== null) value = param;
 </script>
 
+// Mirror state into the URL: an active instance owns its key (elided when
+// still the default), an inactive one removes it so only the visible
+// variables persist in shared links. The value itself stays in memory.
+<script>
+  const params = new URLSearchParams(location.search);
+  if (active && value !== input.value) params.set(input.key, value);
+  else params.delete(input.key);
+  if (`${params}` !== location.search.slice(1)) {
+    const search = `${params}` && `?${params}`;
+    history.replaceState(null, "", `${location.pathname}${search}${location.hash}`);
+  }
+</script>
+
 <return=value
   valueChange(next: string) {
     value = next;
-    const params = new URLSearchParams(location.search);
-    params.set(input.key, next);
-    history.replaceState(null, "", `?${params}${location.hash}`);
   }
 >
