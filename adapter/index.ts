@@ -3,19 +3,14 @@ import baseAdapter, {
   closeSpawnedProcess,
 } from "@marko/run/adapter";
 import { spawn } from "node:child_process";
-import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export type { CloudflarePlatformInfo } from "./types.ts";
 
-const __dirname = fileURLToPath(path.dirname(import.meta.url));
-const defaultEntry = path.join(__dirname, "worker-entry");
+const workerEntry = fileURLToPath(new URL("./worker-entry", import.meta.url));
 
 export default function cloudflareAdapter(): Adapter {
-  // `marko-run dev` still runs the app on Node: it is the fast path, and the
-  // fetch handler below is the same code either way. Use `marko-run preview`
-  // (wrangler) to exercise the real Workers runtime.
-  const { startDev } = baseAdapter();
+  const { startDev: startNodeDev } = baseAdapter();
 
   return {
     name: "cloudflare-adapter",
@@ -29,8 +24,6 @@ export default function cloudflareAdapter(): Adapter {
               dedupe: ["marko"],
               conditions: ["workerd", "worker", "browser", "import", "default"],
             },
-            // Workers have no node_modules at runtime; everything must be
-            // bundled into the single Worker script.
             noExternal: true,
           },
         };
@@ -38,13 +31,13 @@ export default function cloudflareAdapter(): Adapter {
     },
 
     getEntryFile() {
-      return defaultEntry;
+      return workerEntry;
     },
 
     startDev(event) {
-      return startDev!({
+      return startNodeDev!({
         ...event,
-        entry: event.entry === defaultEntry ? undefined : event.entry,
+        entry: event.entry === workerEntry ? undefined : event.entry,
       });
     },
 

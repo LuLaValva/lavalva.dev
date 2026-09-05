@@ -1,11 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "lavalva-dev",
-  // Pinned rather than tracking today: bumping this opts into new runtime
-  // behavior and should be a deliberate change.
   "compatibility_date": "2026-09-01",
-  // Both paths are build output (`marko-run build`), produced by the
-  // Cloudflare adapter in ./adapter.
   "main": "./dist/index.mjs",
   "assets": {
     "directory": "./dist/public",
