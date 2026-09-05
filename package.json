@@ -9,7 +9,7 @@
     "dev": "marko-run",
     "preview": "marko-run preview",
     "start": "node --enable-source-maps ./dist/index.mjs",
-    "deploy": "marko-run build && wrangler deploy --config dist/wrangler.json"
+    "deploy": "marko-run build && wrangler deploy"
   },
   "dependencies": {
     "immer": "^11.1.18",
