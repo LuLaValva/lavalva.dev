@@ -1,6 +1,7 @@
 {
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "adapter/**/*", "vite.config.ts"],
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
     "lib": ["dom", "ESNext"],
     "module": "ESNext",

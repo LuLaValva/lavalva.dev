@@ -5,12 +5,7 @@ export interface Input {
 }
 
 <const/active=input.active !== false>
-<let/value=input.value>
-
-<script>
-  const param = new URLSearchParams(location.search).get(input.key);
-  if (param !== null) value = param;
-</script>
+<let/value=($global.url.searchParams.get(input.key) ?? input.value)>
 
 // Mirror state into the URL: an active instance owns its key (elided when
 // still the default), an inactive one removes it so only the visible
