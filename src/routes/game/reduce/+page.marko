@@ -1,5 +1,5 @@
 import styles from "./reduce.module.css";
-client import { randomLetter, binarySearch, setSeed } from "./utils";
+import { binarySearch, dailyLetters, requestDay } from "./utils";
 static interface Letter {
   char: string;
   id: number;
@@ -36,29 +36,12 @@ client const vibrate = (
 
 <lazy-english-dictionary/words/>
 
-<let/today="">
+<const/day=requestDay($global.request)>
+<const/today=day.toDateString()>
 
 <let/looseLetters=(
-  Array.from({ length: 20 }, () => ({ char: "" })) as (Letter | null)[]
+  dailyLetters(day, 20).map((char, id) => ({ char, id })) as (Letter | null)[]
 )>
-<script>
-  const now = new Date();
-  setSeed(
-    Math.floor(
-      Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 100000,
-    ),
-  );
-  today = now.toDateString();
-  looseLetters = Array.from(
-    {
-      length: 20,
-    },
-    randomLetter,
-  ).map((char, id) => ({
-    char,
-    id,
-  }));
-</script>
 
 <let/pendingWord=([] as Letter[])>
 <let/submittedWords=([] as Letter[][])>
