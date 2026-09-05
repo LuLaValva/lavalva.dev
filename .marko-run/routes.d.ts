@@ -10,8 +10,10 @@
 import { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform } from "@marko/run/namespace";
 import type * as $ from "@marko/run";
 
-
+import type { CloudflarePlatformInfo } from '../adapter';
 declare module "@marko/run" {
+	interface Platform extends CloudflarePlatformInfo {}
+
 	interface App extends $.DefineRoutes<{
 		"/": [L1, P1];
 		"/about": [L1, P2];

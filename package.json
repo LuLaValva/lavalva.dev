@@ -8,7 +8,8 @@
     "build": "marko-run build",
     "dev": "marko-run",
     "preview": "marko-run preview",
-    "start": "node --enable-source-maps ./dist/index.mjs"
+    "start": "node --enable-source-maps ./dist/index.mjs",
+    "deploy": "marko-run build && wrangler deploy"
   },
   "dependencies": {
     "immer": "^11.1.18",
@@ -17,11 +18,12 @@
   },
   "devDependencies": {
     "@marko/run": "^0.11.12",
-    "@marko/run-adapter-static": "^2.0.10",
     "@marko/type-check": "^3.2.0",
+    "@types/node": "^26.4.1",
     "@types/web-bluetooth": "^0.0.21",
     "prettier": "^3.9.6",
     "prettier-plugin-marko": "^4.1.0",
-    "prettier-plugin-packagejson": "^3.0.2"
+    "prettier-plugin-packagejson": "^3.0.2",
+    "wrangler": "^4.129.0"
   }
 }

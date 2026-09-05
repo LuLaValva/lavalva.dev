@@ -55,7 +55,7 @@ export const SPACES = {
   // },
   oklch: {
     channels: ["l", "c", "h"],
-    keys: ["okl", "okc", "okh"],
+    keys: ["l", "c", "h"],
     label: "OKLCH",
     presets: OKLCH_PRESETS,
     css: ([l, c, h]) => `oklch(${l} ${c * 0.4} ${h}turn)`,

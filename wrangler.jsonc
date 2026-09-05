@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "lavalva-dev",
+  "compatibility_date": "2026-09-01",
+  "main": "./dist/index.mjs",
+  "assets": {
+    "directory": "./dist/public",
+    "binding": "ASSETS",
+  },
+}
