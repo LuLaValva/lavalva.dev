@@ -11,20 +11,18 @@ for (let i = 0; i < weights.length; i++) {
   }
 }
 
-let seed = 0;
-
-export function setSeed(s: number) {
-  seed = s;
+export function requestDay(request: Request) {
+  const timeZone = (request as { cf?: { timezone?: string } }).cf?.timezone;
+  return new Date(new Date().toLocaleDateString("en-CA", { timeZone }));
 }
 
-function random(): number {
-  seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
-  return seed / 0x100000000;
-}
-
-export function randomLetter(): string {
-  const idx = Math.floor(random() * lookup.length);
-  return String.fromCharCode(97 + lookup[idx]);
+export function dailyLetters(day: Date, count: number): string[] {
+  let seed = Math.floor(+day / 100000);
+  return Array.from({ length: count }, () => {
+    seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
+    const idx = Math.floor((seed / 0x100000000) * lookup.length);
+    return String.fromCharCode(97 + lookup[idx]);
+  });
 }
 
 export function binarySearch(list: string[], word: string) {
