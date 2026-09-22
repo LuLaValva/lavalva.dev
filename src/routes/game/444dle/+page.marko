@@ -105,7 +105,7 @@ https://lavalva.dev/game/444dle`
   vibrate(50);
   // Let the reveal animation finish before the results take over the screen.
   if (over) {
-    setTimeout(() => results().showModal(), NUM_LETTERS * 400 + 200);
+    setTimeout(() => results().showModal(), (NUM_LETTERS - 1) * 300 + 700);
   }
 }>
 

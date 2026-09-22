@@ -10,8 +10,9 @@
   --eval-2: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
   /* A board that has already been solved stops contributing hints. */
   --eval-solved: light-dark(rgb(222, 211, 199), rgb(60, 47, 36));
-  --tile-empty: light-dark(rgb(204, 190, 176), rgb(82, 66, 52));
+  --rule: light-dark(rgb(228, 216, 204), rgb(62, 49, 38));
   --cell: min(6.2vw, 2.4rem);
+  --gap: calc(var(--cell) * 0.1);
 }
 
 body {
@@ -93,8 +94,18 @@ dialog {
 .board {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--cell) * 0.1);
+  gap: var(--gap);
   transition: opacity 0.4s;
+  /* A hairline down the middle of each gap between columns, in place of
+     outlining every empty square. */
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0 calc(var(--cell) + var(--gap) / 2 - 0.5px),
+    var(--rule) calc(var(--cell) + var(--gap) / 2 - 0.5px)
+      calc(var(--cell) + var(--gap) / 2 + 0.5px),
+    transparent calc(var(--cell) + var(--gap) / 2 + 0.5px)
+      calc(var(--cell) + var(--gap))
+  );
 }
 
 .board.solved {
@@ -103,7 +114,7 @@ dialog {
 
 .row {
   display: flex;
-  gap: calc(var(--cell) * 0.1);
+  gap: var(--gap);
 }
 
 .row.invalid {
@@ -119,7 +130,6 @@ dialog {
   font-family: monospace;
   font-weight: bold;
   color: black;
-  border: 2px solid var(--tile-empty);
   border-radius: 0.2rem;
   box-sizing: border-box;
   user-select: none;
@@ -127,20 +137,18 @@ dialog {
 
 .cell.filled {
   background-color: var(--tile);
-  border-color: transparent;
   box-shadow: var(--tile-bevel);
   animation: pop 0.15s;
 }
 
 .cell.scored {
-  border-color: transparent;
   box-shadow: var(--tile-bevel);
-  /* Each tile flips a full turn, a beat after the one before it, and swaps to
-     its score colour halfway through the spin. */
-  animation: reveal 0.4s backwards;
-  animation-delay: calc(var(--i) * 0.4s);
-  transition: background-color 0.2s;
-  transition-delay: calc(var(--i) * 0.4s + 0.2s);
+  /* Each tile turns face down and back, a beat after the one before it. The
+     colour is swapped while it is edge-on, so it is never seen changing. */
+  animation: flip 0.5s ease-in-out backwards;
+  animation-delay: calc(var(--i) * 0.3s);
+  transition: background-color 0s;
+  transition-delay: calc(var(--i) * 0.3s + 0.25s);
 }
 
 .cell.eval0 {
@@ -257,9 +265,13 @@ strong.eval2 {
   }
 }
 
-@keyframes reveal {
-  from {
-    rotate: x 360deg;
+@keyframes flip {
+  0%,
+  100% {
+    transform: perspective(10rem) rotateX(0deg);
+  }
+  50% {
+    transform: perspective(10rem) rotateX(-90deg);
   }
 }
 
