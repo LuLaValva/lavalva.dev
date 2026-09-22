@@ -37,7 +37,7 @@ static const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
       </if>
       <for|letter| of=letters>
         <button
-          class=styles.key
+          class=[styles.key, input.keyColors[letter] && styles.tinted]
           style=background(letter)
           onClick() {
             input.onKey(letter);
