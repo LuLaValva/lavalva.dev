@@ -2,6 +2,8 @@ import { type Eval, NUM_GUESSES, NUM_LETTERS } from "../utils";
 import styles from "../444dle.module.css";
 
 export interface Input {
+  /** Which of the three boards this is; varies the tile tilt between them. */
+  index: number;
   /** Each submitted guess with its score against this board's solution. */
   rows: { guess: string; scores: Eval[] }[];
   /** The guess currently being typed. */
@@ -21,6 +23,14 @@ export interface Input {
   return {};
 })>
 
+// A hash rather than Math.random, so a tile keeps its tilt across renders
+// and the server and client agree on it.
+<const/tilt(row: number, column: number) {
+  const n =
+    Math.sin(input.index * 12.9898 + row * 78.233 + column * 37.719) * 43758.5;
+  return (n - Math.floor(n) - 0.5) * 5;
+}>
+
 <div class=[styles.board, input.wonAt !== undefined && styles.solved]>
   <for|{ word = "", evaluation }, row| of=cells>
     <div class=[
@@ -35,7 +45,7 @@ export interface Input {
               ? [styles.scored, styles[`eval${evaluation[i]}`]]
               : word[i] && styles.filled,
           ]
-          style=`--i:${i}`
+          style=`--i:${i}; rotate: ${tilt(row, i)}deg`
         >
           ${word[i]?.toUpperCase()}
         </div>

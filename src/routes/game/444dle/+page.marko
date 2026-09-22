@@ -162,8 +162,8 @@ https://lavalva.dev/game/444dle`
 </header>
 
 <div class=styles.boards>
-  <for|{ rows, wonAt }| of=boards>
-    <board rows=rows pending=pending wonAt=wonAt invalid=invalid/>
+  <for|{ rows, wonAt }, i| of=boards>
+    <board index=i rows=rows pending=pending wonAt=wonAt invalid=invalid/>
   </for>
 </div>
 

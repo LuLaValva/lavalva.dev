@@ -218,6 +218,11 @@ strong.eval2 {
   font-size: 0.75rem;
 }
 
+/* A glyph, not a word — it wants the full size back. */
+.key.glyphKey {
+  font-size: 1.4rem;
+}
+
 .results {
   text-align: center;
 
