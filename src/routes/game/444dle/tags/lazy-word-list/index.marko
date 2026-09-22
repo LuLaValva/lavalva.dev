@@ -1,0 +1,17 @@
+import listUrl from "../../words/valid.json?url";
+export interface Input {}
+
+<let/words=null as null | string[]>
+
+<link rel="preload" href=listUrl as="fetch">
+
+<script>
+  fetch(listUrl, {
+    mode: "no-cors",
+    credentials: "include",
+  }).then(async (res) => {
+    words = await res.json();
+  });
+</script>
+
+<return=words>

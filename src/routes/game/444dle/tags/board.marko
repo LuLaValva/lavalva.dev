@@ -1,0 +1,45 @@
+import { type Eval, NUM_GUESSES, NUM_LETTERS } from "../utils";
+import styles from "../444dle.module.css";
+
+export interface Input {
+  /** Each submitted guess with its score against this board's solution. */
+  rows: { guess: string; scores: Eval[] }[];
+  /** The guess currently being typed. */
+  pending: string;
+  /** Index of the guess that solved this board, if any. */
+  wonAt?: number;
+  /** Set while the pending guess is being rejected, to shake the row. */
+  invalid?: boolean;
+}
+
+<const/cells=Array.from({ length: NUM_GUESSES }, (_, i) => {
+  // Once solved, a board stops echoing later guesses.
+  if (input.wonAt !== undefined && i > input.wonAt) return {};
+  const row = input.rows[i];
+  if (row) return { word: row.guess, evaluation: row.scores };
+  if (i === input.rows.length) return { word: input.pending };
+  return {};
+})>
+
+<div class=[styles.board, input.wonAt !== undefined && styles.solved]>
+  <for|{ word = "", evaluation }, row| of=cells>
+    <div class=[
+      styles.row,
+      input.invalid && row === input.rows.length && styles.invalid,
+    ]>
+      <for|_, i| of=Array.from({ length: NUM_LETTERS })>
+        <div
+          class=[
+            styles.cell,
+            evaluation
+              ? [styles.scored, styles[`eval${evaluation[i]}`]]
+              : word[i] && styles.filled,
+          ]
+          style=`--i:${i}`
+        >
+          ${word[i]?.toUpperCase()}
+        </div>
+      </for>
+    </div>
+  </for>
+</div>

@@ -1,0 +1,272 @@
+:root {
+  touch-action: manipulation;
+
+  --eval-0: light-dark(rgb(163, 150, 137), rgb(74, 58, 44));
+  --eval-1: light-dark(rgb(199, 128, 24), rgb(170, 110, 20));
+  --eval-2: light-dark(rgb(58, 133, 75), rgb(52, 122, 68));
+  /* A board that has already been solved stops contributing hints. */
+  --eval-solved: light-dark(rgb(222, 211, 199), rgb(52, 39, 28));
+  --tile-empty: light-dark(rgb(204, 190, 176), rgb(82, 66, 52));
+  --tile-filled: light-dark(rgb(150, 132, 114), rgb(140, 118, 96));
+  --cell: min(6.2vw, 2.4rem);
+}
+
+body {
+  max-width: 34rem;
+  margin: auto;
+  padding: 0 0.5rem;
+  /* Keep the boards clear of the fixed keyboard. */
+  padding-bottom: 12rem;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.btn {
+  background-color: #8884;
+  border-radius: 0.75rem;
+  height: 1.75rem;
+  width: 1.75rem;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: light-dark(black, white);
+  font-family: inherit;
+
+  &:active {
+    scale: 1.15;
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.5rem 0.5rem 1.5rem;
+
+  h1 {
+    font-size: 1.5rem;
+    margin: 0;
+  }
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+dialog {
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid light-dark(black, white);
+  background-color: var(--background);
+  color: light-dark(black, white);
+  max-width: min(30rem, 90vw);
+
+  &::backdrop {
+    background-color: #0008;
+  }
+
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.dialogHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.boards {
+  /* Soak up the space between the header and the pinned keyboard. */
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--cell) * 0.6);
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--cell) * 0.1);
+  transition: opacity 0.4s;
+}
+
+.board.solved {
+  opacity: 0.45;
+}
+
+.row {
+  display: flex;
+  gap: calc(var(--cell) * 0.1);
+}
+
+.row.invalid {
+  animation: shake 0.5s;
+}
+
+.cell {
+  width: var(--cell);
+  height: var(--cell);
+  line-height: var(--cell);
+  text-align: center;
+  font-size: calc(var(--cell) * 0.55);
+  font-weight: bold;
+  box-sizing: border-box;
+  border: 2px solid var(--tile-empty);
+  border-radius: 0.2rem;
+  user-select: none;
+}
+
+.cell.filled {
+  border-color: var(--tile-filled);
+  animation: pop 0.15s;
+}
+
+.cell.scored {
+  border-color: transparent;
+  color: white;
+  /* Each letter flips over a beat after the one before it. */
+  animation: reveal 0.25s backwards;
+  animation-delay: calc(var(--i) * 0.25s);
+  transition: background-color 0.1s;
+  transition-delay: calc(var(--i) * 0.25s + 0.12s);
+}
+
+.cell.eval0 {
+  background-color: var(--eval-0);
+}
+.cell.eval1 {
+  background-color: var(--eval-1);
+}
+.cell.eval2 {
+  background-color: var(--eval-2);
+}
+
+/* Reused by the help dialog to name the colors. */
+strong.eval1 {
+  color: var(--eval-1);
+}
+strong.eval2 {
+  color: var(--eval-2);
+}
+
+.keyboard {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.25rem calc(0.5rem + env(safe-area-inset-bottom));
+  background-color: var(--background);
+}
+
+.keyboardRow {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 34rem;
+}
+
+.key {
+  flex: 1 1 auto;
+  max-width: 2.5rem;
+  height: 3.2rem;
+  border: none;
+  border-radius: 0.3rem;
+  background-color: light-dark(rgb(226, 214, 202), rgb(66, 52, 40));
+  color: light-dark(black, white);
+  font-family: inherit;
+  font-size: 1rem;
+  text-transform: uppercase;
+  user-select: none;
+  transition: background-color 0.4s ease;
+
+  &:active {
+    scale: 0.94;
+    transition: background-color 0.05s;
+  }
+}
+
+.key.wideKey {
+  max-width: 4rem;
+  font-size: 0.75rem;
+}
+
+.results {
+  text-align: center;
+
+  h2 {
+    margin-top: 0;
+  }
+
+  pre {
+    font-family: inherit;
+    font-size: 0.75rem;
+    text-align: left;
+    width: fit-content;
+    margin: 1rem auto;
+    white-space: pre-wrap;
+  }
+}
+
+.answers {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+
+  em {
+    font-style: normal;
+    font-weight: bold;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+}
+
+.share {
+  margin: auto;
+  display: block;
+  font-family: inherit;
+}
+
+@keyframes pop {
+  30% {
+    scale: 1.1;
+  }
+}
+
+@keyframes reveal {
+  from {
+    rotate: x 90deg;
+    border-color: var(--tile-filled);
+    background-color: transparent;
+  }
+}
+
+@keyframes shake {
+  10%,
+  50% {
+    translate: -3px 0;
+  }
+  30%,
+  70% {
+    translate: 3px 0;
+  }
+  90% {
+    translate: -1px 0;
+  }
+}

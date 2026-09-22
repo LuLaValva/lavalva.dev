@@ -1,0 +1,62 @@
+import { type Eval, NUM_WORDS } from "../utils";
+import styles from "../444dle.module.css";
+
+export interface Input {
+  /** Best score seen for each letter, one entry per board. */
+  keyColors: Record<string, Eval[]>;
+  /** Which boards are already solved — their slice reads as spent. */
+  solved: boolean[];
+  onKey: (key: string) => void;
+}
+
+static const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+
+<const/background(letter: string) {
+  const colors = input.keyColors[letter];
+  if (!colors) return false;
+  const percent = 100 / NUM_WORDS;
+  const stops = colors.map((score, i) => {
+    const color = input.solved[i] ? "solved" : score;
+    return `var(--eval-${color}) ${percent * i}% ${percent * (i + 1)}%`;
+  });
+  return `background-image:linear-gradient(to right, ${stops.join(",")})`;
+}>
+
+<div class=styles.keyboard>
+  <for|letters, row| of=ROWS>
+    <div class=styles.keyboardRow>
+      <if=row === 2>
+        <button
+          class=[styles.key, styles.wideKey]
+          onClick() {
+            input.onKey("Enter");
+          }
+        >
+          enter
+        </button>
+      </if>
+      <for|letter| of=letters>
+        <button
+          class=styles.key
+          style=background(letter)
+          onClick() {
+            input.onKey(letter);
+          }
+        >
+          ${letter}
+        </button>
+      </for>
+      <if=row === 2>
+        <button
+          class=[styles.key, styles.wideKey]
+          aria-label="delete"
+          onClick() {
+            input.onKey("Backspace");
+          }
+        >
+          ⌫
+        </button>
+      </if>
+    </div>
+  </for>
+</div>
