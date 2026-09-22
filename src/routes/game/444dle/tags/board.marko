@@ -18,7 +18,14 @@ export interface Input {
   // Once solved, a board stops echoing later guesses.
   if (input.wonAt !== undefined && i > input.wonAt) return {};
   const row = input.rows[i];
-  if (row) return { word: row.guess, evaluation: row.scores };
+  if (row) {
+    return {
+      word: row.guess,
+      evaluation: row.scores,
+      // Only the newest row still has a turn to play out.
+      flipping: i === input.rows.length - 1,
+    };
+  }
   if (i === input.rows.length) return { word: input.pending };
   return {};
 })>
@@ -32,7 +39,7 @@ export interface Input {
 }>
 
 <div class=[styles.board, input.wonAt !== undefined && styles.solved]>
-  <for|{ word = "", evaluation }, row| of=cells>
+  <for|{ word = "", evaluation, flipping }, row| of=cells>
     <div class=[
       styles.row,
       input.invalid && row === input.rows.length && styles.invalid,
@@ -42,7 +49,11 @@ export interface Input {
           class=[
             styles.cell,
             evaluation
-              ? [styles.scored, styles[`eval${evaluation[i]}`]]
+              ? [
+                  styles.scored,
+                  styles[`eval${evaluation[i]}`],
+                  flipping && styles.flipping,
+                ]
               : word[i] && styles.filled,
           ]
           style=`--i:${i}; rotate: ${tilt(row, i)}deg`
