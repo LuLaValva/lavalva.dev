@@ -88,7 +88,6 @@ dialog {
 .boards {
   display: flex;
   justify-content: center;
-  gap: calc(var(--cell) * 0.6);
 }
 
 .board {
@@ -96,16 +95,13 @@ dialog {
   flex-direction: column;
   gap: var(--gap);
   transition: opacity 0.4s;
-  /* A hairline down the middle of each gap between columns, in place of
-     outlining every empty square. */
-  background-image: repeating-linear-gradient(
-    to right,
-    transparent 0 calc(var(--cell) + var(--gap) / 2 - 0.5px),
-    var(--rule) calc(var(--cell) + var(--gap) / 2 - 0.5px)
-      calc(var(--cell) + var(--gap) / 2 + 0.5px),
-    transparent calc(var(--cell) + var(--gap) / 2 + 0.5px)
-      calc(var(--cell) + var(--gap))
-  );
+}
+
+/* A hairline centred in the space between boards. */
+.board + .board {
+  border-left: 1px solid var(--rule);
+  margin-left: calc(var(--cell) * 0.3);
+  padding-left: calc(var(--cell) * 0.3);
 }
 
 .board.solved {
