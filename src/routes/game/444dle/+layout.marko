@@ -2,8 +2,13 @@ export interface Input {
   content: Marko.Body;
 }
 
+// TEMPORARY, for chasing a Chrome-only paint artifact. ?fix=a..e each turn on
+// one candidate workaround so they can be compared without a rebuild. Delete
+// this and the block at the end of 444dle.module.css once one of them wins.
+<const/fix=new URL($global.request.url).searchParams.get("fix")>
+
 <!doctype html>
-<html lang="en">
+<html lang="en" class=fix && `probe-${fix}`>
   <head>
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">

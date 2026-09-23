@@ -102,13 +102,6 @@ dialog {
 .boards {
   display: flex;
   justify-content: center;
-  /* A turning tile paints well outside its own box — it lifts, it bevels, and
-     perspective widens it — and Chrome has been leaving some of that behind
-     as it repaints. Declaring that nothing paints outside this box gives the
-     invalidation an explicit bound; the padding is the room a tile at the
-     edge of the board needs so containing it clips nothing real. */
-  contain: paint;
-  padding: calc(var(--cell) * 0.3);
 }
 
 .board {
@@ -393,4 +386,39 @@ strong.eval2 {
   90% {
     translate: -1px 0;
   }
+}
+
+/* TEMPORARY. Candidate workarounds for a Chrome-only artifact: paint from a
+   turning tile is left behind around and below the boards. Does not reproduce
+   in Firefox or Safari, and not in headless Chrome, so these have to be
+   compared by eye. Reach each with ?fix=<letter>.
+
+   a — the cell never enters or leaves a 3D rendering context, it is always in
+       one. Entering and leaving is the part Chromium has bugs filed against.
+   b — the board holds one stable layer of its own, so a tile's layer is
+       composited into something that already exists.
+   c — as b, but per tile: every tile keeps its own layer rather than being
+       given one for the turn and having it taken away after.
+   d — no lift, so the tile never paints outside its own box vertically.
+   e — no body, so the tile is two faces and nothing else. If the artifact
+       survives this, the slices are not involved at all. */
+:global(html.probe-a) .cell {
+  transform-style: preserve-3d;
+}
+
+:global(html.probe-b) .board {
+  will-change: transform;
+}
+
+:global(html.probe-c) .cell {
+  will-change: transform;
+}
+
+:global(html.probe-d) .cell.flipping {
+  animation: flip 0.55s ease-out both;
+  scale: var(--flip-fit);
+}
+
+:global(html.probe-e) .slice {
+  display: none;
 }
