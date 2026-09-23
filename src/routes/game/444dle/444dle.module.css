@@ -8,7 +8,9 @@
   /* Half the tile's thickness; the two faces sit this far either side of
      centre so the tile is a slab rather than a sheet. */
   --tile-depth: calc(var(--cell) * 0.095);
-  --tile-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
+  /* Keys keep a lit edge; tiles are matte, so a face meeting the rim reads as
+     one surface rather than a shaded one running into an unshaded one. */
+  --key-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
   --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
   --eval-2: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
@@ -137,13 +139,11 @@ dialog {
 
 .cell.filled {
   background-color: var(--tile);
-  box-shadow: var(--tile-bevel);
   animation: pop 0.15s;
 }
 
 .cell.scored {
   background-color: var(--face);
-  box-shadow: var(--tile-bevel);
 }
 
 /* Only the row being revealed is built with two faces. Every earlier row has
@@ -173,9 +173,6 @@ dialog {
   position: absolute;
   inset: 0;
   border-radius: var(--tile-radius);
-  /* No cast shadow: it darkened the seam where the face meets the rim, and a
-     tile at rest does not have one either. */
-  box-shadow: var(--tile-bevel);
   backface-visibility: hidden;
   color: black;
 }
@@ -286,7 +283,7 @@ strong.eval2 {
   border: none;
   border-radius: 0.2rem;
   background-color: light-dark(rgb(226, 214, 202), rgb(66, 52, 40));
-  box-shadow: var(--tile-bevel);
+  box-shadow: var(--key-bevel);
   color: light-dark(black, white);
   font-family: monospace;
   font-weight: bold;
