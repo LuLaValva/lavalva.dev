@@ -356,14 +356,28 @@ strong.eval2 {
   }
 }
 
+/* The body stands proud of the tile, so near flat it reads as a ring around
+   it — and by the end that ring is half the blank face's colour against the
+   scored one, which is the brightest it ever gets. It has to be gone before
+   the tile settles, and gone gradually, or it snaps off.
+
+   The turn eases out, so time and angle pull apart badly: 9% of the way
+   through the tile has turned 27 degrees, half way through it has turned
+   151, and the last tenth of the turn takes a quarter of the time. These
+   stops are picked against the angle rather than the clock — full while the
+   tile is between 27 and 141 degrees, gone by 168, which still leaves it
+   turning. */
 @keyframes tile-body {
-  from,
-  to {
+  from {
     opacity: 0;
   }
   9%,
-  91% {
+  58% {
     opacity: 1;
+  }
+  80%,
+  to {
+    opacity: 0;
   }
 }
 
