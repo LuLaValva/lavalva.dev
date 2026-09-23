@@ -165,14 +165,16 @@ dialog {
   background-color: transparent;
   box-shadow: none;
   color: transparent;
-  /* Each tile turns right over, a beat after the one before it. The turn and
-     the lift are separate animations on separate properties: a single
-     from/to keyframe means the rotation is one uninterrupted curve, so its
-     easing alone decides how the flip feels. */
   scale: var(--flip-fit);
-  animation:
-    flip 0.55s ease-out both,
-    lift 0.55s ease-in-out both;
+  /* Each tile turns right over, a beat after the one before it, on a single
+     from/to keyframe — so the rotation is one uninterrupted curve and its
+     easing alone decides how the flip feels.
+
+     One animation, and only on transform. Animating transform and scale
+     together on the same element is what Chrome was leaving paint behind
+     over: the artifact went with either property's animation removed, and
+     stayed when both were kept. */
+  animation: flip 0.55s ease-out both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
@@ -218,9 +220,11 @@ dialog {
      instead of every layer starting at full brightness again. */
   box-shadow: var(--tile-bevel);
   /* A slice stands proud of the tile, so face on it would show past it. The
-     body is simply not painted at either end of the turn, which costs a
-     discrete step rather than a value interpolated on every frame. */
-  animation: tile-body 0.55s step-end both;
+     body is only painted while the tile is turned, and it fades rather than
+     switching on: at the start of the turn the widest slice is half one
+     face's colour and half the other's, and a ring of that appearing around
+     a tile in one frame reads as a flash. */
+  animation: tile-body 0.55s linear both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
@@ -352,25 +356,14 @@ strong.eval2 {
   }
 }
 
-/* Rides off the board and back, the way a tile has to in order to turn at
-   all. Kept off `transform` so it cannot break the rotation's interpolation. */
-@keyframes lift {
-  50% {
-    scale: calc(var(--flip-fit) * 1.14);
-  }
-}
-
 @keyframes tile-body {
-  from {
-    visibility: hidden;
-  }
-  4%,
-  96% {
-    visibility: visible;
-  }
-  97%,
+  from,
   to {
-    visibility: hidden;
+    opacity: 0;
+  }
+  9%,
+  91% {
+    opacity: 1;
   }
 }
 
@@ -386,70 +379,4 @@ strong.eval2 {
   90% {
     translate: -1px 0;
   }
-}
-
-/* TEMPORARY. Candidate workarounds for a Chrome-only artifact: paint from a
-   turning tile is left behind around and below the boards. Does not reproduce
-   in Firefox or Safari, and not in headless Chrome, so these have to be
-   compared by eye. Reach each with ?fix=<letter>.
-
-   a — the cell never enters or leaves a 3D rendering context, it is always in
-       one. Entering and leaving is the part Chromium has bugs filed against.
-   b — the board holds one stable layer of its own, so a tile's layer is
-       composited into something that already exists.
-   c — as b, but per tile: every tile keeps its own layer rather than being
-       given one for the turn and having it taken away after.
-   d — no lift, so the tile never paints outside its own box vertically.
-   e — no body, so the tile is two faces and nothing else. If the artifact
-       survives this, the slices are not involved at all.
-   f — the lift is back, but folded into the turn rather than run as a second
-       animation on `scale`. Separates "the lift exists" from "two properties
-       are being animated at once".
-   g — the body is back, but flush with the tile rather than standing proud
-       of it. Separates "slices exist" from "slices paint outside the cell". */
-:global(html.probe-a) .cell {
-  transform-style: preserve-3d;
-}
-
-:global(html.probe-b) .board {
-  will-change: transform;
-}
-
-:global(html.probe-c) .cell {
-  will-change: transform;
-}
-
-:global(html.probe-d) .cell.flipping {
-  animation: flip 0.55s ease-out both;
-  /* The shorthand resets animation-delay, so the stagger has to be restated
-     or every tile turns at once. */
-  animation-delay: calc(var(--i) * 0.3s);
-  scale: var(--flip-fit);
-}
-
-:global(html.probe-e) .slice {
-  display: none;
-}
-
-:global(html.probe-f) .cell.flipping {
-  animation: flip-lifted 0.55s ease-out both;
-  animation-delay: calc(var(--i) * 0.3s);
-  scale: var(--flip-fit);
-}
-
-@keyframes flip-lifted {
-  from {
-    transform: perspective(var(--tile-perspective)) scale(1) rotateX(0deg);
-  }
-  50% {
-    transform: perspective(var(--tile-perspective)) scale(1.14) rotateX(90deg);
-  }
-  to {
-    transform: perspective(var(--tile-perspective)) scale(1) rotateX(180deg);
-  }
-}
-
-:global(html.probe-g) .slice {
-  inset: 0;
-  border-radius: var(--tile-radius);
 }
