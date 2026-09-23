@@ -401,7 +401,12 @@ strong.eval2 {
        given one for the turn and having it taken away after.
    d — no lift, so the tile never paints outside its own box vertically.
    e — no body, so the tile is two faces and nothing else. If the artifact
-       survives this, the slices are not involved at all. */
+       survives this, the slices are not involved at all.
+   f — the lift is back, but folded into the turn rather than run as a second
+       animation on `scale`. Separates "the lift exists" from "two properties
+       are being animated at once".
+   g — the body is back, but flush with the tile rather than standing proud
+       of it. Separates "slices exist" from "slices paint outside the cell". */
 :global(html.probe-a) .cell {
   transform-style: preserve-3d;
 }
@@ -416,9 +421,35 @@ strong.eval2 {
 
 :global(html.probe-d) .cell.flipping {
   animation: flip 0.55s ease-out both;
+  /* The shorthand resets animation-delay, so the stagger has to be restated
+     or every tile turns at once. */
+  animation-delay: calc(var(--i) * 0.3s);
   scale: var(--flip-fit);
 }
 
 :global(html.probe-e) .slice {
   display: none;
+}
+
+:global(html.probe-f) .cell.flipping {
+  animation: flip-lifted 0.55s ease-out both;
+  animation-delay: calc(var(--i) * 0.3s);
+  scale: var(--flip-fit);
+}
+
+@keyframes flip-lifted {
+  from {
+    transform: perspective(var(--tile-perspective)) scale(1) rotateX(0deg);
+  }
+  50% {
+    transform: perspective(var(--tile-perspective)) scale(1.14) rotateX(90deg);
+  }
+  to {
+    transform: perspective(var(--tile-perspective)) scale(1) rotateX(180deg);
+  }
+}
+
+:global(html.probe-g) .slice {
+  inset: 0;
+  border-radius: var(--tile-radius);
 }
