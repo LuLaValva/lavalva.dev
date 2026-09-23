@@ -9,9 +9,13 @@
      centre so the tile is a slab rather than a sheet. */
   --tile-depth: calc(var(--cell) * 0.095);
   --tile-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
-  /* How far the bevel stands proud of the tile at mid depth. Held under half
-     the gap so two neighbours at full bevel still cannot touch. */
-  --tile-roll: calc(var(--gap) * 0.45);
+  /* How deep the bevel cuts, as a fraction of the tile, kept unitless so the
+     face's matching shrink can be derived from it. Held under half the gap
+     between tiles. */
+  --tile-roll-ratio: 0.045;
+  --tile-roll: calc(var(--cell) * var(--tile-roll-ratio));
+  /* The face, pulled in to sit flush with the narrow end of the body. */
+  --face-shrunk: calc(1 - 2 * var(--tile-roll-ratio));
   /* Tied to the tile so the turn looks the same at every screen size, and so
      the ratio below is a constant. */
   --tile-perspective: calc(var(--cell) * 4.6);
@@ -189,6 +193,11 @@ dialog {
   box-shadow: var(--tile-bevel);
   backface-visibility: hidden;
   color: black;
+  /* Full size at either end of the turn, where it has to cover the body
+     exactly as a flat tile does, and pulled in to meet the body's narrow end
+     while the tile is turned. The body itself never moves. */
+  animation: tile-face 0.55s linear both;
+  animation-delay: calc(var(--i) * 0.3s);
 }
 
 .cell.flipping::before {
@@ -208,24 +217,25 @@ dialog {
    faces rolling into each other rather than a band painted on. */
 .slice {
   position: absolute;
-  /* Grown outwards from the tile's own shape: offsetting a rounded rectangle
-     by a distance widens it and opens its corners by that same distance, so
-     the bevel stays a true rounded rectangle at every depth. */
-  inset: calc(var(--out) * var(--tile-roll) * -1);
-  border-radius: calc(var(--tile-radius) + var(--out) * var(--tile-roll));
+  /* Cut in from the tile's own shape, never out past it: widest at mid depth
+     where it is exactly the tile, narrowing to the faces. Offsetting a
+     rounded rectangle inwards narrows it and closes its corners by that same
+     distance, so the bevel stays a true rounded rectangle at every depth.
+
+     Inwards is the only direction that works. The widest part of a bevel
+     sits at mid depth, which is further from the eye than the near face, and
+     perspective over half a tile's thickness only magnifies that face by
+     about two percent — enough to hide a quarter pixel. Any bevel worth
+     seeing that grows outwards shows past the face as a ring whenever the
+     tile is near flat. */
+  inset: calc((1 - var(--out)) * var(--tile-roll));
+  border-radius: calc(var(--tile-radius) - (1 - var(--out)) * var(--tile-roll));
   transform: translateZ(calc(var(--z) * var(--tile-depth)));
   background-color: color-mix(in srgb, var(--tile) var(--mix), var(--face));
   /* The same bevel the faces carry. Only a sliver of each slice shows, and
      that sliver is its own shaded edge, so the shading runs on from the face
      instead of every layer starting at full brightness again. */
   box-shadow: var(--tile-bevel);
-  /* A slice stands proud of the tile, so face on it would show past it. The
-     body is only painted while the tile is turned, and it fades rather than
-     switching on: at the start of the turn the widest slice is half one
-     face's colour and half the other's, and a ring of that appearing around
-     a tile in one frame reads as a flash. */
-  animation: tile-body 0.55s linear both;
-  animation-delay: calc(var(--i) * 0.3s);
 }
 
 .cell.eval0 {
@@ -356,28 +366,18 @@ strong.eval2 {
   }
 }
 
-/* The body stands proud of the tile, so near flat it reads as a ring around
-   it — and by the end that ring is half the blank face's colour against the
-   scored one, which is the brightest it ever gets. It has to be gone before
-   the tile settles, and gone gradually, or it snaps off.
-
-   The turn eases out, so time and angle pull apart badly: 9% of the way
-   through the tile has turned 27 degrees, half way through it has turned
-   151, and the last tenth of the turn takes a quarter of the time. These
-   stops are picked against the angle rather than the clock — full while the
-   tile is between 27 and 141 degrees, gone by 168, which still leaves it
-   turning. */
-@keyframes tile-body {
-  from {
-    opacity: 0;
-  }
-  9%,
-  58% {
-    opacity: 1;
-  }
-  80%,
+/* The face has to be the tile's full size when the tile is flat, so it hides
+   the body the way a flat tile does, and has to have pulled in by the time
+   the tile has turned far enough to show its edge. The turn eases out, so 12%
+   of the way through it has already turned 34 degrees. */
+@keyframes tile-face {
+  from,
   to {
-    opacity: 0;
+    scale: 1;
+  }
+  12%,
+  88% {
+    scale: var(--face-shrunk);
   }
 }
 
