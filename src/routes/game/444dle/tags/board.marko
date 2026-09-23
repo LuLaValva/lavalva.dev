@@ -59,6 +59,7 @@ export interface Input {
           style=`--i:${i}; rotate: ${tilt(row, i)}deg`
           data-letter=word[i]?.toUpperCase()
         >
+          <if=flipping><span class=styles.rim/></if>
           ${word[i]?.toUpperCase()}
         </div>
       </for>

@@ -5,6 +5,10 @@
      black letters on. */
   --tile: rgb(200, 174, 121);
   --tile-radius: 0.2rem;
+  --tile-edge: rgb(150, 128, 86);
+  /* Half the tile's thickness; the two faces sit this far either side of
+     centre so the tile is a slab rather than a sheet. */
+  --tile-depth: calc(var(--cell) * 0.045);
   --tile-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
   --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
@@ -165,18 +169,49 @@ dialog {
   position: absolute;
   inset: 0;
   border-radius: var(--tile-radius);
-  box-shadow: var(--tile-bevel);
+  box-shadow:
+    var(--tile-bevel),
+    0 0.15rem 0.35rem rgb(0 0 0 / 0.35);
   backface-visibility: hidden;
   color: black;
 }
 
 .cell.flipping::before {
   background-color: var(--tile);
+  transform: translateZ(var(--tile-depth));
 }
 
 .cell.flipping::after {
   background-color: var(--face);
-  transform: rotateX(180deg);
+  transform: translateZ(calc(var(--tile-depth) * -1)) rotateX(180deg);
+}
+
+/* Closes the slab between the two faces. A turn about X only ever exposes the
+   top and bottom of the rim, so two strips are the whole of it. */
+.rim {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.rim::before,
+.rim::after {
+  content: "";
+  position: absolute;
+  /* Held back to the straight part of the tile, clear of the rounded corners. */
+  left: var(--tile-radius);
+  width: calc(100% - 2 * var(--tile-radius));
+  height: calc(var(--tile-depth) * 2);
+  top: calc(50% - var(--tile-depth));
+  background-color: var(--tile-edge);
+}
+
+.rim::before {
+  transform: rotateX(90deg) translateZ(calc(var(--cell) / 2));
+}
+
+.rim::after {
+  transform: rotateX(-90deg) translateZ(calc(var(--cell) / 2));
 }
 
 .cell.eval0 {
@@ -300,10 +335,15 @@ strong.eval2 {
 
 @keyframes flip {
   from {
-    transform: perspective(12rem) rotateX(0deg);
+    transform: perspective(7rem) translateZ(0) rotateX(0deg);
+  }
+  /* Lifted off the board at the halfway point, the way a tile has to be to
+     turn over at all. */
+  50% {
+    transform: perspective(7rem) translateZ(0.4rem) rotateX(90deg);
   }
   to {
-    transform: perspective(12rem) rotateX(180deg);
+    transform: perspective(7rem) translateZ(0) rotateX(180deg);
   }
 }
 
