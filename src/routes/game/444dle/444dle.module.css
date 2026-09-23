@@ -1,3 +1,11 @@
+/* Registered so it can be animated: a bare custom property would jump between
+   keyframes rather than interpolate. */
+@property --bevel {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
 :root {
   touch-action: manipulation;
 
@@ -9,6 +17,16 @@
      centre so the tile is a slab rather than a sheet. */
   --tile-depth: calc(var(--cell) * 0.095);
   --tile-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
+  /* How far the bevel stands proud of the tile at mid depth. Held under half
+     the gap so two neighbours at full bevel still cannot touch. */
+  --tile-roll: calc(var(--gap) * 0.45);
+  /* Tied to the tile so the turn looks the same at every screen size, and so
+     the ratio below is a constant. */
+  --tile-perspective: calc(var(--cell) * 4.6);
+  /* A face sits a half thickness proud of the tile's plane, where perspective
+     magnifies it. Shrinking by 1 - depth/perspective cancels that exactly, so
+     a turned tile covers the same pixels as a flat one. */
+  --flip-fit: 0.9794;
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
   --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
   --eval-2: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
@@ -159,9 +177,11 @@ dialog {
      the lift are separate animations on separate properties: a single
      from/to keyframe means the rotation is one uninterrupted curve, so its
      easing alone decides how the flip feels. */
+  scale: var(--flip-fit);
   animation:
     flip 0.55s ease-out both,
-    lift 0.55s ease-in-out both;
+    lift 0.55s ease-in-out both,
+    bevel 0.55s ease-in-out both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
@@ -195,8 +215,11 @@ dialog {
    faces rolling into each other rather than a band painted on. */
 .slice {
   position: absolute;
-  inset: 0;
-  border-radius: var(--tile-radius);
+  /* Grown outwards from the tile's own shape: offsetting a rounded rectangle
+     by a distance widens it and opens its corners by that same distance, so
+     the bevel stays a true rounded rectangle at every depth. */
+  inset: calc(var(--out) * var(--bevel) * -1);
+  border-radius: calc(var(--tile-radius) + var(--out) * var(--bevel));
   transform: translateZ(calc(var(--z) * var(--tile-depth)));
   background-color: color-mix(in srgb, var(--tile) var(--mix), var(--face));
 }
@@ -322,10 +345,10 @@ strong.eval2 {
 
 @keyframes flip {
   from {
-    transform: perspective(7rem) rotateX(0deg);
+    transform: perspective(var(--tile-perspective)) rotateX(0deg);
   }
   to {
-    transform: perspective(7rem) rotateX(180deg);
+    transform: perspective(var(--tile-perspective)) rotateX(180deg);
   }
 }
 
@@ -333,7 +356,20 @@ strong.eval2 {
    all. Kept off `transform` so it cannot break the rotation's interpolation. */
 @keyframes lift {
   50% {
-    scale: 1.14;
+    scale: calc(var(--flip-fit) * 1.14);
+  }
+}
+
+/* The bevel stands out only while the tile is turning. Face on, a slice wider
+   than the tile would show past it, so at either end of the turn the stack
+   collapses to exactly the flat tile. */
+@keyframes bevel {
+  from,
+  to {
+    --bevel: 0px;
+  }
+  50% {
+    --bevel: var(--tile-roll);
   }
 }
 

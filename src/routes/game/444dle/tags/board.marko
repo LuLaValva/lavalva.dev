@@ -5,12 +5,20 @@ import styles from "../444dle.module.css";
 // overlap on screen at a steep angle, which is what keeps the side reading as
 // solid rather than as a staircase.
 static const SLICES = 24;
+// Spaced around a half turn rather than evenly through the depth, so the
+// slices sit at even steps along the bevel's curve. Stepping z evenly instead
+// would bunch them at the middle and leave a jump at either face, where the
+// curve is steepest.
 static const BODY = Array.from({ length: SLICES }, (_, i) => {
-  const t = i / (SLICES - 1);
+  const angle = Math.PI * (i / (SLICES - 1) - 0.5);
   return {
     // Just shy of the faces, so the outermost slices do not fight them.
-    z: (t - 0.5) * 1.96,
-    mix: `${Math.round(t * 100)}%`,
+    z: Math.sin(angle) * 0.98,
+    // How far this slice stands out from the tile's edge: none at the faces,
+    // most at mid depth. A slice at the surface is therefore exactly the flat
+    // tile, which is what keeps the two renderings interchangeable.
+    out: Math.cos(angle).toFixed(4),
+    mix: `${Math.round((Math.sin(angle) + 1) * 50)}%`,
   };
 });
 
@@ -73,8 +81,11 @@ export interface Input {
           data-letter=word[i]?.toUpperCase()
         >
           <if=flipping>
-            <for|{ z, mix }| of=BODY>
-              <span class=styles.slice style=`--z:${z}; --mix:${mix}`/>
+            <for|{ z, out, mix }| of=BODY>
+              <span
+                class=styles.slice
+                style=`--z:${z}; --out:${out}; --mix:${mix}`
+              />
             </for>
           </if>
           ${word[i]?.toUpperCase()}
