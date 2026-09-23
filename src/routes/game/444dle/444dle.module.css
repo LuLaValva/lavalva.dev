@@ -193,11 +193,6 @@ dialog {
   box-shadow: var(--tile-bevel);
   backface-visibility: hidden;
   color: black;
-  /* Full size at either end of the turn, where it has to cover the body
-     exactly as a flat tile does, and pulled in to meet the body's narrow end
-     while the tile is turned. The body itself never moves. */
-  animation: tile-face 0.55s linear both;
-  animation-delay: calc(var(--i) * 0.3s);
 }
 
 .cell.flipping::before {
@@ -363,21 +358,6 @@ strong.eval2 {
   }
   to {
     transform: perspective(var(--tile-perspective)) rotateX(180deg);
-  }
-}
-
-/* The face has to be the tile's full size when the tile is flat, so it hides
-   the body the way a flat tile does, and has to have pulled in by the time
-   the tile has turned far enough to show its edge. The turn eases out, so 12%
-   of the way through it has already turned 34 degrees. */
-@keyframes tile-face {
-  from,
-  to {
-    scale: 1;
-  }
-  12%,
-  88% {
-    scale: var(--face-shrunk);
   }
 }
 
