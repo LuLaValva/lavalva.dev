@@ -57,6 +57,7 @@ export interface Input {
               : word[i] && styles.filled,
           ]
           style=`--i:${i}; rotate: ${tilt(row, i)}deg`
+          data-letter=word[i]?.toUpperCase()
         >
           ${word[i]?.toUpperCase()}
         </div>

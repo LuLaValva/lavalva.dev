@@ -4,8 +4,7 @@
   /* Tiles are lifted from reduce, so every score stays light enough to read
      black letters on. */
   --tile: rgb(200, 174, 121);
-  --tile-edge: rgb(150, 128, 86);
-  --tile-depth: calc(var(--cell) * 0.14);
+  --tile-radius: 0.2rem;
   --tile-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
   --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
@@ -128,7 +127,7 @@ dialog {
   font-family: monospace;
   font-weight: bold;
   color: black;
-  border-radius: 0.2rem;
+  border-radius: var(--tile-radius);
   box-sizing: border-box;
   user-select: none;
 }
@@ -140,52 +139,54 @@ dialog {
 }
 
 .cell.scored {
+  background-color: var(--face);
   box-shadow: var(--tile-bevel);
 }
 
-/* Only the row being revealed is built as a solid tile. Every earlier row has
+/* Only the row being revealed is built with two faces. Every earlier row has
    finished turning, so it stays a plain flat square. */
 .cell.flipping {
   position: relative;
   transform-style: preserve-3d;
-  /* Each tile turns face down and back, a beat after the one before it. The
-     colour is swapped while it is edge-on, so it is never seen changing. */
-  animation: flip 0.5s ease-in-out backwards;
+  /* The faces carry the tile now, so the cell itself is just the hinge. */
+  background-color: transparent;
+  box-shadow: none;
+  color: transparent;
+  /* Each tile turns right over, a beat after the one before it. */
+  animation: flip 0.55s ease-in-out both;
   animation-delay: calc(var(--i) * 0.3s);
-  transition: background-color 0s;
-  transition-delay: calc(var(--i) * 0.3s + 0.25s);
 }
 
-/* The tile's thickness. A turn about X only ever exposes the top and bottom
-   edges, so two solid strips stand in for the whole rim — and as
-   pseudo-elements they cost no markup. */
+/* Blank side up, score side down — the tile lands on its other face rather
+   than swapping colour behind your back. */
 .cell.flipping::before,
 .cell.flipping::after {
-  content: "";
+  content: attr(data-letter);
   position: absolute;
-  left: 0;
-  width: 100%;
-  height: var(--tile-depth);
-  top: calc(50% - var(--tile-depth) / 2);
-  background-color: var(--tile-edge);
+  inset: 0;
+  border-radius: var(--tile-radius);
+  box-shadow: var(--tile-bevel);
+  backface-visibility: hidden;
+  color: black;
 }
 
 .cell.flipping::before {
-  transform: rotateX(90deg) translateZ(calc(var(--cell) / 2));
+  background-color: var(--tile);
 }
 
 .cell.flipping::after {
-  transform: rotateX(-90deg) translateZ(calc(var(--cell) / 2));
+  background-color: var(--face);
+  transform: rotateX(180deg);
 }
 
 .cell.eval0 {
-  background-color: var(--eval-0);
+  --face: var(--eval-0);
 }
 .cell.eval1 {
-  background-color: var(--eval-1);
+  --face: var(--eval-1);
 }
 .cell.eval2 {
-  background-color: var(--eval-2);
+  --face: var(--eval-2);
 }
 
 /* Reused by the help dialog to name the colors. */
@@ -298,12 +299,11 @@ strong.eval2 {
 }
 
 @keyframes flip {
-  0%,
-  100% {
-    transform: perspective(10rem) rotateX(0deg);
+  from {
+    transform: perspective(12rem) rotateX(0deg);
   }
-  50% {
-    transform: perspective(10rem) rotateX(-90deg);
+  to {
+    transform: perspective(12rem) rotateX(180deg);
   }
 }
 
