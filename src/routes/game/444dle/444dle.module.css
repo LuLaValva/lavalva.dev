@@ -1,11 +1,3 @@
-/* Registered so it can be animated: a bare custom property would jump between
-   keyframes rather than interpolate. */
-@property --bevel {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 0px;
-}
-
 :root {
   touch-action: manipulation;
 
@@ -178,10 +170,12 @@ dialog {
      from/to keyframe means the rotation is one uninterrupted curve, so its
      easing alone decides how the flip feels. */
   scale: var(--flip-fit);
+  /* Promoted once, up front. Without it Chrome builds and tears down a
+     compositing layer per slice as the turn starts and ends. */
+  will-change: transform;
   animation:
     flip 0.55s ease-out both,
-    lift 0.55s ease-in-out both,
-    bevel 0.55s ease-in-out both;
+    lift 0.55s ease-in-out both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
@@ -218,14 +212,19 @@ dialog {
   /* Grown outwards from the tile's own shape: offsetting a rounded rectangle
      by a distance widens it and opens its corners by that same distance, so
      the bevel stays a true rounded rectangle at every depth. */
-  inset: calc(var(--out) * var(--bevel) * -1);
-  border-radius: calc(var(--tile-radius) + var(--out) * var(--bevel));
+  inset: calc(var(--out) * var(--tile-roll) * -1);
+  border-radius: calc(var(--tile-radius) + var(--out) * var(--tile-roll));
   transform: translateZ(calc(var(--z) * var(--tile-depth)));
   background-color: color-mix(in srgb, var(--tile) var(--mix), var(--face));
   /* The same bevel the faces carry. Only a sliver of each slice shows, and
      that sliver is its own shaded edge, so the shading runs on from the face
      instead of every layer starting at full brightness again. */
   box-shadow: var(--tile-bevel);
+  /* A slice stands proud of the tile, so face on it would show past it. The
+     body is simply not painted at either end of the turn, which costs a
+     discrete step rather than a value interpolated on every frame. */
+  animation: tile-body 0.55s step-end both;
+  animation-delay: calc(var(--i) * 0.3s);
 }
 
 .cell.eval0 {
@@ -364,16 +363,17 @@ strong.eval2 {
   }
 }
 
-/* The bevel stands out only while the tile is turning. Face on, a slice wider
-   than the tile would show past it, so at either end of the turn the stack
-   collapses to exactly the flat tile. */
-@keyframes bevel {
-  from,
-  to {
-    --bevel: 0px;
+@keyframes tile-body {
+  from {
+    visibility: hidden;
   }
-  50% {
-    --bevel: var(--tile-roll);
+  4%,
+  96% {
+    visibility: visible;
+  }
+  97%,
+  to {
+    visibility: hidden;
   }
 }
 
