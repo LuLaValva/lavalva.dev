@@ -5,10 +5,9 @@
      black letters on. */
   --tile: rgb(200, 174, 121);
   --tile-radius: 0.2rem;
-  --tile-edge: rgb(150, 128, 86);
   /* Half the tile's thickness; the two faces sit this far either side of
      centre so the tile is a slab rather than a sheet. */
-  --tile-depth: calc(var(--cell) * 0.045);
+  --tile-depth: calc(var(--cell) * 0.095);
   --tile-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
   --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
@@ -174,9 +173,9 @@ dialog {
   position: absolute;
   inset: 0;
   border-radius: var(--tile-radius);
-  box-shadow:
-    var(--tile-bevel),
-    0 0.15rem 0.35rem rgb(0 0 0 / 0.35);
+  /* No cast shadow: it darkened the seam where the face meets the rim, and a
+     tile at rest does not have one either. */
+  box-shadow: var(--tile-bevel);
   backface-visibility: hidden;
   color: black;
 }
@@ -208,16 +207,29 @@ dialog {
   /* Spans the full thickness, from the back face to the front one. */
   height: calc(var(--tile-depth) * 2);
   top: calc(50% - var(--tile-depth));
-  /* Tapered over the same distance the face's corners curve in, so the rim
-     runs out at the corner instead of cutting straight across it. */
-  border-radius: var(--tile-radius) / var(--tile-depth);
+  /* Rounded right off, so edge on the tile reads as a slab with a rolled
+     edge rather than a cut one. */
+  border-radius: 999px;
   /* Flat on, perspective still catches the rim as a hairline above and below
-     the tile, so it is only painted while the tile is actually turned. This
-     rides on background-color rather than opacity: any opacity below 1 would
-     force the rim's transform-style back to flat and undo its placement. */
-  background-color: var(--tile-edge);
+     the tile, so it is only painted while the tile is actually turned. Safe
+     on opacity only because these strips are leaves: opacity below 1 forces
+     transform-style flat, which would wreck any 3D descendant. */
   animation: rim-catches-light 0.55s linear both;
   animation-delay: calc(var(--i) * 0.3s);
+}
+
+/* The rim is not a colour of its own: it is where one face's colour rolls
+   round into the other's. At an angle that reads as a soft band along the
+   near edge, and edge on it is the whole gradient. */
+/* rotateX(90deg) turns each strip's own bottom edge towards the viewer, so
+   the front face's colour sits at the bottom of one strip and the top of the
+   other. */
+.rim::before {
+  background-image: linear-gradient(to top, var(--tile), var(--face));
+}
+
+.rim::after {
+  background-image: linear-gradient(to bottom, var(--tile), var(--face));
 }
 
 .rim::before {
@@ -367,11 +379,11 @@ strong.eval2 {
 @keyframes rim-catches-light {
   from,
   to {
-    background-color: transparent;
+    opacity: 0;
   }
   12%,
   88% {
-    background-color: var(--tile-edge);
+    opacity: 1;
   }
 }
 
