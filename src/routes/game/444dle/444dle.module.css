@@ -222,6 +222,10 @@ dialog {
   border-radius: calc(var(--tile-radius) + var(--out) * var(--bevel));
   transform: translateZ(calc(var(--z) * var(--tile-depth)));
   background-color: color-mix(in srgb, var(--tile) var(--mix), var(--face));
+  /* The same bevel the faces carry. Only a sliver of each slice shows, and
+     that sliver is its own shaded edge, so the shading runs on from the face
+     instead of every layer starting at full brightness again. */
+  box-shadow: var(--tile-bevel);
 }
 
 .cell.eval0 {
