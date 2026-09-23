@@ -4,7 +4,7 @@
   /* Tiles are lifted from reduce, so every score stays light enough to read
      black letters on. */
   --tile: rgb(200, 174, 121);
-  --tile-radius: 0.06rem;
+  --tile-radius: 0.2rem;
   --tile-edge: rgb(150, 128, 86);
   /* Half the tile's thickness; the two faces sit this far either side of
      centre so the tile is a slab rather than a sheet. */
@@ -208,7 +208,16 @@ dialog {
   /* Spans the full thickness, from the back face to the front one. */
   height: calc(var(--tile-depth) * 2);
   top: calc(50% - var(--tile-depth));
+  /* Tapered over the same distance the face's corners curve in, so the rim
+     runs out at the corner instead of cutting straight across it. */
+  border-radius: var(--tile-radius) / var(--tile-depth);
+  /* Flat on, perspective still catches the rim as a hairline above and below
+     the tile, so it is only painted while the tile is actually turned. This
+     rides on background-color rather than opacity: any opacity below 1 would
+     force the rim's transform-style back to flat and undo its placement. */
   background-color: var(--tile-edge);
+  animation: rim-catches-light 0.55s linear both;
+  animation-delay: calc(var(--i) * 0.3s);
 }
 
 .rim::before {
@@ -352,6 +361,17 @@ strong.eval2 {
 @keyframes lift {
   50% {
     scale: 1.14;
+  }
+}
+
+@keyframes rim-catches-light {
+  from,
+  to {
+    background-color: transparent;
+  }
+  12%,
+  88% {
+    background-color: var(--tile-edge);
   }
 }
 
