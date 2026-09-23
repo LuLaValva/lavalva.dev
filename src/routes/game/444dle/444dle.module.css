@@ -4,7 +4,7 @@
   /* Tiles are lifted from reduce, so every score stays light enough to read
      black letters on. */
   --tile: rgb(200, 174, 121);
-  --tile-radius: 0.2rem;
+  --tile-radius: 0.06rem;
   --tile-edge: rgb(150, 128, 86);
   /* Half the tile's thickness; the two faces sit this far either side of
      centre so the tile is a slab rather than a sheet. */
@@ -156,8 +156,13 @@ dialog {
   background-color: transparent;
   box-shadow: none;
   color: transparent;
-  /* Each tile turns right over, a beat after the one before it. */
-  animation: flip 0.55s ease-in-out both;
+  /* Each tile turns right over, a beat after the one before it. The turn and
+     the lift are separate animations on separate properties: a single
+     from/to keyframe means the rotation is one uninterrupted curve, so its
+     easing alone decides how the flip feels. */
+  animation:
+    flip 0.55s ease-out both,
+    lift 0.55s ease-in-out both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
@@ -198,9 +203,9 @@ dialog {
 .rim::after {
   content: "";
   position: absolute;
-  /* Held back to the straight part of the tile, clear of the rounded corners. */
-  left: var(--tile-radius);
-  width: calc(100% - 2 * var(--tile-radius));
+  left: 0;
+  width: 100%;
+  /* Spans the full thickness, from the back face to the front one. */
   height: calc(var(--tile-depth) * 2);
   top: calc(50% - var(--tile-depth));
   background-color: var(--tile-edge);
@@ -335,15 +340,18 @@ strong.eval2 {
 
 @keyframes flip {
   from {
-    transform: perspective(7rem) translateZ(0) rotateX(0deg);
-  }
-  /* Lifted off the board at the halfway point, the way a tile has to be to
-     turn over at all. */
-  50% {
-    transform: perspective(7rem) translateZ(0.4rem) rotateX(90deg);
+    transform: perspective(7rem) rotateX(0deg);
   }
   to {
-    transform: perspective(7rem) translateZ(0) rotateX(180deg);
+    transform: perspective(7rem) rotateX(180deg);
+  }
+}
+
+/* Rides off the board and back, the way a tile has to in order to turn at
+   all. Kept off `transform` so it cannot break the rotation's interpolation. */
+@keyframes lift {
+  50% {
+    scale: 1.14;
   }
 }
 
