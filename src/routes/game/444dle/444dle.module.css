@@ -170,9 +170,6 @@ dialog {
      from/to keyframe means the rotation is one uninterrupted curve, so its
      easing alone decides how the flip feels. */
   scale: var(--flip-fit);
-  /* Promoted once, up front. Without it Chrome builds and tears down a
-     compositing layer per slice as the turn starts and ends. */
-  will-change: transform;
   animation:
     flip 0.55s ease-out both,
     lift 0.55s ease-in-out both;
