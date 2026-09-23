@@ -102,6 +102,13 @@ dialog {
 .boards {
   display: flex;
   justify-content: center;
+  /* A turning tile paints well outside its own box — it lifts, it bevels, and
+     perspective widens it — and Chrome has been leaving some of that behind
+     as it repaints. Declaring that nothing paints outside this box gives the
+     invalidation an explicit bound; the padding is the room a tile at the
+     edge of the board needs so containing it clips nothing real. */
+  contain: paint;
+  padding: calc(var(--cell) * 0.3);
 }
 
 .board {
