@@ -8,9 +8,7 @@
   /* Half the tile's thickness; the two faces sit this far either side of
      centre so the tile is a slab rather than a sheet. */
   --tile-depth: calc(var(--cell) * 0.095);
-  /* Keys keep a lit edge; tiles are matte, so a face meeting the rim reads as
-     one surface rather than a shaded one running into an unshaded one. */
-  --key-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
+  --tile-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
   --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
   --eval-2: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
@@ -139,11 +137,13 @@ dialog {
 
 .cell.filled {
   background-color: var(--tile);
+  box-shadow: var(--tile-bevel);
   animation: pop 0.15s;
 }
 
 .cell.scored {
   background-color: var(--face);
+  box-shadow: var(--tile-bevel);
 }
 
 /* Only the row being revealed is built with two faces. Every earlier row has
@@ -173,6 +173,7 @@ dialog {
   position: absolute;
   inset: 0;
   border-radius: var(--tile-radius);
+  box-shadow: var(--tile-bevel);
   backface-visibility: hidden;
   color: black;
 }
@@ -187,54 +188,17 @@ dialog {
   transform: translateZ(calc(var(--tile-depth) * -1)) rotateX(180deg);
 }
 
-/* Closes the slab between the two faces. A turn about X only ever exposes the
-   top and bottom of the rim, so two strips are the whole of it. */
-.rim {
+/* The tile's body, built by stacking its own silhouette through the depth.
+   Every slice carries the tile's border radius, so the extrusion follows the
+   rounded corners exactly — which a flat strip standing on edge never could.
+   Slice colour walks from one face's to the other's, so the side is the two
+   faces rolling into each other rather than a band painted on. */
+.slice {
   position: absolute;
   inset: 0;
-  transform-style: preserve-3d;
-}
-
-.rim::before,
-.rim::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  width: 100%;
-  /* Spans the full thickness, from the back face to the front one. */
-  height: calc(var(--tile-depth) * 2);
-  top: calc(50% - var(--tile-depth));
-  /* Rounded right off, so edge on the tile reads as a slab with a rolled
-     edge rather than a cut one. */
-  border-radius: 999px;
-  /* Flat on, perspective still catches the rim as a hairline above and below
-     the tile, so it is only painted while the tile is actually turned. Safe
-     on opacity only because these strips are leaves: opacity below 1 forces
-     transform-style flat, which would wreck any 3D descendant. */
-  animation: rim-catches-light 0.55s linear both;
-  animation-delay: calc(var(--i) * 0.3s);
-}
-
-/* The rim is not a colour of its own: it is where one face's colour rolls
-   round into the other's. At an angle that reads as a soft band along the
-   near edge, and edge on it is the whole gradient. */
-/* rotateX(90deg) turns each strip's own bottom edge towards the viewer, so
-   the front face's colour sits at the bottom of one strip and the top of the
-   other. */
-.rim::before {
-  background-image: linear-gradient(to top, var(--tile), var(--face));
-}
-
-.rim::after {
-  background-image: linear-gradient(to bottom, var(--tile), var(--face));
-}
-
-.rim::before {
-  transform: rotateX(90deg) translateZ(calc(var(--cell) / 2));
-}
-
-.rim::after {
-  transform: rotateX(-90deg) translateZ(calc(var(--cell) / 2));
+  border-radius: var(--tile-radius);
+  transform: translateZ(calc(var(--z) * var(--tile-depth)));
+  background-color: color-mix(in srgb, var(--tile) var(--mix), var(--face));
 }
 
 .cell.eval0 {
@@ -283,7 +247,7 @@ strong.eval2 {
   border: none;
   border-radius: 0.2rem;
   background-color: light-dark(rgb(226, 214, 202), rgb(66, 52, 40));
-  box-shadow: var(--key-bevel);
+  box-shadow: var(--tile-bevel);
   color: light-dark(black, white);
   font-family: monospace;
   font-weight: bold;
@@ -370,17 +334,6 @@ strong.eval2 {
 @keyframes lift {
   50% {
     scale: 1.14;
-  }
-}
-
-@keyframes rim-catches-light {
-  from,
-  to {
-    opacity: 0;
-  }
-  12%,
-  88% {
-    opacity: 1;
   }
 }
 

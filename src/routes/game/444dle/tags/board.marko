@@ -1,6 +1,19 @@
 import { type Eval, NUM_GUESSES, NUM_LETTERS } from "../utils";
 import styles from "../444dle.module.css";
 
+// Slices through the tile's thickness. Enough that neighbouring slices still
+// overlap on screen at a steep angle, which is what keeps the side reading as
+// solid rather than as a staircase.
+static const SLICES = 24;
+static const BODY = Array.from({ length: SLICES }, (_, i) => {
+  const t = i / (SLICES - 1);
+  return {
+    // Just shy of the faces, so the outermost slices do not fight them.
+    z: (t - 0.5) * 1.96,
+    mix: `${Math.round(t * 100)}%`,
+  };
+});
+
 export interface Input {
   /** Which of the three boards this is; varies the tile tilt between them. */
   index: number;
@@ -59,7 +72,11 @@ export interface Input {
           style=`--i:${i}; rotate: ${tilt(row, i)}deg`
           data-letter=word[i]?.toUpperCase()
         >
-          <if=flipping><span class=styles.rim/></if>
+          <if=flipping>
+            <for|{ z, mix }| of=BODY>
+              <span class=styles.slice style=`--z:${z}; --mix:${mix}`/>
+            </for>
+          </if>
           ${word[i]?.toUpperCase()}
         </div>
       </for>
