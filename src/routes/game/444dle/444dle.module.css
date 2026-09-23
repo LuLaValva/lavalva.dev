@@ -231,6 +231,13 @@ dialog {
      that sliver is its own shaded edge, so the shading runs on from the face
      instead of every layer starting at full brightness again. */
   box-shadow: var(--tile-bevel);
+  /* Not painted at either end of the turn. The cut is inwards, so the face
+     covers the body at rest either way and this shows nothing — but a row
+     keeps its flipping class until the next guess lands, so without it a
+     hundred and forty four transformed slices sit live in the compositor
+     long after the turn is over, and Chrome leaves paint around them. */
+  animation: tile-body 0.55s step-end both;
+  animation-delay: calc(var(--i) * 0.3s);
 }
 
 .cell.eval0 {
@@ -358,6 +365,20 @@ strong.eval2 {
   }
   to {
     transform: perspective(var(--tile-perspective)) rotateX(180deg);
+  }
+}
+
+@keyframes tile-body {
+  from {
+    visibility: hidden;
+  }
+  4%,
+  96% {
+    visibility: visible;
+  }
+  97%,
+  to {
+    visibility: hidden;
   }
 }
 
