@@ -40,6 +40,8 @@ body {
   width: var(--size);
   height: var(--size);
   line-height: var(--size);
+  /* Same proportion the 444dle tiles carry, so a letter fills its tile. */
+  font-size: calc(var(--size) * 0.6);
   border-radius: 0.2rem;
   text-align: center;
   background-color: rgb(200, 174, 121);
@@ -98,7 +100,6 @@ dialog {
   }
   > .tile {
     --size: var(--big);
-    font-size: 2rem;
 
     &:focus-visible {
       background-color: rgb(83, 203, 115);
