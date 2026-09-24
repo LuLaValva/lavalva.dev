@@ -190,6 +190,8 @@ dialog {
      No timing function, so the turn takes CSS's default ease. */
   animation-name: flip-settle;
   animation-duration: 0.65s;
+  /* The turn is linear because nothing slows it; see the keyframes. */
+  animation-timing-function: linear;
   animation-fill-mode: both;
   animation-delay: calc(var(--i) * 0.3s);
 }
@@ -376,32 +378,43 @@ strong.eval2 {
   }
 }
 
-/* One property has to carry three motions — the turn, the toss, and the tile
-   coming round to the lie it settles at — and they do not share a curve. The
-   answer is not a stop per frame, though: a keyframe can carry its own timing
-   function, so each leg gets a real bezier and the stops are only where the
-   motion changes direction.
+/* One impulse at the start and then nothing but gravity, which fixes both
+   curves and makes them disagree.
 
-   The beziers hand over at matched speed. A curve ending on 1 arrives at a
-   standstill, so a leg that ends there makes the tile stall mid-air before
-   the next leg picks it up — the second control point is held short of 1 for
-   exactly that reason. */
+   Nothing torques the tile once it is out of the hand, so it turns at a
+   constant rate — linear, right up until the table stops it dead. Easing the
+   turn is drag, and drag is what makes a tile look like it is settling
+   through water.
 
-/* Thrown hard and let go: it is most of the way round before it peaks, then
-   carries what is left at a steady rate into the table. The lie comes round
-   with the turn, so both finish together and the tile simply arrives. */
+   Height is the other half: thrown up, decelerating to the top, accelerating
+   back down. A parabola, symmetric about its peak.
+
+   Those cannot share a timing function, and the turn is the half you read, so
+   it gets the exact one — every leg linear, with the arc sampled across
+   enough stops to round it off. */
+
+/* Thrown and let go. */
 @keyframes flip-settle {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(0deg);
-    animation-timing-function: cubic-bezier(0.14, 0.6, 0.6, 0.92);
+  }
+  25% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.45))
+      rotateZ(calc(var(--lie) * 0.75 + var(--lie-settled) * 0.25))
+      rotateX(45deg);
   }
   50% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--cell) * 0.6))
-      rotateZ(calc(var(--lie) * 0.22 + var(--lie-settled) * 0.78))
-      rotateX(140deg);
-    animation-timing-function: linear;
+      rotateZ(calc(var(--lie) * 0.5 + var(--lie-settled) * 0.5)) rotateX(90deg);
+  }
+  75% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.45))
+      rotateZ(calc(var(--lie) * 0.25 + var(--lie-settled) * 0.75))
+      rotateX(135deg);
   }
   to {
     transform: perspective(var(--tile-perspective)) translateZ(0)
@@ -409,32 +422,48 @@ strong.eval2 {
   }
 }
 
-/* The same throw with more on it: round sooner, down sooner, and back off the
-   table once as it lands. It holds its lie until it is down and does all its
-   turning over that hop — perspective flattens the hop itself to about a
-   pixel, so the skid is what the hop has to show for itself. */
+/* Thrown flatter and harder: round sooner, and it hits with enough left to
+   come off the table once more. It carries no spin about the table's face in
+   the air — that comes from the scuff of landing, which is why it turns to
+   its settled lie fast on contact and then eases off. */
 @keyframes flip-bounce {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(0deg);
-    animation-timing-function: cubic-bezier(0.12, 0.66, 0.58, 0.93);
   }
-  42% {
+  16% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.6)) rotateZ(var(--lie)) rotateX(150deg);
-    animation-timing-function: linear;
+      translateZ(calc(var(--cell) * 0.45)) rotateZ(var(--lie)) rotateX(45deg);
+  }
+  32% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.6)) rotateZ(var(--lie)) rotateX(90deg);
+  }
+  48% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.45)) rotateZ(var(--lie)) rotateX(135deg);
   }
   64% {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(180deg);
-    animation-timing-function: cubic-bezier(0.25, 0.7, 0.5, 0.95);
   }
-  79% {
+  73% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.28))
+      translateZ(calc(var(--cell) * 0.21))
       rotateZ(calc(var(--lie) * 0.45 + var(--lie-settled) * 0.55))
       rotateX(180deg);
-    animation-timing-function: cubic-bezier(0.45, 0, 0.9, 1);
+  }
+  82% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.28))
+      rotateZ(calc(var(--lie) * 0.18 + var(--lie-settled) * 0.82))
+      rotateX(180deg);
+  }
+  91% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.21))
+      rotateZ(calc(var(--lie) * 0.05 + var(--lie-settled) * 0.95))
+      rotateX(180deg);
   }
   to {
     transform: perspective(var(--tile-perspective)) translateZ(0)
