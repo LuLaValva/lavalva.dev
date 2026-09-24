@@ -411,17 +411,27 @@ strong.eval2 {
    it gets the exact one — every leg linear, with the arc sampled across
    enough stops to round it off. */
 
-/* Thrown and let go. */
+/* Thrown and let go.
+
+   z-index rides along so that a tile in the air paints over its neighbours
+   rather than under them. Cells composite in DOM order otherwise, so a tile
+   still sitting at rest cuts into the one to its left in mid-flight, which
+   put a ceiling on how far the toss could go. Only the stops where it
+   changes are given: an integer interpolates and rounds, so 0 to 10 across
+   the opening leg is above its neighbours within one percent of the turn,
+   and back level only in the last half percent. */
 @keyframes flip-settle {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(0deg);
+    z-index: 0;
   }
   25% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--cell) * var(--toss-height) * 0.75))
       rotateZ(calc(var(--lie) * 0.75 + var(--lie-settled) * 0.25))
       rotateX(45deg);
+    z-index: 10;
   }
   50% {
     transform: perspective(var(--tile-perspective))
@@ -433,10 +443,12 @@ strong.eval2 {
       translateZ(calc(var(--cell) * var(--toss-height) * 0.75))
       rotateZ(calc(var(--lie) * 0.25 + var(--lie-settled) * 0.75))
       rotateX(135deg);
+    z-index: 10;
   }
   to {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie-settled)) rotateX(180deg);
+    z-index: 0;
   }
 }
 
@@ -448,11 +460,13 @@ strong.eval2 {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(0deg);
+    z-index: 0;
   }
   16% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--cell) * var(--toss-height) * 0.75))
       rotateZ(var(--lie)) rotateX(45deg);
+    z-index: 10;
   }
   32% {
     transform: perspective(var(--tile-perspective))
@@ -485,10 +499,12 @@ strong.eval2 {
       translateZ(calc(var(--cell) * var(--hop-height) * 0.75))
       rotateZ(calc(var(--lie) * 0.05 + var(--lie-settled) * 0.95))
       rotateX(180deg);
+    z-index: 10;
   }
   to {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie-settled)) rotateX(180deg);
+    z-index: 0;
   }
 }
 
