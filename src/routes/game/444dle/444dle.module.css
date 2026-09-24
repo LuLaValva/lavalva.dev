@@ -354,15 +354,19 @@ strong.eval2 {
 .results {
   text-align: center;
 
-  /* Centred rather than left aligned, which is what lets the third board sit
-     under the other two without being indented to meet them — an indent of
-     spaces lands differently wherever the text ends up pasted. */
+  /* Left aligned inside a block that is itself centred, because the third
+     board is indented to sit under the second and an indent only lands
+     against a left edge. Monospace for the same reason: the indent is
+     spaces, so the spaces have to be the width they are counted as. */
   pre {
-    font-family: inherit;
+    font-family: monospace;
     font-size: 0.85rem;
+    text-align: left;
     width: fit-content;
+    max-width: 100%;
     margin: 1rem auto;
-    white-space: pre-wrap;
+    white-space: pre;
+    overflow-x: auto;
   }
 
   hr {
