@@ -376,68 +376,32 @@ strong.eval2 {
   }
 }
 
-/* Thrown: all the force is at the start, the tile spins at close to a
-   constant rate, and it rises and falls on the way round. It turns towards
-   where it will come to rest as it goes, so both rotations finish together
-   and it simply arrives. */
+/* One property has to carry three motions — the turn, the toss, and the tile
+   coming round to the lie it settles at — and they do not share a curve. The
+   answer is not a stop per frame, though: a keyframe can carry its own timing
+   function, so each leg gets a real bezier and the stops are only where the
+   motion changes direction.
+
+   The beziers hand over at matched speed. A curve ending on 1 arrives at a
+   standstill, so a leg that ends there makes the tile stall mid-air before
+   the next leg picks it up — the second control point is held short of 1 for
+   exactly that reason. */
+
+/* Thrown hard and let go: it is most of the way round before it peaks, then
+   carries what is left at a steady rate into the table. The lie comes round
+   with the turn, so both finish together and the tile simply arrives. */
 @keyframes flip-settle {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(0deg);
-  }
-  10% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.216))
-      rotateZ(calc(var(--lie) * 0.88 + var(--lie-settled) * 0.12))
-      rotateX(22deg);
-  }
-  20% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.384))
-      rotateZ(calc(var(--lie) * 0.76 + var(--lie-settled) * 0.24))
-      rotateX(43deg);
-  }
-  30% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.504))
-      rotateZ(calc(var(--lie) * 0.65 + var(--lie-settled) * 0.35))
-      rotateX(63deg);
-  }
-  40% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.576))
-      rotateZ(calc(var(--lie) * 0.54 + var(--lie-settled) * 0.46))
-      rotateX(83deg);
+    animation-timing-function: cubic-bezier(0.14, 0.6, 0.6, 0.92);
   }
   50% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--cell) * 0.6))
-      rotateZ(calc(var(--lie) * 0.44 + var(--lie-settled) * 0.56))
-      rotateX(101deg);
-  }
-  60% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.576))
-      rotateZ(calc(var(--lie) * 0.34 + var(--lie-settled) * 0.66))
-      rotateX(119deg);
-  }
-  70% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.504))
-      rotateZ(calc(var(--lie) * 0.25 + var(--lie-settled) * 0.75))
-      rotateX(135deg);
-  }
-  80% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.384))
-      rotateZ(calc(var(--lie) * 0.16 + var(--lie-settled) * 0.84))
-      rotateX(151deg);
-  }
-  90% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.216))
-      rotateZ(calc(var(--lie) * 0.08 + var(--lie-settled) * 0.92))
-      rotateX(166deg);
+      rotateZ(calc(var(--lie) * 0.22 + var(--lie-settled) * 0.78))
+      rotateX(140deg);
+    animation-timing-function: linear;
   }
   to {
     transform: perspective(var(--tile-perspective)) translateZ(0)
@@ -445,67 +409,32 @@ strong.eval2 {
   }
 }
 
-/* The same throw with more on it: round sooner, and off the table once more
-   as it lands. This one holds its lie until it is down, and does all its
-   turning over the hop — the skid is what the hop has to show for itself,
-   since perspective flattens the hop itself to about a pixel. */
+/* The same throw with more on it: round sooner, down sooner, and back off the
+   table once as it lands. It holds its lie until it is down and does all its
+   turning over that hop — perspective flattens the hop itself to about a
+   pixel, so the skid is what the hop has to show for itself. */
 @keyframes flip-bounce {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(0deg);
+    animation-timing-function: cubic-bezier(0.12, 0.66, 0.58, 0.93);
   }
-  8.8% {
+  42% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.263)) rotateZ(var(--lie)) rotateX(27deg);
+      translateZ(calc(var(--cell) * 0.6)) rotateZ(var(--lie)) rotateX(150deg);
+    animation-timing-function: linear;
   }
-  17.5% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.45)) rotateZ(var(--lie)) rotateX(53deg);
-  }
-  26.2% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.562)) rotateZ(var(--lie)) rotateX(78deg);
-  }
-  35% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.6)) rotateZ(var(--lie)) rotateX(101deg);
-  }
-  43.8% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.562)) rotateZ(var(--lie)) rotateX(123deg);
-  }
-  52.5% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.45)) rotateZ(var(--lie)) rotateX(143deg);
-  }
-  61.2% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.263)) rotateZ(var(--lie)) rotateX(162deg);
-  }
-  70% {
+  64% {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(180deg);
+    animation-timing-function: cubic-bezier(0.25, 0.7, 0.5, 0.95);
   }
-  76% {
+  79% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.225))
-      rotateZ(calc(var(--lie) * 0.7 + var(--lie-settled) * 0.3)) rotateX(180deg);
-  }
-  82% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.3))
-      rotateZ(calc(var(--lie) * 0.42 + var(--lie-settled) * 0.58))
+      translateZ(calc(var(--cell) * 0.28))
+      rotateZ(calc(var(--lie) * 0.45 + var(--lie-settled) * 0.55))
       rotateX(180deg);
-  }
-  88% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.225))
-      rotateZ(calc(var(--lie) * 0.18 + var(--lie-settled) * 0.82))
-      rotateX(180deg);
-  }
-  94% {
-    transform: perspective(var(--tile-perspective)) translateZ(0)
-      rotateZ(var(--lie-settled)) rotateX(180deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.9, 1);
   }
   to {
     transform: perspective(var(--tile-perspective)) translateZ(0)
