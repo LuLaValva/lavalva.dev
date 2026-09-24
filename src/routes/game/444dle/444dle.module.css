@@ -377,57 +377,67 @@ strong.eval2 {
 }
 
 /* Thrown: all the force is at the start, the tile spins at close to a
-   constant rate, and it rises and falls on the way round. It lands flat and
-   only then turns to face the way it came to rest. */
+   constant rate, and it rises and falls on the way round. It turns towards
+   where it will come to rest as it goes, so both rotations finish together
+   and it simply arrives. */
 @keyframes flip-settle {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(0deg);
   }
-  8.2% {
+  10% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.216)) rotateZ(var(--lie)) rotateX(22deg);
+      translateZ(calc(var(--cell) * 0.216))
+      rotateZ(calc(var(--lie) * 0.88 + var(--lie-settled) * 0.12))
+      rotateX(22deg);
   }
-  16.4% {
+  20% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.384)) rotateZ(var(--lie)) rotateX(43deg);
+      translateZ(calc(var(--cell) * 0.384))
+      rotateZ(calc(var(--lie) * 0.76 + var(--lie-settled) * 0.24))
+      rotateX(43deg);
   }
-  24.6% {
+  30% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.504)) rotateZ(var(--lie)) rotateX(63deg);
+      translateZ(calc(var(--cell) * 0.504))
+      rotateZ(calc(var(--lie) * 0.65 + var(--lie-settled) * 0.35))
+      rotateX(63deg);
   }
-  32.8% {
+  40% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.576)) rotateZ(var(--lie)) rotateX(83deg);
+      translateZ(calc(var(--cell) * 0.576))
+      rotateZ(calc(var(--lie) * 0.54 + var(--lie-settled) * 0.46))
+      rotateX(83deg);
   }
-  41% {
+  50% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.6)) rotateZ(var(--lie)) rotateX(101deg);
+      translateZ(calc(var(--cell) * 0.6))
+      rotateZ(calc(var(--lie) * 0.44 + var(--lie-settled) * 0.56))
+      rotateX(101deg);
   }
-  49.2% {
+  60% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.576)) rotateZ(var(--lie)) rotateX(119deg);
+      translateZ(calc(var(--cell) * 0.576))
+      rotateZ(calc(var(--lie) * 0.34 + var(--lie-settled) * 0.66))
+      rotateX(119deg);
   }
-  57.4% {
+  70% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.504)) rotateZ(var(--lie)) rotateX(135deg);
+      translateZ(calc(var(--cell) * 0.504))
+      rotateZ(calc(var(--lie) * 0.25 + var(--lie-settled) * 0.75))
+      rotateX(135deg);
   }
-  65.6% {
+  80% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.384)) rotateZ(var(--lie)) rotateX(151deg);
+      translateZ(calc(var(--cell) * 0.384))
+      rotateZ(calc(var(--lie) * 0.16 + var(--lie-settled) * 0.84))
+      rotateX(151deg);
   }
-  73.8% {
+  90% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.216)) rotateZ(var(--lie)) rotateX(166deg);
-  }
-  82% {
-    transform: perspective(var(--tile-perspective)) translateZ(0)
-      rotateZ(var(--lie)) rotateX(180deg);
-  }
-  91% {
-    transform: perspective(var(--tile-perspective)) translateZ(0)
-      rotateZ(calc(var(--lie) * 0.45 + var(--lie-settled) * 0.55))
-      rotateX(180deg);
+      translateZ(calc(var(--cell) * 0.216))
+      rotateZ(calc(var(--lie) * 0.08 + var(--lie-settled) * 0.92))
+      rotateX(166deg);
   }
   to {
     transform: perspective(var(--tile-perspective)) translateZ(0)
@@ -435,90 +445,65 @@ strong.eval2 {
   }
 }
 
-/* The same throw with more on it. It comes round sooner and lands with
-   enough left to leave the table twice more, each hop shorter than the
-   last, turning to its settled lie across them rather than in the air. */
+/* The same throw with more on it: round sooner, and off the table once more
+   as it lands. This one holds its lie until it is down, and does all its
+   turning over the hop — the skid is what the hop has to show for itself,
+   since perspective flattens the hop itself to about a pixel. */
 @keyframes flip-bounce {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(0deg);
   }
-  7% {
+  8.8% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.216)) rotateZ(var(--lie)) rotateX(22deg);
+      translateZ(calc(var(--cell) * 0.263)) rotateZ(var(--lie)) rotateX(27deg);
   }
-  14% {
+  17.5% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.384)) rotateZ(var(--lie)) rotateX(43deg);
+      translateZ(calc(var(--cell) * 0.45)) rotateZ(var(--lie)) rotateX(53deg);
   }
-  21% {
+  26.2% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.504)) rotateZ(var(--lie)) rotateX(63deg);
-  }
-  28% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.576)) rotateZ(var(--lie)) rotateX(83deg);
+      translateZ(calc(var(--cell) * 0.562)) rotateZ(var(--lie)) rotateX(78deg);
   }
   35% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--cell) * 0.6)) rotateZ(var(--lie)) rotateX(101deg);
   }
-  42% {
+  43.8% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.576)) rotateZ(var(--lie)) rotateX(119deg);
+      translateZ(calc(var(--cell) * 0.562)) rotateZ(var(--lie)) rotateX(123deg);
   }
-  49% {
+  52.5% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.504)) rotateZ(var(--lie)) rotateX(135deg);
+      translateZ(calc(var(--cell) * 0.45)) rotateZ(var(--lie)) rotateX(143deg);
   }
-  56% {
+  61.2% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.384)) rotateZ(var(--lie)) rotateX(151deg);
-  }
-  63% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.216)) rotateZ(var(--lie)) rotateX(166deg);
+      translateZ(calc(var(--cell) * 0.263)) rotateZ(var(--lie)) rotateX(162deg);
   }
   70% {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie)) rotateX(180deg);
   }
-  74% {
+  76% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--cell) * 0.225))
-      rotateZ(calc(var(--lie) * 0.84 + var(--lie-settled) * 0.16))
-      rotateX(184deg);
-  }
-  78% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.3))
-      rotateZ(calc(var(--lie) * 0.68 + var(--lie-settled) * 0.32))
-      rotateX(187deg);
+      rotateZ(calc(var(--lie) * 0.7 + var(--lie-settled) * 0.3)) rotateX(180deg);
   }
   82% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.225))
-      rotateZ(calc(var(--lie) * 0.52 + var(--lie-settled) * 0.48))
-      rotateX(184deg);
-  }
-  86% {
-    transform: perspective(var(--tile-perspective)) translateZ(0)
-      rotateZ(calc(var(--lie) * 0.36 + var(--lie-settled) * 0.64))
+      translateZ(calc(var(--cell) * 0.3))
+      rotateZ(calc(var(--lie) * 0.42 + var(--lie-settled) * 0.58))
       rotateX(180deg);
   }
-  89% {
+  88% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.1))
-      rotateZ(calc(var(--lie) * 0.24 + var(--lie-settled) * 0.76))
-      rotateX(182deg);
+      translateZ(calc(var(--cell) * 0.225))
+      rotateZ(calc(var(--lie) * 0.18 + var(--lie-settled) * 0.82))
+      rotateX(180deg);
   }
-  92% {
-    transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * 0.11))
-      rotateZ(calc(var(--lie) * 0.12 + var(--lie-settled) * 0.88))
-      rotateX(182deg);
-  }
-  95% {
+  94% {
     transform: perspective(var(--tile-perspective)) translateZ(0)
       rotateZ(var(--lie-settled)) rotateX(180deg);
   }
