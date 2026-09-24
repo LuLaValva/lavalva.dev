@@ -11,7 +11,7 @@
 
 .tile {
   composes: shading;
-  /* Tiles are buttons in reduce. `all` leaves custom properties alone. */
+  /* A tile can be any element; `all` leaves custom properties alone. */
   all: unset;
   width: var(--tile-size);
   height: var(--tile-size);
@@ -25,7 +25,6 @@
   user-select: none;
 }
 
-/* Separate because 444dle's empty cells are tile-shaped but unpainted. */
 .faceUp {
   background-color: var(--tile-face);
   box-shadow: var(--tile-bevel);
