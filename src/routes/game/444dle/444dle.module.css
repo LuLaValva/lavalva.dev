@@ -47,8 +47,6 @@
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
   --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
   --eval-2: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
-  /* A board that has already been solved stops contributing hints. */
-  --eval-solved: light-dark(rgb(222, 211, 199), rgb(60, 47, 36));
   --rule: light-dark(rgb(228, 216, 204), rgb(62, 49, 38));
   --cell: min(6.2vw, 2.4rem);
   --gap: calc(var(--cell) * 0.1);

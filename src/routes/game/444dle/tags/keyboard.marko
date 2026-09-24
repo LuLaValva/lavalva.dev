@@ -4,8 +4,6 @@ import styles from "../444dle.module.css";
 export interface Input {
   /** Best score seen for each letter, one entry per board. */
   keyColors: Record<string, Eval[]>;
-  /** Which boards are already solved — their slice reads as spent. */
-  solved: boolean[];
   onKey: (key: string) => void;
 }
 
@@ -15,9 +13,10 @@ static const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
   const colors = input.keyColors[letter];
   if (!colors) return false;
   const percent = 100 / NUM_WORDS;
+  // A solved board keeps its colours. They are still what that word turned
+  // out to be, and they are worth keeping on screen.
   const stops = colors.map((score, i) => {
-    const color = input.solved[i] ? "solved" : score;
-    return `var(--eval-${color}) ${percent * i}% ${percent * (i + 1)}%`;
+    return `var(--eval-${score}) ${percent * i}% ${percent * (i + 1)}%`;
   });
   return `background-image:linear-gradient(to right, ${stops.join(",")})`;
 }>

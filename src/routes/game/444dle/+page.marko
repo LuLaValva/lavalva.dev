@@ -175,11 +175,7 @@ https://lavalva.dev/game/444dle`
   </for>
 </div>
 
-<keyboard
-  keyColors=keyColors
-  solved=boards.map(({ wonAt }) => wonAt !== undefined)
-  onKey=type
-/>
+<keyboard keyColors=keyColors onKey=type/>
 
 <dialog/results class=styles.results closedby="any">
   <h2>${won ? "You win!" : "You are awful at this."}</h2>
