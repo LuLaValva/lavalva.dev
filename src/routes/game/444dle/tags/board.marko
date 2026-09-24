@@ -1,4 +1,4 @@
-import { type Eval, NUM_GUESSES, NUM_LETTERS } from "../utils";
+import { COLORS, type Eval, NUM_GUESSES, NUM_LETTERS } from "../utils";
 import styles from "../444dle.module.css";
 
 static const COLUMNS = Array.from({ length: NUM_LETTERS }, (_, i) => i);
@@ -58,6 +58,7 @@ static const SKID_WORTH_A_HOP = 1.5;
 }>
 
 <div class=styles.board>
+  <span class=styles.srOnly>word ${input.index + 1}</span>
   <for|{ word, evaluation, flipping }, row| of=cells>
     <div class=[
       styles.row,
@@ -88,6 +89,9 @@ static const SKID_WORTH_A_HOP = 1.5;
             </for>
           </if>
           ${word[i]}
+          <if=evaluation>
+            <span class=styles.srOnly>${`, ${COLORS[evaluation[i]]}`}</span>
+          </if>
         </div>
       </for>
     </div>

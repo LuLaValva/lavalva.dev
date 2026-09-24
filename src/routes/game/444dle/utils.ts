@@ -11,6 +11,8 @@ export const COW = 1;
 export const BULL = 2;
 
 export const EMOJIS = ["⚪", "🟠", "🟢"];
+/** Named for the screen reader, since the score is otherwise only a colour. */
+export const COLORS = ["grey", "orange", "green"];
 /** Stands in for a board that was already solved on an earlier guess. */
 export const SOLVED_EMOJI = "⚫";
 
