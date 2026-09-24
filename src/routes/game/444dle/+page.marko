@@ -47,29 +47,10 @@ client const vibrate = (pattern: number | number[]) =>
 })>
 
 <const/won=boards.every(({ wonAt }) => wonAt !== undefined)>
+<const/finished=won || guesses.length >= NUM_GUESSES>
 
-// Reads the guess list rather than `won`, which is derived from that same
-// list: a value that depends on both a signal and something downstream of it
-// gets worked out before the downstream half has caught up, and then never
-// again. That left this false for the rest of the game, which hid the button
-// that reopens the results and stopped `type` from turning the keyboard off.
-<const/over(list: string[]) {
-  return (
-    list.length >= NUM_GUESSES ||
-    solutions.every((solution) => list.includes(solution))
-  );
-}>
-<const/finished=over(guesses)>
-
-// Both halves read `boards` and nothing else. Taking the letters from
-// `guesses` instead left this deriving from a `boards` that had not caught up,
-// so a key scored a guess behind.
 <const/keyColors=Object.fromEntries(
-  [
-    ...new Set(
-      boards.flatMap(({ played }) => played.map(({ guess }) => guess)).join(""),
-    ),
-  ].map((letter) => [
+  [...new Set(guesses.join(""))].map((letter) => [
     letter,
     boards.map(({ played }) =>
       played
@@ -126,14 +107,16 @@ ${block([2], "            ")}`
     setTimeout(() => (invalid = false), 600);
     return;
   }
+  // Asked of `next` rather than read off `finished`, which still describes the
+  // guess before this one until the render queue flushes.
   const next = [...guesses, pending];
-  // Asked of `next`, since `finished` still describes the guess before this
-  // one until the render queue flushes.
-  const ends = over(next);
+  const over =
+    next.length >= NUM_GUESSES ||
+    solutions.every((solution) => next.includes(solution));
   guesses = next;
   pending = "";
   vibrate(50);
-  if (ends) {
+  if (over) {
     // Let the reveal finish before the results take over the screen.
     setTimeout(() => results().showModal(), (NUM_LETTERS - 1) * 300 + 800);
   }
