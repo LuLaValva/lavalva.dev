@@ -40,15 +40,19 @@ body {
   width: var(--size);
   height: var(--size);
   line-height: var(--size);
-  /* Same proportion the 444dle tiles carry, so a letter fills its tile. */
+  /* Letter, corner and bevel are all fractions of the tile, at the proportions
+     the 444dle cells use, so both pages show the same tile whatever size it is
+     drawn at. At 444dle's own 2.4rem cell these come out to its exact values. */
+  --bevel: calc(var(--size) / 48);
   font-size: calc(var(--size) * 0.6);
-  border-radius: 0.2rem;
+  border-radius: calc(var(--size) / 12);
   text-align: center;
   background-color: rgb(200, 174, 121);
   color: black;
   font-family: monospace;
   font-weight: bold;
-  box-shadow: 0.05rem -0.1rem 0.25rem inset;
+  box-shadow: var(--bevel) calc(var(--bevel) * -2) calc(var(--bevel) * 5) inset
+    rgb(0 0 0 / 0.45);
   user-select: none;
 }
 
