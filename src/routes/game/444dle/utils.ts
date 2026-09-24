@@ -5,7 +5,6 @@ export const NUM_LETTERS = 4;
 /** Nine, so every solved board scores a digit and the three read as a number. */
 export const NUM_GUESSES = 9;
 
-/** A letter's score against one solution. */
 export type Eval = 0 | 1 | 2;
 export const MISS = 0;
 export const COW = 1;
@@ -24,7 +23,6 @@ export function requestDay(request: Request) {
   );
 }
 
-/** The same day always yields the same words. */
 export function dailySolutions(day: Date): string[] {
   let seed = Math.floor(+day / 100000);
   return Array.from({ length: NUM_WORDS }, () => {

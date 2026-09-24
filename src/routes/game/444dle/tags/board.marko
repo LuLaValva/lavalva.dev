@@ -3,42 +3,32 @@ import styles from "../444dle.module.css";
 
 static const COLUMNS = Array.from({ length: NUM_LETTERS }, (_, i) => i);
 
-// Enough slices through the tile's thickness that neighbours still overlap on
-// screen at a steep angle, which is what keeps the side reading as solid
-// rather than as a staircase.
+// Slices spaced around a half turn rather than evenly through the depth, so
+// they sit at even steps along the bevel's curve. Twelve keeps neighbours
+// overlapping on screen at a steep angle, which reads as solid rather than as
+// a staircase.
 static const SLICES = 12;
-// Spaced around a half turn rather than evenly through the depth, so the
-// slices sit at even steps along the bevel's curve. Stepping z evenly would
-// bunch them at mid depth and leave a jump at either face.
 static const BODY = Array.from({ length: SLICES }, (_, i) => {
   const angle = Math.PI * (i / (SLICES - 1) - 0.5);
   return {
-    // Just shy of the faces, so the outermost slices do not fight them.
     z: Math.sin(angle) * 0.98,
-    // How far the slice is cut in from the tile's edge: none at mid depth,
-    // most at the faces. A slice at mid depth is therefore exactly the flat
-    // tile, which is what keeps the two renderings interchangeable.
     out: Math.cos(angle).toFixed(4),
     mix: `${Math.round((Math.sin(angle) + 1) * 50)}%`,
   };
 });
 
 export interface Input {
-  /** Which of the three boards this is; varies the tile tilt between them. */
   index: number;
   /** The guesses this board is still answering, oldest first. */
   rows: { guess: string; scores: Eval[] }[];
   pending: string;
-  /** Which row the pending guess belongs on. */
   pendingAt: number;
-  /** Set while the pending guess is being rejected, to shake the row. */
   invalid?: boolean;
 }
 
 <const/cells=Array.from({ length: NUM_GUESSES }, (_, i) => {
   const row = input.rows[i];
   if (!row) return { word: i === input.pendingAt ? input.pending : "" };
-  // Only the newest row still has a turn to play out.
   return {
     word: row.guess,
     evaluation: row.scores,
@@ -47,9 +37,8 @@ export interface Input {
 })>
 
 // A hash rather than Math.random, so a tile keeps its tilt across renders and
-// the server and client agree on it. `settled` picks a second, unrelated
-// angle: a tile that has been turned over has been disturbed, and lands at a
-// different lie than it was sitting at.
+// the server and client agree on it. A turned tile has been disturbed, so
+// `settled` picks a second, unrelated angle for it to land at.
 <const/tilt(row: number, column: number, settled: number) {
   const n =
     Math.sin(
@@ -58,10 +47,8 @@ export interface Input {
   return (n - Math.floor(n) - 0.5) * 4;
 }>
 
-// A hop only reads when the tile visibly turns as it comes to rest: a few
-// degrees of skid shows far more than the hop itself, which perspective
-// flattens to about a pixel. So a tile bounces when it has a skid worth
-// watching, rather than at random — which lands around two in five anyway.
+// Perspective flattens the hop itself to about a pixel, so it only reads on a
+// tile that visibly turns as it comes to rest.
 static const SKID_WORTH_A_HOP = 1.5;
 
 <const/bounces(row: number, column: number) {

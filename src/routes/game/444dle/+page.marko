@@ -30,9 +30,6 @@ client const vibrate = (pattern: number | number[]) =>
 <let/pending="">
 <let/invalid=false>
 
-// Derived from the guess list, so a guess is only ever recorded once. Anything
-// downstream reads `boards` rather than reaching back past it, which keeps the
-// derivations in one order Marko can resolve.
 <const/boards=solutions.map((solution) => {
   const rows = guesses.map((guess) => ({
     guess,
@@ -44,7 +41,7 @@ client const vibrate = (pattern: number | number[]) =>
   return {
     solution,
     wonAt: wonAt === -1 ? undefined : wonAt,
-    // A solved board stops responding, so these are the rows that still count.
+    // A solved board stops answering, so these are the rows that still count.
     played: wonAt === -1 ? rows : rows.slice(0, wonAt + 1),
   };
 })>
@@ -65,8 +62,7 @@ client const vibrate = (pattern: number | number[]) =>
   ]),
 )>
 
-// Worst first, so the word that held out longest leads. Never solved is worse
-// than any number of guesses, which is what puts it at the front.
+// Worst first, so the word that held out longest leads.
 <const/score=(
   boards
     .map(({ wonAt }) => (wonAt === undefined ? Infinity : wonAt + 1))
@@ -92,9 +88,9 @@ client const vibrate = (pattern: number | number[]) =>
   ).join("\n");
 }>
 
-// Two boards abreast and the third below, rather than three across: three sets
-// of four emoji wrap on a narrow window. The indent is the original's, set by
-// eye against how imessage lays emoji out rather than by counting columns.
+// Two boards abreast and the third below: three sets of four emoji wrap on a
+// narrow window. The indent was set by eye against how imessage lays emoji
+// out, not by counting columns.
 <const/summary=(
   `444dle ${today}: ${score}
 
@@ -111,8 +107,8 @@ ${block([2], "            ")}`
     setTimeout(() => (invalid = false), 600);
     return;
   }
-  // Worked out from `next` rather than read off `finished`, which will not
-  // have caught up until the render queue flushes.
+  // Worked out from `next`, since `finished` will not have caught up until the
+  // render queue flushes.
   const next = [...guesses, pending];
   const over =
     next.length >= NUM_GUESSES ||
@@ -120,8 +116,8 @@ ${block([2], "            ")}`
   guesses = next;
   pending = "";
   vibrate(50);
-  // Let the reveal animation finish before the results take over the screen.
   if (over) {
+    // Let the reveal finish before the results take over the screen.
     setTimeout(() => results().showModal(), (NUM_LETTERS - 1) * 300 + 800);
   }
 }>

@@ -35,25 +35,8 @@ body {
 }
 
 .tile {
-  --size: 2rem;
-  all: unset;
-  width: var(--size);
-  height: var(--size);
-  line-height: var(--size);
-  /* Letter, corner and bevel are all fractions of the tile, at the proportions
-     the 444dle cells use, so both pages show the same tile whatever size it is
-     drawn at. At 444dle's own 2.4rem cell these come out to its exact values. */
-  --bevel: calc(var(--size) / 48);
-  font-size: calc(var(--size) * 0.6);
-  border-radius: calc(var(--size) / 12);
-  text-align: center;
-  background-color: rgb(200, 174, 121);
-  color: black;
-  font-family: monospace;
-  font-weight: bold;
-  box-shadow: var(--bevel) calc(var(--bevel) * -2) calc(var(--bevel) * 5) inset
-    rgb(0 0 0 / 0.45);
-  user-select: none;
+  composes: tile faceUp from "../tile.module.css";
+  --tile-size: 2rem;
 }
 
 .header {
@@ -103,7 +86,7 @@ dialog {
     height: var(--big);
   }
   > .tile {
-    --size: var(--big);
+    --tile-size: var(--big);
 
     &:focus-visible {
       background-color: rgb(83, 203, 115);
@@ -143,9 +126,6 @@ dialog {
     scrollbar-width: none;
 
     > * {
-      width: 2rem;
-      height: 2rem;
-      line-height: 2rem;
       animation: grow 0.1s;
     }
 

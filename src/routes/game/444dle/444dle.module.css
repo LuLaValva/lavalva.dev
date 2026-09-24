@@ -1,54 +1,33 @@
 :root {
   touch-action: manipulation;
-  /* A phone is already full of board, so it keeps the browser's own text
-     size; past about 620px there is room to spare and everything grows with
-     the window, up to half again as large. Every length here is either rem or
-     a fraction of --cell, and --cell is capped in rem, so one declaration
-     scales the board, the keyboard and the dialogs together. */
+  /* Every length here is rem or a fraction of --cell, so one clamp scales the
+     board, the keyboard and the dialogs together. */
   font-size: clamp(1rem, 2.6vw, 1.5rem);
 
-  /* Tiles are lifted from reduce, so every score stays light enough to read
-     black letters on. */
-  --tile: rgb(200, 174, 121);
-  --tile-radius: 0.2rem;
-  /* Half the tile's thickness; the two faces sit this far either side of
-     centre so the tile is a slab rather than a sheet. */
-  --tile-depth: calc(var(--cell) * 0.095);
-  --tile-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
-  /* How deep the bevel cuts. Held under half the gap between tiles. */
-  --tile-roll: calc(var(--cell) * 0.045);
-  /* Tied to the tile so the turn looks the same at every screen size, and so
-     the ratio below is a constant. */
+  --cell: min(6.2vw, 2.4rem);
+  --gap: calc(var(--cell) * 0.1);
+  --half-thickness: calc(var(--cell) * 0.095);
+  /* Held under half the gap, so bevels never touch. */
+  --bevel-cut: calc(var(--cell) * 0.045);
   --tile-perspective: calc(var(--cell) * 4.6);
-  /* How long a tile is in the air. Both throws are the same throw, so both
-     are airborne for this long — a tile that bounces just isn't finished when
-     it lands, and runs on by however much of its animation sits after the
-     landing keyframe. */
   --toss: 0.38s;
+  /* Where the table is in @keyframes flip-bounce. Keep the two in step. */
   --toss-lands-at: 0.64;
-  /* How far off the table a tile gets, in tile widths. A parabola is at
-     three quarters of its height a quarter of the way along, which is where
-     the 0.75 in the keyframes comes from. */
   --toss-height: 0.76;
   --hop-height: 0.28;
-  /* A face sits a half thickness proud of the tile's plane, where perspective
-     magnifies it. Shrinking by 1 - depth/perspective cancels that exactly, so
-     a turned tile covers the same pixels as a flat one. */
+  /* Cancels the perspective magnification of a face sitting half a thickness
+     proud of the tile's plane, so a turned tile covers a flat one exactly. */
   --flip-fit: 0.9794;
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
   --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
   --eval-2: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
   --rule: light-dark(rgb(228, 216, 204), rgb(62, 49, 38));
-  --cell: min(6.2vw, 2.4rem);
-  --gap: calc(var(--cell) * 0.1);
 }
 
 body {
   max-width: 34rem;
   margin: auto;
-  padding: 0 0.5rem;
-  /* Keep the boards clear of the fixed keyboard. */
-  padding-bottom: 12rem;
+  padding: 0 0.5rem 12rem;
 }
 
 .btn {
@@ -124,7 +103,6 @@ dialog {
   gap: var(--gap);
 }
 
-/* A hairline centred in the space between boards. */
 .board + .board {
   border-left: 1px solid var(--rule);
   margin-left: calc(var(--cell) * 0.3);
@@ -141,65 +119,58 @@ dialog {
 }
 
 .cell {
-  /* How the tile is lying on the table. Not yet turned it sits at `--lie`;
-     turned, it has been disturbed and settles at `--lie-settled`. The turn
-     itself carries the angle inside its own transform. */
+  composes: tile from "../tile.module.css";
+  --tile-size: var(--cell);
   rotate: var(--lie);
-  width: var(--cell);
-  height: var(--cell);
-  line-height: var(--cell);
-  text-align: center;
-  font-size: calc(var(--cell) * 0.6);
-  font-family: monospace;
-  font-weight: bold;
-  color: black;
-  border-radius: var(--tile-radius);
-  box-sizing: border-box;
-  user-select: none;
 }
 
-.cell.filled {
-  background-color: var(--tile);
-  box-shadow: var(--tile-bevel);
+.filled {
+  composes: faceUp from "../tile.module.css";
   animation: pop 0.15s;
 }
 
-.cell.scored {
-  background-color: var(--face);
-  box-shadow: var(--tile-bevel);
+/* A turned tile has been disturbed, and comes to rest at a different angle. */
+.scored {
+  composes: faceUp from "../tile.module.css";
   rotate: var(--lie-settled);
 }
 
-/* Only the row being revealed is built with two faces. Every earlier row has
-   finished turning, so it stays a plain flat square. */
+.cell.eval0 {
+  --tile-face: var(--eval-0);
+}
+.cell.eval1 {
+  --tile-face: var(--eval-1);
+}
+.cell.eval2 {
+  --tile-face: var(--eval-2);
+}
+
+/* Only the row being revealed is built with two faces and a body. Every
+   earlier row has finished turning, so it stays a plain flat square. */
 .cell.flipping {
   position: relative;
   rotate: none;
   transform-style: preserve-3d;
-  /* The faces carry the tile now, so the cell itself is just the hinge. */
   background-color: transparent;
   box-shadow: none;
   color: transparent;
   scale: var(--flip-fit);
-  /* Longhands, because the shorthand would reset the delay and unstagger the
-     row. Linear because nothing slows the turn; see the keyframes. */
   --turn: var(--toss);
   animation-name: flip-settle;
   animation-duration: var(--turn);
   animation-timing-function: linear;
   animation-fill-mode: both;
+  /* Longhands: the shorthand would reset the delay and unstagger the row. */
   animation-delay: calc(var(--i) * 0.3s);
 }
 
-/* Airborne for the same --toss, then however long the hop takes on top: the
-   landing sits at --toss-lands-at through its keyframes, so dividing by that
-   puts the landing at the same moment a tile that does not bounce arrives. */
+/* Airborne for the same --toss, then however long the hop takes on top. */
 .cell.flipping.bounces {
   --turn: calc(var(--toss) / var(--toss-lands-at));
   animation-name: flip-bounce;
 }
 
-/* Blank side up, score side down — the tile lands on its other face rather
+/* Blank side up, score side down, so the tile lands on its other face rather
    than swapping colour behind your back. */
 .cell.flipping::before,
 .cell.flipping::after {
@@ -213,60 +184,39 @@ dialog {
 }
 
 .cell.flipping::before {
-  background-color: var(--tile);
-  transform: translateZ(var(--tile-depth));
+  background-color: var(--tile-wood);
+  transform: translateZ(var(--half-thickness));
 }
 
 .cell.flipping::after {
-  background-color: var(--face);
-  transform: translateZ(calc(var(--tile-depth) * -1)) rotateX(180deg);
+  background-color: var(--tile-face);
+  transform: translateZ(calc(var(--half-thickness) * -1)) rotateX(180deg);
 }
 
-/* The tile's body, built by stacking its own silhouette through the depth.
-   Every slice carries the tile's border radius, so the extrusion follows the
-   rounded corners exactly — which a flat strip standing on edge never could.
-   Slice colour walks from one face's to the other's, so the side is the two
-   faces rolling into each other rather than a band painted on. */
+/* The tile's body: its own silhouette stacked through the depth, so the
+   extrusion follows the rounded corners exactly. */
 .slice {
   position: absolute;
-  /* Cut in from the tile's own shape, never out past it: widest at mid depth
-     where it is exactly the tile, narrowing to the faces. Offsetting a
-     rounded rectangle inwards closes its corners by that same distance, so
-     the bevel stays a true rounded rectangle at every depth.
-
-     Inwards is the only direction that works: perspective over half a tile's
-     thickness magnifies the near face by about two percent, enough to hide a
-     quarter pixel, so any bevel worth seeing that grows outwards shows past
-     the face as a ring whenever the tile is near flat. */
-  inset: calc((1 - var(--out)) * var(--tile-roll));
-  border-radius: calc(var(--tile-radius) - (1 - var(--out)) * var(--tile-roll));
-  transform: translateZ(calc(var(--z) * var(--tile-depth)));
-  background-color: color-mix(in srgb, var(--tile) var(--mix), var(--face));
-  /* The same bevel the faces carry. Only a sliver of each slice shows, and
-     that sliver is its own shaded edge, so the shading runs on from the face
-     instead of every layer starting at full brightness again. */
+  /* Cut inward, never out past the face. Perspective magnifies the near face
+     by about two percent, enough to hide a quarter pixel, so a bevel that
+     grew outward would show as a ring whenever the tile is near flat. */
+  inset: calc((1 - var(--out)) * var(--bevel-cut));
+  border-radius: calc(var(--tile-radius) - (1 - var(--out)) * var(--bevel-cut));
+  transform: translateZ(calc(var(--z) * var(--half-thickness)));
+  background-color: color-mix(
+    in srgb,
+    var(--tile-wood) var(--mix),
+    var(--tile-face)
+  );
   box-shadow: var(--tile-bevel);
-  /* Not painted at either end of the turn. The cut is inwards, so the face
-     covers the body at rest either way and this hides nothing — but a row
-     keeps its flipping class until the next guess lands, and without it a
-     hundred and forty four transformed slices sit live in the compositor
-     long after the turn is over, which Chrome leaves paint around. */
+  /* Looks like dead code — the face covers the body at rest either way. It is
+     not: a row keeps .flipping until the next guess, and without this the
+     slices stay live in the compositor, which Chrome leaves paint around. */
   animation-name: tile-body;
-  /* Inherited, so it follows whichever turn this tile is taking. */
   animation-duration: var(--turn);
   animation-timing-function: step-end;
   animation-fill-mode: both;
   animation-delay: calc(var(--i) * 0.3s);
-}
-
-.cell.eval0 {
-  --face: var(--eval-0);
-}
-.cell.eval1 {
-  --face: var(--eval-1);
-}
-.cell.eval2 {
-  --face: var(--eval-2);
 }
 
 /* Reused by the help dialog to name the colors. */
@@ -278,6 +228,8 @@ strong.eval2 {
 }
 
 .keyboard {
+  composes: shading from "../tile.module.css";
+  --tile-size: 2.5rem;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -300,10 +252,10 @@ strong.eval2 {
 
 .key {
   flex: 1 1 auto;
-  max-width: 2.5rem;
+  max-width: var(--tile-size);
   height: 3.2rem;
   border: none;
-  border-radius: 0.2rem;
+  border-radius: var(--tile-radius);
   background-color: light-dark(rgb(226, 214, 202), rgb(66, 52, 40));
   box-shadow: var(--tile-bevel);
   color: light-dark(black, white);
@@ -329,7 +281,6 @@ strong.eval2 {
   font-size: 0.75rem;
 }
 
-/* A glyph, not a word — it wants the full size back. */
 .key.glyphKey {
   font-size: 1.4rem;
 }
@@ -337,10 +288,9 @@ strong.eval2 {
 .results {
   text-align: center;
 
-  /* Left aligned inside a block that is itself centred, because the third
-     board is indented to sit under the second and an indent only lands
-     against a left edge. Monospace for the same reason: the indent is
-     spaces, so the spaces have to be the width they are counted as. */
+  /* Left aligned inside a centred block, because the third board is indented
+     to sit under the second and an indent only lands against a left edge.
+     Monospace so those spaces are the width they are counted as. */
   pre {
     font-family: monospace;
     font-size: 0.85rem;
@@ -359,7 +309,6 @@ strong.eval2 {
   }
 }
 
-/* The three boards' guess counts, worst first, read as one number. */
 .score {
   font-family: monospace;
   font-size: 3rem;
@@ -393,19 +342,14 @@ strong.eval2 {
   }
 }
 
-/* One impulse and then nothing but gravity, which fixes both curves and makes
-   them disagree: nothing torques the tile once it is out of the hand, so it
-   turns at a constant rate until the table stops it dead, while its height is
-   a parabola. Easing the turn instead reads as drag, and drag looks like the
-   tile settling through water. They cannot share a timing function, so the
-   turn — the half you read — gets the exact one, and the arc is sampled
-   across enough stops to round it off.
+/* One impulse and then nothing but gravity, which makes the two curves
+   disagree: the turn is linear, because nothing torques the tile once it is
+   out of the hand, while the height is a parabola. Easing the turn instead
+   reads as drag, like the tile is settling through water. So the turn gets
+   the exact timing function and the arc is sampled across enough stops.
 
-   z-index rides along so a tile in the air paints over its neighbours. Cells
-   composite in DOM order otherwise, and a tile still at rest cuts into the
-   one to its left mid-flight. Only the stops where it changes are given: an
-   integer interpolates and rounds, so 0 to 10 across the opening leg is above
-   its neighbours within one percent of the turn. */
+   z-index rides along so a tile in the air paints over its neighbours, which
+   it would otherwise cut into. Only the stops where it changes are given. */
 @keyframes flip-settle {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
@@ -438,10 +382,9 @@ strong.eval2 {
   }
 }
 
-/* Thrown flatter and harder: round sooner, and it hits with enough left to
-   come off the table once more. It carries no spin about the table's face in
-   the air — that comes from the scuff of landing, which is why it turns to
-   its settled lie fast on contact and then eases off. */
+/* Thrown flatter and harder: round sooner, and hit with enough left to come
+   off the table once more. The spin about the table's face comes from the
+   scuff of landing, so it holds its lie until contact. */
 @keyframes flip-bounce {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)

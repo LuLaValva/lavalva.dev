@@ -1,0 +1,32 @@
+/* Everything about a tile follows from --tile-size, so the same object can be
+   drawn at any size. Set that, then compose whichever part you need. */
+.shading {
+  --tile-shade: calc(var(--tile-size) / 48);
+  --tile-radius: calc(var(--tile-size) / 12);
+  --tile-bevel: var(--tile-shade) calc(var(--tile-shade) * -2)
+    calc(var(--tile-shade) * 5) inset rgb(0 0 0 / 0.45);
+  --tile-wood: rgb(200, 174, 121);
+  --tile-face: var(--tile-wood);
+}
+
+.tile {
+  composes: shading;
+  /* Tiles are buttons in reduce. `all` leaves custom properties alone. */
+  all: unset;
+  width: var(--tile-size);
+  height: var(--tile-size);
+  line-height: var(--tile-size);
+  font-size: calc(var(--tile-size) * 0.6);
+  border-radius: var(--tile-radius);
+  text-align: center;
+  font-family: monospace;
+  font-weight: bold;
+  color: black;
+  user-select: none;
+}
+
+/* Separate because 444dle's empty cells are tile-shaped but unpainted. */
+.faceUp {
+  background-color: var(--tile-face);
+  box-shadow: var(--tile-bevel);
+}
