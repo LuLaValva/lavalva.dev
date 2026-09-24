@@ -2,7 +2,6 @@ import common from "./words/common.ts";
 
 export const NUM_WORDS = 3;
 export const NUM_LETTERS = 4;
-/** Nine, so every solved board scores a digit and the three read as a number. */
 export const NUM_GUESSES = 9;
 
 export type Eval = 0 | 1 | 2;
@@ -16,8 +15,6 @@ export const SOLVED_EMOJI = "⚫";
 
 export function requestDay(request: Request) {
   const timeZone = (request as { cf?: { timezone?: string } }).cf?.timezone;
-  // `T00:00` keeps the parse local, so the date does not slip a day when it is
-  // read back somewhere behind UTC.
   return new Date(
     `${new Date().toLocaleDateString("en-CA", { timeZone })}T00:00`,
   );
@@ -30,8 +27,6 @@ export function dailySolutions(day: Date): string[] {
     return common[Math.floor((seed / 0x100000000) * common.length)];
   };
   const solutions: string[] = [];
-  // Redrawing rather than picking from what is left, so a day that never drew
-  // a repeat keeps the words it has always had.
   while (solutions.length < NUM_WORDS) {
     const word = draw();
     if (!solutions.includes(word)) solutions.push(word);

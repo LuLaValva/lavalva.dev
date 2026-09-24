@@ -8,13 +8,13 @@ export interface Input {
 
 static const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 
-<const/stripes(colors: Eval[]) {
+static function stripes(colors: Eval[]) {
   const width = 100 / NUM_WORDS;
   const stops = colors.map(
     (score, i) => `var(--eval-${score}) ${width * i}% ${width * (i + 1)}%`,
   );
   return `background-image:linear-gradient(to right, ${stops.join(",")})`;
-}>
+}
 
 <div class=styles.keyboard>
   <for|letters, row| of=ROWS>
