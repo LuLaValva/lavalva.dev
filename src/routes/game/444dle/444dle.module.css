@@ -19,6 +19,12 @@
   /* Tied to the tile so the turn looks the same at every screen size, and so
      the ratio below is a constant. */
   --tile-perspective: calc(var(--cell) * 4.6);
+  /* How long a tile is in the air. Both throws are the same throw, so both
+     are airborne for this long — a tile that bounces just isn't finished when
+     it lands, and runs on by however much of its animation sits after the
+     landing keyframe. */
+  --toss: 0.38s;
+  --toss-lands-at: 0.64;
   /* A face sits a half thickness proud of the tile's plane, where perspective
      magnifies it. Shrinking by 1 - depth/perspective cancels that exactly, so
      a turned tile covers the same pixels as a flat one. */
@@ -178,26 +184,25 @@ dialog {
   box-shadow: none;
   color: transparent;
   scale: var(--flip-fit);
-  /* Each tile turns right over, a beat after the one before it, on a single
-     from/to keyframe — so the rotation is one uninterrupted curve and its
-     easing alone decides how the flip feels.
-
-     One animation, and only on transform. Animating transform and scale
+  /* One animation, and only on transform. Animating transform and scale
      together on the same element is what Chrome was leaving paint behind
-     over: the artifact went with either property's animation removed, and
-     stayed when both were kept. */
-  /* Longhands: the shorthand would reset the delay and unstagger the row.
-     No timing function, so the turn takes CSS's default ease. */
+     over. Longhands, because the shorthand would reset the delay and
+     unstagger the row. The turn is linear because nothing slows it; see the
+     keyframes. */
+  --turn: var(--toss);
   animation-name: flip-settle;
-  animation-duration: 0.65s;
-  /* The turn is linear because nothing slows it; see the keyframes. */
+  animation-duration: var(--turn);
   animation-timing-function: linear;
   animation-fill-mode: both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
 /* Some throws have more on them than others. */
+/* Airborne for the same --toss, then however long the hop takes on top: the
+   landing sits at --toss-lands-at through its keyframes, so dividing by that
+   puts the landing at the same moment a tile that does not bounce arrives. */
 .cell.flipping.bounces {
+  --turn: calc(var(--toss) / var(--toss-lands-at));
   animation-name: flip-bounce;
 }
 
@@ -255,7 +260,11 @@ dialog {
      keeps its flipping class until the next guess lands, so without it a
      hundred and forty four transformed slices sit live in the compositor
      long after the turn is over, and Chrome leaves paint around them. */
-  animation: tile-body 0.65s step-end both;
+  animation-name: tile-body;
+  /* Inherited, so it follows whichever turn this tile is taking. */
+  animation-duration: var(--turn);
+  animation-timing-function: step-end;
+  animation-fill-mode: both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
