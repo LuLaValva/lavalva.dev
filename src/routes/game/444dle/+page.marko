@@ -80,8 +80,10 @@ client {
 
 // Boards one and two side by side and the third below them, rather than three
 // across: four emoji is wide, and three of those does not survive a narrow
-// window. The third is indented to sit under the second. Each block runs only
-// as far as its own boards needed, so nothing trails a row of blanks.
+// window. Twelve spaces of indent and two between the pair, matching the
+// original, which was set by eye against how imessage lays emoji out rather
+// than by counting columns. Each block runs only as far as its own boards
+// needed, so nothing trails a row of blanks.
 <const/block(indexes: number[], indent = "") {
   const until = Math.max(
     ...indexes.map((i) =>
@@ -110,7 +112,7 @@ client {
 
 ${block([0, 1])}
 
-${block([2], "          ")}`
+${block([2], "            ")}`
 )>
 
 <const/submit() {
