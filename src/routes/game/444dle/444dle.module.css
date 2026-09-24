@@ -136,6 +136,12 @@ dialog {
 }
 
 .cell {
+  /* How the tile is lying on the table. A tile that has not been turned yet
+     is at `--lie`; once turned it has been disturbed and settles at
+     `--lie-settled`. Across the turn itself the angle rides inside the flip's
+     transform, since a second animated property would bring back the paint
+     Chrome leaves behind. */
+  rotate: var(--lie);
   width: var(--cell);
   height: var(--cell);
   line-height: var(--cell);
@@ -158,12 +164,14 @@ dialog {
 .cell.scored {
   background-color: var(--face);
   box-shadow: var(--tile-bevel);
+  rotate: var(--lie-settled);
 }
 
 /* Only the row being revealed is built with two faces. Every earlier row has
    finished turning, so it stays a plain flat square. */
 .cell.flipping {
   position: relative;
+  rotate: none;
   transform-style: preserve-3d;
   /* The faces carry the tile now, so the cell itself is just the hinge. */
   background-color: transparent;
@@ -178,7 +186,7 @@ dialog {
      together on the same element is what Chrome was leaving paint behind
      over: the artifact went with either property's animation removed, and
      stayed when both were kept. */
-  animation: flip 0.55s ease-out both;
+  animation: flip 0.55s cubic-bezier(0.3, 0.72, 0.7, 0.28) both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
@@ -359,12 +367,19 @@ strong.eval2 {
   }
 }
 
+/* A tile turned over on a table is not thrown, it is tipped: pushed up onto
+   its edge against gravity, slowest as it passes the point of balance, then
+   dropped onto its other face and landing hard. So the turn runs fast, slow,
+   fast rather than easing out — and the angle it is lying at moves from one
+   to the other along the way. */
 @keyframes flip {
   from {
-    transform: perspective(var(--tile-perspective)) rotateX(0deg);
+    transform: perspective(var(--tile-perspective)) rotateZ(var(--lie))
+      rotateX(0deg);
   }
   to {
-    transform: perspective(var(--tile-perspective)) rotateX(180deg);
+    transform: perspective(var(--tile-perspective)) rotateZ(var(--lie-settled))
+      rotateX(180deg);
   }
 }
 

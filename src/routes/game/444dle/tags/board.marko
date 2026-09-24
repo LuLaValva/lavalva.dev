@@ -51,12 +51,16 @@ export interface Input {
   return {};
 })>
 
-// A hash rather than Math.random, so a tile keeps its tilt across renders
-// and the server and client agree on it.
-<const/tilt(row: number, column: number) {
+// A hash rather than Math.random, so a tile keeps its tilt across renders and
+// the server and client agree on it. `settled` picks a second, unrelated
+// angle: a tile that has been turned over has been disturbed, and lands at a
+// different lie than it was sitting at.
+<const/tilt(row: number, column: number, settled: number) {
   const n =
-    Math.sin(input.index * 12.9898 + row * 78.233 + column * 37.719) * 43758.5;
-  return (n - Math.floor(n) - 0.5) * 5;
+    Math.sin(
+      input.index * 12.9898 + row * 78.233 + column * 37.719 + settled * 55.137,
+    ) * 43758.5;
+  return (n - Math.floor(n) - 0.5) * 4;
 }>
 
 <div class=[styles.board, input.wonAt !== undefined && styles.solved]>
@@ -77,7 +81,7 @@ export interface Input {
                 ]
               : word[i] && styles.filled,
           ]
-          style=`--i:${i}; rotate: ${tilt(row, i)}deg`
+          style=`--i:${i}; --lie:${tilt(row, i, 0)}deg; --lie-settled:${tilt(row, i, 1)}deg`
           data-letter=word[i]?.toUpperCase()
         >
           <if=flipping>
