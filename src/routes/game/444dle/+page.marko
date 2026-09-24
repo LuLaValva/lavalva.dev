@@ -68,10 +68,18 @@ client {
   {} as Record<string, Eval[]>,
 )>
 
+// One digit per board, worst first: the word that held out longest leads.
+// A board never solved has no digit to give and sorts ahead of all of them.
+<const/score=(
+  boards
+    .map(({ wonAt }) => (wonAt === undefined ? null : wonAt + 1))
+    .sort((a, b) => (a === null ? -1 : b === null ? 1 : b - a))
+    .map((guesses) => guesses ?? "X")
+    .join("")
+)>
+
 <const/summary=(
-  `444dle ${today}: ${boards
-    .map(({ wonAt }) => (wonAt === undefined ? "X" : wonAt + 1))
-    .join("|")}
+  `444dle ${today}: ${score}
 
 ${boards[0].rows
   .map((_, row) =>
@@ -175,6 +183,7 @@ https://lavalva.dev/game/444dle`
 
 <dialog/results class=styles.results closedby="any">
   <h2>${won ? "You win!" : "You are awful at this."}</h2>
+  <p class=styles.score>${score}</p>
   <p class=styles.answers>
     <for|{ solution }| of=boards><em>${solution}</em></for>
   </p>

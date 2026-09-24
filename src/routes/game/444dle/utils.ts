@@ -2,7 +2,9 @@ import common from "./words/common.ts";
 
 export const NUM_WORDS = 3;
 export const NUM_LETTERS = 4;
-export const NUM_GUESSES = 8;
+/* Nine, so a board that is solved at all is solved in a single digit and the
+   three of them read as one number. */
+export const NUM_GUESSES = 9;
 
 /** A letter's score against one solution. */
 export type Eval = 0 | 1 | 2;

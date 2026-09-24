@@ -370,6 +370,15 @@ strong.eval2 {
   }
 }
 
+/* The three boards' guess counts, worst first, read as one number. */
+.score {
+  font-family: monospace;
+  font-size: 3rem;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  margin: 0.25rem 0 0.75rem;
+}
+
 .answers {
   display: flex;
   justify-content: center;
