@@ -95,7 +95,7 @@ static const SKID_WORTH_A_HOP = 1.5;
               : word[i] && styles.filled,
           ]
           style=`--i:${i}; --lie:${tilt(row, i, 0)}deg; --lie-settled:${tilt(row, i, 1)}deg`
-          data-letter=word[i]?.toUpperCase()
+          data-letter=word[i]
         >
           <if=flipping>
             <for|{ z, out, mix }| of=BODY>
@@ -105,7 +105,7 @@ static const SKID_WORTH_A_HOP = 1.5;
               />
             </for>
           </if>
-          ${word[i]?.toUpperCase()}
+          ${word[i]}
         </div>
       </for>
     </div>

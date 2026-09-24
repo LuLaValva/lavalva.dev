@@ -78,22 +78,37 @@ client {
     .join("")
 )>
 
+// Boards one and two side by side and the third below them, rather than three
+// across: four emoji is wide, and three of those does not survive a narrow
+// window. Each block runs only as far as its own boards needed, so nothing
+// trails a row of blanks.
+<const/block(indexes: number[]) {
+  const until = Math.max(
+    ...indexes.map((i) =>
+      boards[i].wonAt === undefined ? guesses.length - 1 : boards[i].wonAt,
+    ),
+  );
+  return boards[0].rows
+    .slice(0, until + 1)
+    .map((_, row) =>
+      indexes
+        .map((i) => {
+          const { rows, wonAt } = boards[i];
+          return wonAt !== undefined && wonAt < row
+            ? SOLVED_EMOJI.repeat(NUM_LETTERS)
+            : rows[row].scores.map((score) => EMOJIS[score]).join("");
+        })
+        .join("  "),
+    )
+    .join("\n");
+}>
+
 <const/summary=(
   `444dle ${today}: ${score}
 
-${boards[0].rows
-  .map((_, row) =>
-    boards
-      .map(({ rows, wonAt }) =>
-        wonAt !== undefined && wonAt < row
-          ? SOLVED_EMOJI.repeat(NUM_LETTERS)
-          : rows[row].scores.map((score) => EMOJIS[score]).join(""),
-      )
-      .join(" "),
-  )
-  .join("\n")}
+${block([0, 1])}
 
-https://lavalva.dev/game/444dle`
+${block([2])}`
 )>
 
 <const/submit() {
@@ -178,12 +193,19 @@ https://lavalva.dev/game/444dle`
 <keyboard keyColors=keyColors onKey=type/>
 
 <dialog/results class=styles.results closedby="any">
-  <h2>${won ? "You win!" : "You are awful at this."}</h2>
+  <div class=styles.dialogHeading>
+    <h3>${won ? "you win!" : "you are awful at this."}</h3>
+    <form method="dialog">
+      <button class=styles.btn aria-label="close dialog">×</button>
+    </form>
+  </div>
   <p class=styles.score>${score}</p>
   <p class=styles.answers>
     <for|{ solution }| of=boards><em>${solution}</em></for>
   </p>
+  <hr>
   <pre>${summary}</pre>
+  <hr>
   <button
     class=styles.share
     onClick() {

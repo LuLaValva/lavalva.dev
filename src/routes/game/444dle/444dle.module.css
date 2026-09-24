@@ -327,7 +327,6 @@ strong.eval2 {
   font-family: monospace;
   font-weight: bold;
   font-size: 1rem;
-  text-transform: uppercase;
   user-select: none;
   transition: background-color 0.4s ease;
 
@@ -355,17 +354,21 @@ strong.eval2 {
 .results {
   text-align: center;
 
-  h2 {
-    margin-top: 0;
-  }
-
+  /* Centred rather than left aligned, which is what lets the third board sit
+     under the other two without being indented to meet them — an indent of
+     spaces lands differently wherever the text ends up pasted. */
   pre {
     font-family: inherit;
-    font-size: 0.75rem;
-    text-align: left;
+    font-size: 0.85rem;
     width: fit-content;
     margin: 1rem auto;
     white-space: pre-wrap;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 1rem 0;
   }
 }
 
@@ -387,7 +390,6 @@ strong.eval2 {
     font-style: normal;
     font-weight: bold;
     color: var(--accent);
-    text-transform: uppercase;
     letter-spacing: 0.1em;
   }
 }
