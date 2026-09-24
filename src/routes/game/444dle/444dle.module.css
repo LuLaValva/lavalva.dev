@@ -186,21 +186,16 @@ dialog {
      together on the same element is what Chrome was leaving paint behind
      over: the artifact went with either property's animation removed, and
      stayed when both were kept. */
-  /* Longhands: the shorthand would reset the delay and unstagger the row. */
-  animation-name: flip-settle;
+  /* Longhands: the shorthand would reset the delay and unstagger the row.
+     No timing function, so the turn takes CSS's default ease. */
+  animation-name: flip;
   animation-duration: 0.55s;
-  animation-timing-function: linear;
   animation-fill-mode: both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
 /* Blank side up, score side down — the tile lands on its other face rather
    than swapping colour behind your back. */
-/* Some tiles land harder than others. */
-.cell.flipping.bounces {
-  animation-name: flip-bounce;
-}
-
 .cell.flipping::before,
 .cell.flipping::after {
   content: attr(data-letter);
@@ -376,132 +371,10 @@ strong.eval2 {
   }
 }
 
-/* Thrown, not tipped: all the force is at the start and the tile spins at
-   close to a constant rate, shedding speed only as it comes down. */
-@keyframes flip-settle {
+@keyframes flip {
   from {
     transform: perspective(var(--tile-perspective)) rotateZ(var(--lie))
       rotateX(0deg);
-  }
-  10% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.9 + var(--lie-settled) * 0.1)) rotateX(24deg);
-  }
-  20% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.8 + var(--lie-settled) * 0.2)) rotateX(47deg);
-  }
-  30% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.7 + var(--lie-settled) * 0.3)) rotateX(69deg);
-  }
-  40% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.6 + var(--lie-settled) * 0.4)) rotateX(90deg);
-  }
-  50% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.5 + var(--lie-settled) * 0.5)) rotateX(110deg);
-  }
-  60% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.4 + var(--lie-settled) * 0.6)) rotateX(129deg);
-  }
-  70% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.3 + var(--lie-settled) * 0.7)) rotateX(147deg);
-  }
-  80% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.2 + var(--lie-settled) * 0.8)) rotateX(163deg);
-  }
-  90% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.1 + var(--lie-settled) * 0.9)) rotateX(175deg);
-  }
-  95% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.05 + var(--lie-settled) * 0.95))
-      rotateX(179deg);
-  }
-  to {
-    transform: perspective(var(--tile-perspective)) rotateZ(var(--lie-settled))
-      rotateX(180deg);
-  }
-}
-
-/* The same throw with more on it: round sooner, and still carrying speed
-   when it lands. It sheds that by rocking — back, over, back, damping out —
-   and by skidding a little in the plane of the table, which is the half of
-   it you can actually see: a tile rocked about flat is barely foreshortened
-   at all. */
-@keyframes flip-bounce {
-  from {
-    transform: perspective(var(--tile-perspective)) rotateZ(var(--lie))
-      rotateX(0deg);
-  }
-  10% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.86 + var(--lie-settled) * 0.14))
-      rotateX(26deg);
-  }
-  20% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.73 + var(--lie-settled) * 0.27))
-      rotateX(51deg);
-  }
-  30% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.59 + var(--lie-settled) * 0.41))
-      rotateX(75deg);
-  }
-  40% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.46 + var(--lie-settled) * 0.54))
-      rotateX(98deg);
-  }
-  50% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.32 + var(--lie-settled) * 0.68))
-      rotateX(120deg);
-  }
-  60% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.19 + var(--lie-settled) * 0.81))
-      rotateX(141deg);
-  }
-  68% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie) * 0.08 + var(--lie-settled) * 0.92))
-      rotateX(159deg);
-  }
-  74% {
-    transform: perspective(var(--tile-perspective)) rotateZ(var(--lie-settled))
-      rotateX(180deg);
-  }
-  79% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie-settled) + 1.6deg)) rotateX(148deg);
-  }
-  84% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie-settled) + 0.4deg)) rotateX(180deg);
-  }
-  88% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie-settled) + -0.8deg)) rotateX(194deg);
-  }
-  92% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie-settled) + -0.2deg)) rotateX(180deg);
-  }
-  95% {
-    transform: perspective(var(--tile-perspective))
-      rotateZ(calc(var(--lie-settled) + 0.3deg)) rotateX(174deg);
-  }
-  98% {
-    transform: perspective(var(--tile-perspective)) rotateZ(var(--lie-settled))
-      rotateX(180deg);
   }
   to {
     transform: perspective(var(--tile-perspective)) rotateZ(var(--lie-settled))
