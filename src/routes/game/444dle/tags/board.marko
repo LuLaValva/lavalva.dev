@@ -3,10 +3,6 @@ import styles from "../444dle.module.css";
 
 static const COLUMNS = Array.from({ length: NUM_LETTERS }, (_, i) => i);
 
-// Slices spaced around a half turn rather than evenly through the depth, so
-// they sit at even steps along the bevel's curve. Twelve keeps neighbours
-// overlapping on screen at a steep angle, which reads as solid rather than as
-// a staircase.
 static const SLICES = 12;
 static const BODY = Array.from({ length: SLICES }, (_, i) => {
   const angle = Math.PI * (i / (SLICES - 1) - 0.5);
@@ -19,15 +15,14 @@ static const BODY = Array.from({ length: SLICES }, (_, i) => {
 
 export interface Input {
   index: number;
-  /** The guesses this board is still answering, oldest first. */
-  rows: { guess: string; scores: Eval[] }[];
+  played: { guess: string; scores: Eval[] }[];
   pending: string;
   pendingAt: number;
   invalid?: boolean;
 }
 
 <const/cells=Array.from({ length: NUM_GUESSES }, (_, i) => {
-  const row = input.rows[i];
+  const row = input.played[i];
   if (!row) return { word: i === input.pendingAt ? input.pending : "" };
   return {
     word: row.guess,
@@ -36,9 +31,7 @@ export interface Input {
   };
 })>
 
-// A hash rather than Math.random, so a tile keeps its tilt across renders and
-// the server and client agree on it. A turned tile has been disturbed, so
-// `settled` picks a second, unrelated angle for it to land at.
+// A hash rather than Math.random, so the server and client agree on the tilt.
 <const/tilt(row: number, column: number, settled: number) {
   const n =
     Math.sin(
@@ -47,8 +40,6 @@ export interface Input {
   return (n - Math.floor(n) - 0.5) * 4;
 }>
 
-// Perspective flattens the hop itself to about a pixel, so it only reads on a
-// tile that visibly turns as it comes to rest.
 static const SKID_WORTH_A_HOP = 1.5;
 
 <const/bounces(row: number, column: number) {

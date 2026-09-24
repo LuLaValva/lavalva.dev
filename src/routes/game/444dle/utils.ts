@@ -11,9 +11,7 @@ export const COW = 1;
 export const BULL = 2;
 
 export const EMOJIS = ["⚪", "🟠", "🟢"];
-/** Named for the screen reader, since the score is otherwise only a colour. */
 export const COLORS = ["grey", "orange", "green"];
-/** Stands in for a board that was already solved on an earlier guess. */
 export const SOLVED_EMOJI = "⚫";
 
 export function requestDay(request: Request) {
@@ -41,7 +39,6 @@ export function dailySolutions(day: Date): string[] {
   return solutions;
 }
 
-/** Scores a guess, spending each solution letter on at most one position. */
 export function evaluate(guess: string, solution: string): Eval[] {
   const unspent = solution.split("");
   const result: Eval[] = Array(guess.length).fill(MISS);

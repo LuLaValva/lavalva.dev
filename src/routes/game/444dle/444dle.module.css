@@ -1,23 +1,20 @@
 :root {
   touch-action: manipulation;
-  /* Every length here is rem or a fraction of --cell, so one clamp scales the
-     board, the keyboard and the dialogs together. */
   font-size: clamp(1rem, 2.6vw, 1.5rem);
 
   --cell: min(6.2vw, 2.4rem);
   --gap: calc(var(--cell) * 0.1);
-  --half-thickness: calc(var(--cell) * 0.095);
-  /* Held under half the gap, so bevels never touch. */
+  --depth-ratio: 0.095;
+  --perspective-ratio: 4.6;
+  --half-thickness: calc(var(--cell) * var(--depth-ratio));
+  --tile-perspective: calc(var(--cell) * var(--perspective-ratio));
+  --flip-fit: calc(1 - var(--depth-ratio) / var(--perspective-ratio));
   --bevel-cut: calc(var(--cell) * 0.045);
-  --tile-perspective: calc(var(--cell) * 4.6);
   --toss: 0.38s;
-  /* Where the table is in @keyframes flip-bounce. Keep the two in step. */
+  /* Must stay in step with the landing keyframe in flip-bounce, at 64%. */
   --toss-lands-at: 0.64;
   --toss-height: 0.76;
   --hop-height: 0.28;
-  /* Cancels the perspective magnification of a face sitting half a thickness
-     proud of the tile's plane, so a turned tile covers a flat one exactly. */
-  --flip-fit: 0.9794;
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
   --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
   --eval-2: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
@@ -92,7 +89,6 @@ dialog {
   }
 }
 
-/* Read out but never drawn: the score is otherwise only a colour. */
 .srOnly {
   position: absolute;
   width: 1px;
@@ -139,7 +135,6 @@ dialog {
   animation: pop 0.15s;
 }
 
-/* A turned tile has been disturbed, and comes to rest at a different angle. */
 .scored {
   composes: faceUp from "../tile.module.css";
   rotate: var(--lie-settled);
@@ -155,8 +150,6 @@ dialog {
   --tile-face: var(--eval-2);
 }
 
-/* Only the row being revealed is built with two faces and a body. Every
-   earlier row has finished turning, so it stays a plain flat square. */
 .cell.flipping {
   position: relative;
   rotate: none;
@@ -168,26 +161,22 @@ dialog {
   --turn: var(--toss);
   animation-name: flip-settle;
   animation-duration: var(--turn);
+  /* Linear because nothing torques the tile once it is out of the hand. */
   animation-timing-function: linear;
   animation-fill-mode: both;
-  /* Longhands: the shorthand would reset the delay and unstagger the row. */
   animation-delay: calc(var(--i) * 0.3s);
 }
 
-/* Airborne for the same --toss, then however long the hop takes on top. */
 .cell.flipping.bounces {
   --turn: calc(var(--toss) / var(--toss-lands-at));
   animation-name: flip-bounce;
 }
 
-/* Blank side up, score side down, so the tile lands on its other face rather
-   than swapping colour behind your back. */
 .cell.flipping::before,
 .cell.flipping::after {
   content: attr(data-letter);
-  /* Both faces carry the letter, and a row keeps them until the next guess,
-     so without empty alt text it is read out three times over. Declared twice
-     so a browser that does not know the alt syntax still gets a letter. */
+  /* Empty alt text, or both faces read the letter out again. Declared twice so
+     a browser without the alt syntax still gets a letter. */
   content: attr(data-letter) / "";
   position: absolute;
   inset: 0;
@@ -207,13 +196,8 @@ dialog {
   transform: translateZ(calc(var(--half-thickness) * -1)) rotateX(180deg);
 }
 
-/* The tile's body: its own silhouette stacked through the depth, so the
-   extrusion follows the rounded corners exactly. */
 .slice {
   position: absolute;
-  /* Cut inward, never out past the face. Perspective magnifies the near face
-     by about two percent, enough to hide a quarter pixel, so a bevel that
-     grew outward would show as a ring whenever the tile is near flat. */
   inset: calc((1 - var(--out)) * var(--bevel-cut));
   border-radius: calc(var(--tile-radius) - (1 - var(--out)) * var(--bevel-cut));
   transform: translateZ(calc(var(--z) * var(--half-thickness)));
@@ -223,9 +207,8 @@ dialog {
     var(--tile-face)
   );
   box-shadow: var(--tile-bevel);
-  /* Looks like dead code — the face covers the body at rest either way. It is
-     not: a row keeps .flipping until the next guess, and without this the
-     slices stay live in the compositor, which Chrome leaves paint around. */
+  /* Looks like dead code. It is not: a row keeps .flipping until the next
+     guess, and Chrome leaves paint around slices left live in the compositor. */
   animation-name: tile-body;
   animation-duration: var(--turn);
   animation-timing-function: step-end;
@@ -233,7 +216,6 @@ dialog {
   animation-delay: calc(var(--i) * 0.3s);
 }
 
-/* Reused by the help dialog to name the colors. */
 strong.eval1 {
   color: var(--eval-1);
 }
@@ -285,7 +267,6 @@ strong.eval2 {
   }
 }
 
-/* Tinted keys carry score colours, which are always light. */
 .key.tinted {
   color: black;
 }
@@ -342,14 +323,6 @@ strong.eval2 {
   }
 }
 
-/* One impulse and then nothing but gravity, which makes the two curves
-   disagree: the turn is linear, because nothing torques the tile once it is
-   out of the hand, while the height is a parabola. Easing the turn instead
-   reads as drag, like the tile is settling through water. So the turn gets
-   the exact timing function and the arc is sampled across enough stops.
-
-   z-index rides along so a tile in the air paints over its neighbours, which
-   it would otherwise cut into. Only the stops where it changes are given. */
 @keyframes flip-settle {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
@@ -382,9 +355,6 @@ strong.eval2 {
   }
 }
 
-/* Thrown flatter and harder: round sooner, and hit with enough left to come
-   off the table once more. The spin about the table's face comes from the
-   scuff of landing, so it holds its lie until contact. */
 @keyframes flip-bounce {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)

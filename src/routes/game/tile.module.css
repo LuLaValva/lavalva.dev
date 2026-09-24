@@ -1,5 +1,3 @@
-/* Everything about a tile follows from --tile-size, so the same object can be
-   drawn at any size. Set that, then compose whichever part you need. */
 .shading {
   --tile-shade: calc(var(--tile-size) / 48);
   --tile-radius: calc(var(--tile-size) / 12);
@@ -11,7 +9,6 @@
 
 .tile {
   composes: shading;
-  /* A tile can be any element; `all` leaves custom properties alone. */
   all: unset;
   width: var(--tile-size);
   height: var(--tile-size);

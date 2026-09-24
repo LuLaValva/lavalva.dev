@@ -41,7 +41,6 @@ client const vibrate = (pattern: number | number[]) =>
   return {
     solution,
     wonAt: wonAt === -1 ? undefined : wonAt,
-    // A solved board stops answering, so these are the rows that still count.
     played: wonAt === -1 ? rows : rows.slice(0, wonAt + 1),
   };
 })>
@@ -62,7 +61,6 @@ client const vibrate = (pattern: number | number[]) =>
   ]),
 )>
 
-// Worst first, so the word that held out longest leads.
 <const/score=(
   boards
     .map(({ wonAt }) => (wonAt === undefined ? Infinity : wonAt + 1))
@@ -88,9 +86,7 @@ client const vibrate = (pattern: number | number[]) =>
   ).join("\n");
 }>
 
-// Two boards abreast and the third below: three sets of four emoji wrap on a
-// narrow window. The indent was set by eye against how imessage lays emoji
-// out, not by counting columns.
+// The indent was set by eye against how imessage lays emoji out.
 <const/summary=(
   `444dle ${today}: ${score}
 
@@ -117,7 +113,8 @@ ${block([2], "            ")}`
   pending = "";
   vibrate(50);
   if (over) {
-    // Let the reveal finish before the results take over the screen.
+    // 300ms is the per-column stagger in the stylesheet; the rest is one turn
+    // plus a beat, so the results do not cut the reveal off.
     setTimeout(() => results().showModal(), (NUM_LETTERS - 1) * 300 + 800);
   }
 }>
@@ -179,7 +176,7 @@ ${block([2], "            ")}`
   <for|{ played, wonAt }, i| of=boards>
     <board
       index=i
-      rows=played
+      played=played
       pending=wonAt === undefined ? pending : ""
       pendingAt=guesses.length
       invalid=invalid
