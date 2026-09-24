@@ -49,8 +49,15 @@ client const vibrate = (pattern: number | number[]) =>
 <const/won=boards.every(({ wonAt }) => wonAt !== undefined)>
 <const/finished=won || guesses.length >= NUM_GUESSES>
 
+// Both halves read `boards` and nothing else. Taking the letters from
+// `guesses` instead left this deriving from a `boards` that had not caught up,
+// so a key scored a guess behind.
 <const/keyColors=Object.fromEntries(
-  [...new Set(guesses.join(""))].map((letter) => [
+  [
+    ...new Set(
+      boards.flatMap(({ played }) => played.map(({ guess }) => guess)).join(""),
+    ),
+  ].map((letter) => [
     letter,
     boards.map(({ played }) =>
       played
@@ -158,6 +165,7 @@ ${block([2], "            ")}`
         right spot, <strong class=styles.eval1>orange</strong> is the right
         letter somewhere else, grey is not in the word at all.
       </p>
+      <p>A key is striped with its colour for each word, in order.</p>
       <p>You get ${NUM_GUESSES} guesses for all ${NUM_WORDS} words.</p>
     </dialog>
     <if=finished>

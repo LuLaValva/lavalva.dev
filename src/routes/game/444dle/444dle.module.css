@@ -185,6 +185,10 @@ dialog {
 .cell.flipping::before,
 .cell.flipping::after {
   content: attr(data-letter);
+  /* Both faces carry the letter, and a row keeps them until the next guess,
+     so without empty alt text it is read out three times over. Declared twice
+     so a browser that does not know the alt syntax still gets a letter. */
+  content: attr(data-letter) / "";
   position: absolute;
   inset: 0;
   border-radius: var(--tile-radius);
