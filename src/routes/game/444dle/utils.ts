@@ -25,10 +25,18 @@ export function requestDay(request: Request) {
 
 export function dailySolutions(day: Date): string[] {
   let seed = Math.floor(+day / 100000);
-  return Array.from({ length: NUM_WORDS }, () => {
+  const draw = () => {
     seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
     return common[Math.floor((seed / 0x100000000) * common.length)];
-  });
+  };
+  const solutions: string[] = [];
+  // Redrawing rather than picking from what is left, so a day that never drew
+  // a repeat keeps the words it has always had.
+  while (solutions.length < NUM_WORDS) {
+    const word = draw();
+    if (!solutions.includes(word)) solutions.push(word);
+  }
+  return solutions;
 }
 
 /** Scores a guess, spending each solution letter on at most one position. */

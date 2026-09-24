@@ -200,15 +200,14 @@ ${block([2], "            ")}`
     <for|{ solution }| of=boards><em>${solution}</em></for>
   </p>
   <hr>
-  <pre>${summary}</pre>
-  <hr>
   <button
     class=styles.share
     onClick() {
+      const text = `${summary}\n\n${location.origin}${location.pathname}`;
       if (navigator.share) {
-        navigator.share({ text: summary });
+        navigator.share({ text });
       } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(summary).then(() => {
+        navigator.clipboard.writeText(text).then(() => {
           alert("Copied to clipboard!");
         });
       }

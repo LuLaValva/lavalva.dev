@@ -288,20 +288,6 @@ strong.eval2 {
 .results {
   text-align: center;
 
-  /* Left aligned inside a centred block, because the third board is indented
-     to sit under the second and an indent only lands against a left edge.
-     Monospace so those spaces are the width they are counted as. */
-  pre {
-    font-family: monospace;
-    font-size: 0.85rem;
-    text-align: left;
-    width: fit-content;
-    max-width: 100%;
-    margin: 1rem auto;
-    white-space: pre;
-    overflow-x: auto;
-  }
-
   hr {
     border: none;
     border-top: 1px solid var(--rule);
