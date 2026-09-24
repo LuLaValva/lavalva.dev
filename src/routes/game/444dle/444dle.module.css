@@ -1,5 +1,11 @@
 :root {
   touch-action: manipulation;
+  /* A phone is already full of board, so it keeps the browser's own text
+     size; past about 620px there is room to spare and everything grows with
+     the window, up to half again as large. Every length here is either rem or
+     a fraction of --cell, and --cell is capped in rem, so one declaration
+     scales the board, the keyboard and the dialogs together. */
+  font-size: clamp(1rem, 2.6vw, 1.5rem);
 
   /* Tiles are lifted from reduce, so every score stays light enough to read
      black letters on. */
@@ -127,7 +133,6 @@ dialog {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  transition: opacity 0.4s;
 }
 
 /* A hairline centred in the space between boards. */
@@ -135,10 +140,6 @@ dialog {
   border-left: 1px solid var(--rule);
   margin-left: calc(var(--cell) * 0.3);
   padding-left: calc(var(--cell) * 0.3);
-}
-
-.board.solved {
-  opacity: 0.45;
 }
 
 .row {

@@ -75,7 +75,7 @@ static const SKID_WORTH_A_HOP = 1.5;
   );
 }>
 
-<div class=[styles.board, input.wonAt !== undefined && styles.solved]>
+<div class=styles.board>
   <for|{ word = "", evaluation, flipping }, row| of=cells>
     <div class=[
       styles.row,
