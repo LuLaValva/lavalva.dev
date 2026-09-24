@@ -2,17 +2,12 @@
   touch-action: manipulation;
   font-size: clamp(1rem, 2.6vw, 1.5rem);
 
-  --cell: min(6.2vw, 2.4rem);
-  --gap: calc(var(--cell) * 0.1);
-  --depth-ratio: 0.095;
-  --perspective-ratio: 4.6;
-  --half-thickness: calc(var(--cell) * var(--depth-ratio));
-  --tile-perspective: calc(var(--cell) * var(--perspective-ratio));
-  --flip-fit: calc(1 - var(--depth-ratio) / var(--perspective-ratio));
-  --bevel-cut: calc(var(--cell) * 0.045);
+  --tile-size: min(6.2vw, 2.4rem);
+  --gap: calc(var(--tile-size) * 0.1);
+  --half-thickness: calc(var(--tile-size) * 0.095);
+  --tile-perspective: calc(var(--tile-size) * 4.6);
+  --bevel-cut: calc(var(--tile-size) * 0.045);
   --toss: 0.38s;
-  /* Must stay in step with the landing keyframe in flip-bounce, at 64%. */
-  --toss-lands-at: 0.64;
   --toss-height: 0.76;
   --hop-height: 0.28;
   --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
@@ -111,8 +106,8 @@ dialog {
 
 .board + .board {
   border-left: 1px solid var(--rule);
-  margin-left: calc(var(--cell) * 0.3);
-  padding-left: calc(var(--cell) * 0.3);
+  margin-left: calc(var(--tile-size) * 0.3);
+  padding-left: calc(var(--tile-size) * 0.3);
 }
 
 .row {
@@ -126,7 +121,6 @@ dialog {
 
 .cell {
   composes: tile from "../tile.module.css";
-  --tile-size: var(--cell);
   rotate: var(--lie);
 }
 
@@ -157,7 +151,7 @@ dialog {
   background-color: transparent;
   box-shadow: none;
   color: transparent;
-  scale: var(--flip-fit);
+  scale: calc(1 - var(--half-thickness) / var(--tile-perspective));
   --turn: var(--toss);
   animation-name: flip-settle;
   animation-duration: var(--turn);
@@ -168,7 +162,8 @@ dialog {
 }
 
 .cell.flipping.bounces {
-  --turn: calc(var(--toss) / var(--toss-lands-at));
+  /* 0.64 is where flip-bounce puts the landing; keep the two in step. */
+  --turn: calc(var(--toss) / 0.64);
   animation-name: flip-bounce;
 }
 
@@ -331,19 +326,19 @@ strong.eval2 {
   }
   25% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * var(--toss-height) * 0.75))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
       rotateZ(calc(var(--lie) * 0.75 + var(--lie-settled) * 0.25))
       rotateX(45deg);
     z-index: 10;
   }
   50% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * var(--toss-height)))
+      translateZ(calc(var(--tile-size) * var(--toss-height)))
       rotateZ(calc(var(--lie) * 0.5 + var(--lie-settled) * 0.5)) rotateX(90deg);
   }
   75% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * var(--toss-height) * 0.75))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
       rotateZ(calc(var(--lie) * 0.25 + var(--lie-settled) * 0.75))
       rotateX(135deg);
     z-index: 10;
@@ -363,18 +358,18 @@ strong.eval2 {
   }
   16% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * var(--toss-height) * 0.75))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
       rotateZ(var(--lie)) rotateX(45deg);
     z-index: 10;
   }
   32% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * var(--toss-height))) rotateZ(var(--lie))
-      rotateX(90deg);
+      translateZ(calc(var(--tile-size) * var(--toss-height)))
+      rotateZ(var(--lie)) rotateX(90deg);
   }
   48% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * var(--toss-height) * 0.75))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
       rotateZ(var(--lie)) rotateX(135deg);
   }
   64% {
@@ -383,19 +378,19 @@ strong.eval2 {
   }
   73% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * var(--hop-height) * 0.75))
+      translateZ(calc(var(--tile-size) * var(--hop-height) * 0.75))
       rotateZ(calc(var(--lie) * 0.45 + var(--lie-settled) * 0.55))
       rotateX(180deg);
   }
   82% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * var(--hop-height)))
+      translateZ(calc(var(--tile-size) * var(--hop-height)))
       rotateZ(calc(var(--lie) * 0.18 + var(--lie-settled) * 0.82))
       rotateX(180deg);
   }
   91% {
     transform: perspective(var(--tile-perspective))
-      translateZ(calc(var(--cell) * var(--hop-height) * 0.75))
+      translateZ(calc(var(--tile-size) * var(--hop-height) * 0.75))
       rotateZ(calc(var(--lie) * 0.05 + var(--lie-settled) * 0.95))
       rotateX(180deg);
     z-index: 10;
