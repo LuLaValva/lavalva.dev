@@ -28,7 +28,11 @@
   /* How far off the table a tile gets, in tile widths. A parabola is at
      three quarters of its height a quarter of the way along, which is where
      the 0.75 in the keyframes comes from. */
-  --toss-height: 2.4;
+  /* As high as it can go and still clear its neighbours. Cells composite in
+     DOM order, so a tile at rest paints over the one to its left in mid-air;
+     below this a tile at its peak still fits inside the gap between them and
+     nothing touches. The ceiling is 0.767 — this is just under. */
+  --toss-height: 0.76;
   --hop-height: 0.28;
   /* A face sits a half thickness proud of the tile's plane, where perspective
      magnifies it. Shrinking by 1 - depth/perspective cancels that exactly, so
