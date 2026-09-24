@@ -55,6 +55,13 @@ export interface Input {
 // the server and client agree on it. `settled` picks a second, unrelated
 // angle: a tile that has been turned over has been disturbed, and lands at a
 // different lie than it was sitting at.
+// Not every throw has the same on it. About two in five come down with enough
+// left to leave the table again.
+<const/bounces(row: number, column: number) {
+  const n = Math.sin(input.index * 3.71 + row * 19.13 + column * 7.57) * 9371.3;
+  return n - Math.floor(n) < 0.4;
+}>
+
 <const/tilt(row: number, column: number, settled: number) {
   const n =
     Math.sin(
@@ -78,6 +85,7 @@ export interface Input {
                   styles.scored,
                   styles[`eval${evaluation[i]}`],
                   flipping && styles.flipping,
+                  flipping && bounces(row, i) && styles.bounces,
                 ]
               : word[i] && styles.filled,
           ]

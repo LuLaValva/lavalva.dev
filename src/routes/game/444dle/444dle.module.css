@@ -188,10 +188,15 @@ dialog {
      stayed when both were kept. */
   /* Longhands: the shorthand would reset the delay and unstagger the row.
      No timing function, so the turn takes CSS's default ease. */
-  animation-name: flip;
-  animation-duration: 0.55s;
+  animation-name: flip-settle;
+  animation-duration: 0.65s;
   animation-fill-mode: both;
   animation-delay: calc(var(--i) * 0.3s);
+}
+
+/* Some throws have more on them than others. */
+.cell.flipping.bounces {
+  animation-name: flip-bounce;
 }
 
 /* Blank side up, score side down — the tile lands on its other face rather
@@ -248,7 +253,7 @@ dialog {
      keeps its flipping class until the next guess lands, so without it a
      hundred and forty four transformed slices sit live in the compositor
      long after the turn is over, and Chrome leaves paint around them. */
-  animation: tile-body 0.55s step-end both;
+  animation: tile-body 0.65s step-end both;
   animation-delay: calc(var(--i) * 0.3s);
 }
 
@@ -371,14 +376,155 @@ strong.eval2 {
   }
 }
 
-@keyframes flip {
+/* Thrown: all the force is at the start, the tile spins at close to a
+   constant rate, and it rises and falls on the way round. It lands flat and
+   only then turns to face the way it came to rest. */
+@keyframes flip-settle {
   from {
-    transform: perspective(var(--tile-perspective)) rotateZ(var(--lie))
-      rotateX(0deg);
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--lie)) rotateX(0deg);
+  }
+  8.2% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.216)) rotateZ(var(--lie)) rotateX(22deg);
+  }
+  16.4% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.384)) rotateZ(var(--lie)) rotateX(43deg);
+  }
+  24.6% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.504)) rotateZ(var(--lie)) rotateX(63deg);
+  }
+  32.8% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.576)) rotateZ(var(--lie)) rotateX(83deg);
+  }
+  41% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.6)) rotateZ(var(--lie)) rotateX(101deg);
+  }
+  49.2% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.576)) rotateZ(var(--lie)) rotateX(119deg);
+  }
+  57.4% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.504)) rotateZ(var(--lie)) rotateX(135deg);
+  }
+  65.6% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.384)) rotateZ(var(--lie)) rotateX(151deg);
+  }
+  73.8% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.216)) rotateZ(var(--lie)) rotateX(166deg);
+  }
+  82% {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--lie)) rotateX(180deg);
+  }
+  91% {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(calc(var(--lie) * 0.45 + var(--lie-settled) * 0.55))
+      rotateX(180deg);
   }
   to {
-    transform: perspective(var(--tile-perspective)) rotateZ(var(--lie-settled))
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--lie-settled)) rotateX(180deg);
+  }
+}
+
+/* The same throw with more on it. It comes round sooner and lands with
+   enough left to leave the table twice more, each hop shorter than the
+   last, turning to its settled lie across them rather than in the air. */
+@keyframes flip-bounce {
+  from {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--lie)) rotateX(0deg);
+  }
+  7% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.216)) rotateZ(var(--lie)) rotateX(22deg);
+  }
+  14% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.384)) rotateZ(var(--lie)) rotateX(43deg);
+  }
+  21% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.504)) rotateZ(var(--lie)) rotateX(63deg);
+  }
+  28% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.576)) rotateZ(var(--lie)) rotateX(83deg);
+  }
+  35% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.6)) rotateZ(var(--lie)) rotateX(101deg);
+  }
+  42% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.576)) rotateZ(var(--lie)) rotateX(119deg);
+  }
+  49% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.504)) rotateZ(var(--lie)) rotateX(135deg);
+  }
+  56% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.384)) rotateZ(var(--lie)) rotateX(151deg);
+  }
+  63% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.216)) rotateZ(var(--lie)) rotateX(166deg);
+  }
+  70% {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--lie)) rotateX(180deg);
+  }
+  74% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.225))
+      rotateZ(calc(var(--lie) * 0.84 + var(--lie-settled) * 0.16))
+      rotateX(184deg);
+  }
+  78% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.3))
+      rotateZ(calc(var(--lie) * 0.68 + var(--lie-settled) * 0.32))
+      rotateX(187deg);
+  }
+  82% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.225))
+      rotateZ(calc(var(--lie) * 0.52 + var(--lie-settled) * 0.48))
+      rotateX(184deg);
+  }
+  86% {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(calc(var(--lie) * 0.36 + var(--lie-settled) * 0.64))
       rotateX(180deg);
+  }
+  89% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.1))
+      rotateZ(calc(var(--lie) * 0.24 + var(--lie-settled) * 0.76))
+      rotateX(182deg);
+  }
+  92% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--cell) * 0.11))
+      rotateZ(calc(var(--lie) * 0.12 + var(--lie-settled) * 0.88))
+      rotateX(182deg);
+  }
+  95% {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--lie-settled)) rotateX(180deg);
+  }
+  to {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--lie-settled)) rotateX(180deg);
   }
 }
 
