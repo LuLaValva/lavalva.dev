@@ -1,21 +1,22 @@
 import { type Eval, NUM_GUESSES, NUM_LETTERS } from "../utils";
 import styles from "../444dle.module.css";
 
-// Slices through the tile's thickness. Enough that neighbouring slices still
-// overlap on screen at a steep angle, which is what keeps the side reading as
-// solid rather than as a staircase.
+static const COLUMNS = Array.from({ length: NUM_LETTERS }, (_, i) => i);
+
+// Enough slices through the tile's thickness that neighbours still overlap on
+// screen at a steep angle, which is what keeps the side reading as solid
+// rather than as a staircase.
 static const SLICES = 12;
 // Spaced around a half turn rather than evenly through the depth, so the
-// slices sit at even steps along the bevel's curve. Stepping z evenly instead
-// would bunch them at the middle and leave a jump at either face, where the
-// curve is steepest.
+// slices sit at even steps along the bevel's curve. Stepping z evenly would
+// bunch them at mid depth and leave a jump at either face.
 static const BODY = Array.from({ length: SLICES }, (_, i) => {
   const angle = Math.PI * (i / (SLICES - 1) - 0.5);
   return {
     // Just shy of the faces, so the outermost slices do not fight them.
     z: Math.sin(angle) * 0.98,
-    // How far this slice stands out from the tile's edge: none at the faces,
-    // most at mid depth. A slice at the surface is therefore exactly the flat
+    // How far the slice is cut in from the tile's edge: none at mid depth,
+    // most at the faces. A slice at mid depth is therefore exactly the flat
     // tile, which is what keeps the two renderings interchangeable.
     out: Math.cos(angle).toFixed(4),
     mix: `${Math.round((Math.sin(angle) + 1) * 50)}%`,
@@ -25,30 +26,24 @@ static const BODY = Array.from({ length: SLICES }, (_, i) => {
 export interface Input {
   /** Which of the three boards this is; varies the tile tilt between them. */
   index: number;
-  /** Each submitted guess with its score against this board's solution. */
+  /** The guesses this board is still answering, oldest first. */
   rows: { guess: string; scores: Eval[] }[];
-  /** The guess currently being typed. */
   pending: string;
-  /** Index of the guess that solved this board, if any. */
-  wonAt?: number;
+  /** Which row the pending guess belongs on. */
+  pendingAt: number;
   /** Set while the pending guess is being rejected, to shake the row. */
   invalid?: boolean;
 }
 
 <const/cells=Array.from({ length: NUM_GUESSES }, (_, i) => {
-  // Once solved, a board stops echoing later guesses.
-  if (input.wonAt !== undefined && i > input.wonAt) return {};
   const row = input.rows[i];
-  if (row) {
-    return {
-      word: row.guess,
-      evaluation: row.scores,
-      // Only the newest row still has a turn to play out.
-      flipping: i === input.rows.length - 1,
-    };
-  }
-  if (i === input.rows.length) return { word: input.pending };
-  return {};
+  if (!row) return { word: i === input.pendingAt ? input.pending : "" };
+  // Only the newest row still has a turn to play out.
+  return {
+    word: row.guess,
+    evaluation: row.scores,
+    flipping: i === input.pendingAt - 1,
+  };
 })>
 
 // A hash rather than Math.random, so a tile keeps its tilt across renders and
@@ -76,12 +71,12 @@ static const SKID_WORTH_A_HOP = 1.5;
 }>
 
 <div class=styles.board>
-  <for|{ word = "", evaluation, flipping }, row| of=cells>
+  <for|{ word, evaluation, flipping }, row| of=cells>
     <div class=[
       styles.row,
-      input.invalid && row === input.rows.length && styles.invalid,
+      input.invalid && row === input.pendingAt && styles.invalid,
     ]>
-      <for|_, i| of=Array.from({ length: NUM_LETTERS })>
+      <for|i| of=COLUMNS>
         <div
           class=[
             styles.cell,

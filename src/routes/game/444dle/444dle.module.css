@@ -15,13 +15,8 @@
      centre so the tile is a slab rather than a sheet. */
   --tile-depth: calc(var(--cell) * 0.095);
   --tile-bevel: 0.05rem -0.1rem 0.25rem inset rgb(0 0 0 / 0.45);
-  /* How deep the bevel cuts, as a fraction of the tile, kept unitless so the
-     face's matching shrink can be derived from it. Held under half the gap
-     between tiles. */
-  --tile-roll-ratio: 0.045;
-  --tile-roll: calc(var(--cell) * var(--tile-roll-ratio));
-  /* The face, pulled in to sit flush with the narrow end of the body. */
-  --face-shrunk: calc(1 - 2 * var(--tile-roll-ratio));
+  /* How deep the bevel cuts. Held under half the gap between tiles. */
+  --tile-roll: calc(var(--cell) * 0.045);
   /* Tied to the tile so the turn looks the same at every screen size, and so
      the ratio below is a constant. */
   --tile-perspective: calc(var(--cell) * 4.6);
@@ -34,10 +29,6 @@
   /* How far off the table a tile gets, in tile widths. A parabola is at
      three quarters of its height a quarter of the way along, which is where
      the 0.75 in the keyframes comes from. */
-  /* As high as it can go and still clear its neighbours. Cells composite in
-     DOM order, so a tile at rest paints over the one to its left in mid-air;
-     below this a tile at its peak still fits inside the gap between them and
-     nothing touches. The ceiling is 0.767 — this is just under. */
   --toss-height: 0.76;
   --hop-height: 0.28;
   /* A face sits a half thickness proud of the tile's plane, where perspective
@@ -150,11 +141,9 @@ dialog {
 }
 
 .cell {
-  /* How the tile is lying on the table. A tile that has not been turned yet
-     is at `--lie`; once turned it has been disturbed and settles at
-     `--lie-settled`. Across the turn itself the angle rides inside the flip's
-     transform, since a second animated property would bring back the paint
-     Chrome leaves behind. */
+  /* How the tile is lying on the table. Not yet turned it sits at `--lie`;
+     turned, it has been disturbed and settles at `--lie-settled`. The turn
+     itself carries the angle inside its own transform. */
   rotate: var(--lie);
   width: var(--cell);
   height: var(--cell);
@@ -192,11 +181,8 @@ dialog {
   box-shadow: none;
   color: transparent;
   scale: var(--flip-fit);
-  /* One animation, and only on transform. Animating transform and scale
-     together on the same element is what Chrome was leaving paint behind
-     over. Longhands, because the shorthand would reset the delay and
-     unstagger the row. The turn is linear because nothing slows it; see the
-     keyframes. */
+  /* Longhands, because the shorthand would reset the delay and unstagger the
+     row. Linear because nothing slows the turn; see the keyframes. */
   --turn: var(--toss);
   animation-name: flip-settle;
   animation-duration: var(--turn);
@@ -205,7 +191,6 @@ dialog {
   animation-delay: calc(var(--i) * 0.3s);
 }
 
-/* Some throws have more on them than others. */
 /* Airborne for the same --toss, then however long the hop takes on top: the
    landing sits at --toss-lands-at through its keyframes, so dividing by that
    puts the landing at the same moment a tile that does not bounce arrives. */
@@ -246,15 +231,13 @@ dialog {
   position: absolute;
   /* Cut in from the tile's own shape, never out past it: widest at mid depth
      where it is exactly the tile, narrowing to the faces. Offsetting a
-     rounded rectangle inwards narrows it and closes its corners by that same
-     distance, so the bevel stays a true rounded rectangle at every depth.
+     rounded rectangle inwards closes its corners by that same distance, so
+     the bevel stays a true rounded rectangle at every depth.
 
-     Inwards is the only direction that works. The widest part of a bevel
-     sits at mid depth, which is further from the eye than the near face, and
-     perspective over half a tile's thickness only magnifies that face by
-     about two percent — enough to hide a quarter pixel. Any bevel worth
-     seeing that grows outwards shows past the face as a ring whenever the
-     tile is near flat. */
+     Inwards is the only direction that works: perspective over half a tile's
+     thickness magnifies the near face by about two percent, enough to hide a
+     quarter pixel, so any bevel worth seeing that grows outwards shows past
+     the face as a ring whenever the tile is near flat. */
   inset: calc((1 - var(--out)) * var(--tile-roll));
   border-radius: calc(var(--tile-radius) - (1 - var(--out)) * var(--tile-roll));
   transform: translateZ(calc(var(--z) * var(--tile-depth)));
@@ -264,10 +247,10 @@ dialog {
      instead of every layer starting at full brightness again. */
   box-shadow: var(--tile-bevel);
   /* Not painted at either end of the turn. The cut is inwards, so the face
-     covers the body at rest either way and this shows nothing — but a row
-     keeps its flipping class until the next guess lands, so without it a
+     covers the body at rest either way and this hides nothing — but a row
+     keeps its flipping class until the next guess lands, and without it a
      hundred and forty four transformed slices sit live in the compositor
-     long after the turn is over, and Chrome leaves paint around them. */
+     long after the turn is over, which Chrome leaves paint around. */
   animation-name: tile-body;
   /* Inherited, so it follows whichever turn this tile is taking. */
   animation-duration: var(--turn);
@@ -410,30 +393,19 @@ strong.eval2 {
   }
 }
 
-/* One impulse at the start and then nothing but gravity, which fixes both
-   curves and makes them disagree.
+/* One impulse and then nothing but gravity, which fixes both curves and makes
+   them disagree: nothing torques the tile once it is out of the hand, so it
+   turns at a constant rate until the table stops it dead, while its height is
+   a parabola. Easing the turn instead reads as drag, and drag looks like the
+   tile settling through water. They cannot share a timing function, so the
+   turn — the half you read — gets the exact one, and the arc is sampled
+   across enough stops to round it off.
 
-   Nothing torques the tile once it is out of the hand, so it turns at a
-   constant rate — linear, right up until the table stops it dead. Easing the
-   turn is drag, and drag is what makes a tile look like it is settling
-   through water.
-
-   Height is the other half: thrown up, decelerating to the top, accelerating
-   back down. A parabola, symmetric about its peak.
-
-   Those cannot share a timing function, and the turn is the half you read, so
-   it gets the exact one — every leg linear, with the arc sampled across
-   enough stops to round it off. */
-
-/* Thrown and let go.
-
-   z-index rides along so that a tile in the air paints over its neighbours
-   rather than under them. Cells composite in DOM order otherwise, so a tile
-   still sitting at rest cuts into the one to its left in mid-flight, which
-   put a ceiling on how far the toss could go. Only the stops where it
-   changes are given: an integer interpolates and rounds, so 0 to 10 across
-   the opening leg is above its neighbours within one percent of the turn,
-   and back level only in the last half percent. */
+   z-index rides along so a tile in the air paints over its neighbours. Cells
+   composite in DOM order otherwise, and a tile still at rest cuts into the
+   one to its left mid-flight. Only the stops where it changes are given: an
+   integer interpolates and rounds, so 0 to 10 across the opening leg is above
+   its neighbours within one percent of the turn. */
 @keyframes flip-settle {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)

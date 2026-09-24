@@ -1,7 +1,6 @@
 import styles from "./444dle.module.css";
 import {
   BULL,
-  binarySearch,
   dailySolutions,
   EMOJIS,
   type Eval,
@@ -14,12 +13,8 @@ import {
   SOLVED_EMOJI,
 } from "./utils";
 
-client {
-  const vibrate =
-    typeof navigator.vibrate === "function"
-      ? (pattern: number | number[]) => navigator.vibrate(pattern)
-      : () => {};
-}
+client const vibrate = (pattern: number | number[]) =>
+  navigator.vibrate?.(pattern);
 
 <lazy-word-list/validWords/>
 
@@ -35,9 +30,9 @@ client {
 <let/pending="">
 <let/invalid=false>
 
-// Every board is derived from the guess list, so a guess only has to be
-// recorded once. Everything else derives from `boards` rather than reaching
-// back to `guesses`, which keeps the derivations in one ordered chain.
+// Derived from the guess list, so a guess is only ever recorded once. Anything
+// downstream reads `boards` rather than reaching back past it, which keeps the
+// derivations in one order Marko can resolve.
 <const/boards=solutions.map((solution) => {
   const rows = guesses.map((guess) => ({
     guess,
@@ -46,67 +41,60 @@ client {
   const wonAt = rows.findIndex(({ scores }) =>
     scores.every((score) => score === BULL),
   );
-  return { solution, rows, wonAt: wonAt === -1 ? undefined : wonAt };
+  return {
+    solution,
+    wonAt: wonAt === -1 ? undefined : wonAt,
+    // A solved board stops responding, so these are the rows that still count.
+    played: wonAt === -1 ? rows : rows.slice(0, wonAt + 1),
+  };
 })>
 
 <const/won=boards.every(({ wonAt }) => wonAt !== undefined)>
 <const/finished=won || guesses.length >= NUM_GUESSES>
 
-<const/keyColors=boards.reduce(
-  (colors, { rows, wonAt }, board) => {
-    rows.forEach(({ guess, scores }, row) => {
-      // A solved board stops tinting keys.
-      if (wonAt !== undefined && wonAt < row) return;
-      scores.forEach((score, i) => {
-        const letter = guess[i];
-        const seen = (colors[letter] ??= Array(NUM_WORDS).fill(MISS) as Eval[]);
-        if (score > seen[board]) seen[board] = score;
-      });
-    });
-    return colors;
-  },
-  {} as Record<string, Eval[]>,
+<const/keyColors=Object.fromEntries(
+  [...new Set(guesses.join(""))].map((letter) => [
+    letter,
+    boards.map(({ played }) =>
+      played
+        .flatMap(({ guess, scores }) =>
+          scores.filter((_, i) => guess[i] === letter),
+        )
+        .reduce<Eval>((best, score) => (score > best ? score : best), MISS),
+    ),
+  ]),
 )>
 
-// One digit per board, worst first: the word that held out longest leads.
-// A board never solved has no digit to give and sorts ahead of all of them.
+// Worst first, so the word that held out longest leads. Never solved is worse
+// than any number of guesses, which is what puts it at the front.
 <const/score=(
   boards
-    .map(({ wonAt }) => (wonAt === undefined ? null : wonAt + 1))
-    .sort((a, b) => (a === null ? -1 : b === null ? 1 : b - a))
-    .map((guesses) => guesses ?? "X")
+    .map(({ wonAt }) => (wonAt === undefined ? Infinity : wonAt + 1))
+    .sort((a, b) => b - a)
+    .map((count) => (count === Infinity ? "X" : count))
     .join("")
 )>
 
-// Boards one and two side by side and the third below them, rather than three
-// across: four emoji is wide, and three of those does not survive a narrow
-// window. Twelve spaces of indent and two between the pair, matching the
-// original, which was set by eye against how imessage lays emoji out rather
-// than by counting columns. Each block runs only as far as its own boards
-// needed, so nothing trails a row of blanks.
 <const/block(indexes: number[], indent = "") {
-  const until = Math.max(
-    ...indexes.map((i) =>
-      boards[i].wonAt === undefined ? guesses.length - 1 : boards[i].wonAt,
-    ),
-  );
-  return boards[0].rows
-    .slice(0, until + 1)
-    .map(
-      (_, row) =>
-        indent +
-        indexes
-          .map((i) => {
-            const { rows, wonAt } = boards[i];
-            return wonAt !== undefined && wonAt < row
-              ? SOLVED_EMOJI.repeat(NUM_LETTERS)
-              : rows[row].scores.map((score) => EMOJIS[score]).join("");
-          })
-          .join("  "),
-    )
-    .join("\n");
+  const group = indexes.map((i) => boards[i]);
+  const height = Math.max(...group.map(({ played }) => played.length));
+  return Array.from(
+    { length: height },
+    (_, row) =>
+      indent +
+      group
+        .map(
+          ({ played }) =>
+            played[row]?.scores.map((score) => EMOJIS[score]).join("") ??
+            SOLVED_EMOJI.repeat(NUM_LETTERS),
+        )
+        .join("  "),
+  ).join("\n");
 }>
 
+// Two boards abreast and the third below, rather than three across: three sets
+// of four emoji wrap on a narrow window. The indent is the original's, set by
+// eye against how imessage lays emoji out rather than by counting columns.
 <const/summary=(
   `444dle ${today}: ${score}
 
@@ -117,12 +105,14 @@ ${block([2], "            ")}`
 
 <const/submit() {
   if (!validWords || pending.length < NUM_LETTERS) return;
-  if (!binarySearch(validWords, pending)) {
+  if (!validWords.includes(pending)) {
     invalid = true;
     vibrate([100, 100, 50, 100, 100]);
     setTimeout(() => (invalid = false), 600);
     return;
   }
+  // Worked out from `next` rather than read off `finished`, which will not
+  // have caught up until the render queue flushes.
   const next = [...guesses, pending];
   const over =
     next.length >= NUM_GUESSES ||
@@ -189,8 +179,14 @@ ${block([2], "            ")}`
 </header>
 
 <div class=styles.boards>
-  <for|{ rows, wonAt }, i| of=boards>
-    <board index=i rows=rows pending=pending wonAt=wonAt invalid=invalid/>
+  <for|{ played, wonAt }, i| of=boards>
+    <board
+      index=i
+      rows=played
+      pending=wonAt === undefined ? pending : ""
+      pendingAt=guesses.length
+      invalid=invalid
+    />
   </for>
 </div>
 
@@ -231,15 +227,10 @@ ${block([2], "            ")}`
     "keydown",
     (e) => {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
-      if (
-        e.key === "Enter" ||
-        e.key === "Backspace" ||
-        /^[a-zA-Z]$/.test(e.key)
-      ) {
-        if (document.querySelector("dialog[open]")) return;
-        e.preventDefault();
-        type(e.key);
-      }
+      if (!/^(Enter|Backspace|[a-zA-Z])$/.test(e.key)) return;
+      if (document.querySelector("dialog[open]")) return;
+      e.preventDefault();
+      type(e.key);
     },
     { signal: $signal },
   );
