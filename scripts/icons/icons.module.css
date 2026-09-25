@@ -1,0 +1,30 @@
+:global(body) {
+  margin: 0;
+  background-color: transparent;
+}
+
+.canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap);
+  width: 100vw;
+  height: 100vh;
+  --gap: calc(var(--tile-size) * 0.09);
+}
+
+.row {
+  display: flex;
+  gap: var(--gap);
+}
+
+.tile {
+  composes: tile faceUp from "../../src/routes/game/tile.module.css";
+  rotate: var(--lie);
+  font-size: calc(var(--tile-size) * 0.85);
+  filter: drop-shadow(
+    0 calc(var(--tile-size) * 0.025) calc(var(--tile-size) * 0.055)
+      rgb(0 0 0 / 0.5)
+  );
+}
