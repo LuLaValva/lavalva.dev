@@ -26,7 +26,7 @@ const ART: Record<string, Art> = {
         { char: "4", lie: -5 },
         { char: "4", lie: -1 },
       ],
-      [{ char: "4", lie: -3 }],
+      [{ char: "4", lie: 3 }],
     ],
   },
 };
