@@ -1,0 +1,96 @@
+.dialog {
+  border: none;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  background-color: light-dark(rgb(255, 253, 250), rgb(54, 40, 28));
+  color: light-dark(black, white);
+  max-width: min(26rem, 90vw);
+  box-shadow:
+    inset -2px 4px 4px light-dark(white, rgb(255 255 255 / 0.18)),
+    inset 2px -4px 10px light-dark(rgb(0 0 0 / 0.14), rgb(0 0 0 / 0.45)),
+    -0.75rem 1.5rem 2.25rem -0.75rem rgb(0 0 0 / 0.45);
+
+  &::backdrop {
+    background-color: #0009;
+    backdrop-filter: blur(3px);
+  }
+
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.6;
+  }
+}
+
+.btn {
+  position: relative;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: light-dark(black, white);
+  font-family: inherit;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: #0002;
+    box-shadow: inset -1.5px 3px 4.5px #0003;
+  }
+
+  &:active::before {
+    scale: 1.15;
+  }
+}
+
+.primary {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 0.75rem;
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+  font: inherit;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+  box-shadow:
+    inset -1px 2px 2px rgb(255 255 255 / 0.25),
+    inset 1px -2px 5px rgb(0 0 0 / 0.2),
+    -0.1rem 0.2rem 0.3rem -0.1rem rgb(0 0 0 / 0.45);
+
+  &:active {
+    scale: 0.98;
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

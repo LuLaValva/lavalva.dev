@@ -22,23 +22,6 @@ body {
   padding: 0 0.5rem 12rem;
 }
 
-.btn {
-  background-color: #8884;
-  border-radius: 0.75rem;
-  height: 1.75rem;
-  width: 1.75rem;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: light-dark(black, white);
-  font-family: inherit;
-
-  &:active {
-    scale: 1.15;
-  }
-}
-
 .header {
   display: flex;
   justify-content: space-between;
@@ -54,43 +37,6 @@ body {
 .headerActions {
   display: flex;
   gap: 0.5rem;
-}
-
-dialog {
-  border-radius: 1rem;
-  padding: 1rem;
-  border: 1px solid light-dark(black, white);
-  background-color: var(--background);
-  color: light-dark(black, white);
-  max-width: min(30rem, 90vw);
-
-  &::backdrop {
-    background-color: #0008;
-  }
-
-  & > :last-child {
-    margin-bottom: 0;
-  }
-}
-
-.dialogHeading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-
-  h3 {
-    margin: 0;
-  }
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 .boards {
@@ -274,41 +220,30 @@ strong.eval2 {
   font-weight: normal;
 }
 
-.results {
-  text-align: center;
-
-  hr {
-    border: none;
-    border-top: 1px solid var(--rule);
-    margin: 1rem 0;
-  }
+.btn {
+  composes: btn from "../chrome.module.css";
 }
 
-.score {
+.srOnly {
+  composes: srOnly from "../chrome.module.css";
+}
+
+.stat {
+  margin: 1.5rem 0 0;
   font-family: monospace;
   font-size: 3rem;
   font-weight: bold;
-  letter-spacing: 0.1em;
-  margin: 0.25rem 0 0.75rem;
+  text-align: center;
 }
 
 .answers {
   display: flex;
   justify-content: center;
   gap: 0.75rem;
-
-  em {
-    font-style: normal;
-    font-weight: bold;
-    color: var(--accent);
-    letter-spacing: 0.1em;
-  }
-}
-
-.share {
-  margin: auto;
-  display: block;
-  font-family: inherit;
+  margin: 0.5rem 0 1.5rem;
+  font-weight: bold;
+  color: var(--accent);
+  letter-spacing: 0.1em;
 }
 
 @keyframes pop {

@@ -42,38 +42,27 @@ client const vibrate = (pattern: number | number[]) =>
 <const/won=boards.every(({ wonAt }) => wonAt !== undefined)>
 <const/finished=won || guesses.length >= NUM_GUESSES>
 
+<let/helpOpen=false>
+<let/resultsOpen=false>
+
 <header class=styles.header>
   <h1>444dle</h1>
   <span class=styles.headerActions>
     <button
       class=styles.btn
       title="help"
-      onclick="this.nextElementSibling.showModal()"
+      onClick() {
+        helpOpen = true;
+      }
     >
       ?
     </button>
-    <dialog closedby="any">
-      <div class=styles.dialogHeading>
-        <h3>Three words, one keyboard</h3>
-        <form method="dialog">
-          <button class=styles.btn aria-label="close dialog">×</button>
-        </form>
-      </div>
-      <p>Every guess is played against all three words at once.</p>
-      <p>
-        <strong class=styles.eval2>Green</strong> is the right letter in the
-        right spot, <strong class=styles.eval1>orange</strong> is the right
-        letter somewhere else, grey is not in the word at all.
-      </p>
-      <p>A key is striped with its colour for each word, in order.</p>
-      <p>You get ${NUM_GUESSES} guesses for all ${NUM_WORDS} words.</p>
-    </dialog>
     <if=finished>
       <button
         class=styles.btn
         title="show results"
         onClick() {
-          results().showModal();
+          resultsOpen = true;
         }
       >
         ⇪
@@ -81,6 +70,18 @@ client const vibrate = (pattern: number | number[]) =>
     </if>
   </span>
 </header>
+
+<game-dialog open:=helpOpen>
+  <@heading>Three words, one keyboard</@heading>
+  <p>Every guess is played against all three words at once.</p>
+  <p>
+    <strong class=styles.eval2>Green</strong> is the right letter in the right
+    spot, <strong class=styles.eval1>orange</strong> is the right letter
+    somewhere else, grey is not in the word at all.
+  </p>
+  <p>A key is striped with its colour for each word, in order.</p>
+  <p>You get ${NUM_GUESSES} guesses for all ${NUM_WORDS} words.</p>
+</game-dialog>
 
 <div class=styles.boards>
   <for|{ played, wonAt }, i| of=boards>
@@ -138,6 +139,7 @@ client const vibrate = (pattern: number | number[]) =>
   day: "numeric",
   year: "2-digit",
 })>
+<const/fullDate=day.toLocaleDateString("en-US", { dateStyle: "long" })>
 <const/score=(
   boards
     .map(({ wonAt }) => wonAt ?? Infinity)
@@ -146,18 +148,14 @@ client const vibrate = (pattern: number | number[]) =>
     .join("")
 )>
 
-<dialog/results class=styles.results closedby="any">
-  <div class=styles.dialogHeading>
-    <h3>444dle ${today}</h3>
-    <form method="dialog">
-      <button class=styles.btn aria-label="close dialog">×</button>
-    </form>
-  </div>
-  <p class=styles.score>${score}</p>
+<game-dialog open:=resultsOpen>
+  <@heading>${fullDate}</@heading>
+  <p class=styles.stat>${[...score].join(" ")}</p>
   <p class=styles.answers>
-    <for|{ solution }| of=boards><em>${solution}</em></for>
+    <span class=styles.srOnly>Answers:</span>
+    <for|{ solution }| of=boards><span>${solution}</span></for>
   </p>
-  <hr>
+
   <const/block(indexes: number[], indent = "") {
     const group = indexes.map((i) => boards[i]);
     const height = Math.max(...group.map(({ played }) => played.length));
@@ -175,36 +173,21 @@ client const vibrate = (pattern: number | number[]) =>
     ).join("\n");
   }>
   // The indent was set by eye against how imessage lays emoji out.
-  <const/summary=(
+  <share-button text=(
     `444dle ${today}: ${score}
 
 ${block([0, 1])}
 
 ${block([2], "            ")}`
-  )>
-  <button
-    class=styles.share
-    onClick() {
-      const text = `${summary}\n\n${location.origin}${location.pathname}`;
-      if (navigator.share) {
-        navigator.share({ text });
-      } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => {
-          alert("Copied to clipboard!");
-        });
-      }
-    }
-  >
-    Share with Friends
-  </button>
-</dialog>
+  )/>
+</game-dialog>
 
 <script>
   if (finished) {
     // 300ms is the per-column stagger in the stylesheet; the rest is one turn
     // plus a beat, so the results do not cut the reveal off.
     const reveal = setTimeout(
-      () => results().showModal(),
+      () => (resultsOpen = true),
       (NUM_LETTERS - 1) * 300 + 800,
     );
     $signal.onabort = () => clearTimeout(reveal);

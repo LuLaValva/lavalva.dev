@@ -1,0 +1,34 @@
+import styles from "../chrome.module.css";
+
+export interface Input {
+  heading: Marko.AttrTag<Marko.HTML.H2>;
+  open?: boolean;
+  openChange?: (open: boolean) => void;
+  content: Marko.Body;
+}
+
+<let/open:=input.open>
+
+<script>
+  if (open) {
+    $dialog().showModal();
+  } else {
+    $dialog().close();
+  }
+</script>
+
+<dialog/$dialog
+  class=styles.dialog
+  closedby="any"
+  onClose() {
+    open = false;
+  }
+>
+  <div class=styles.heading>
+    <h2 ...input.heading/>
+    <form method="dialog">
+      <button class=styles.btn aria-label="close dialog">×</button>
+    </form>
+  </div>
+  <${input.content}/>
+</dialog>

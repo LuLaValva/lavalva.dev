@@ -13,25 +13,11 @@ body {
 }
 
 .btn {
-  background-color: #8884;
-  border-radius: 0.75rem;
-  height: 1.75rem;
-  width: 1.75rem;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: light-dark(black, white);
-
-  &:active {
-    scale: 1.15;
-  }
+  composes: btn from "../chrome.module.css";
 }
 
-.share {
-  margin: auto;
-  display: block;
-  margin-top: 1rem;
+.srOnly {
+  composes: srOnly from "../chrome.module.css";
 }
 
 .tile {
@@ -44,32 +30,6 @@ body {
   justify-content: space-between;
   max-width: 18rem;
   margin: 1rem auto;
-}
-
-dialog {
-  border-radius: 1rem;
-  padding: 1rem;
-  border: 1px solid light-dark(black, white);
-  background-color: var(--background);
-
-  &::backdrop {
-    background-color: #0008;
-  }
-
-  & > :last-child {
-    margin-bottom: 0;
-  }
-
-  .dialogHeading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-
-    h3 {
-      margin: 0;
-    }
-  }
 }
 
 .looseLetters {
@@ -168,15 +128,48 @@ dialog {
   }
 }
 
-@keyframes grow {
-  from {
-    scale: 0.5;
-    opacity: 0;
+.stat {
+  margin: 1.25rem 0 0;
+  font-family: monospace;
+  font-size: 3rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.caption {
+  margin: 0 0 1.25rem;
+  text-align: center;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+
+.receipt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 0 1.25rem;
+}
+
+.receiptWord {
+  display: flex;
+  gap: 0.1rem;
+
+  .tile {
+    --tile-size: 1.4rem;
   }
 }
 
-@keyframes fade {
+.loose .tile {
+  --tile-face: light-dark(rgb(228, 216, 204), rgb(62, 49, 38));
+  color: light-dark(black, white);
+}
+
+@keyframes grow {
   from {
+    scale: 0.5;
     opacity: 0;
   }
 }

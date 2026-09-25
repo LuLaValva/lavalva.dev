@@ -4,36 +4,18 @@ static interface Letter {
   char: string;
   id: number;
 }
-static const EmojiNumbers = [
-  "0️⃣",
-  "1️⃣",
-  "2️⃣",
-  "3️⃣",
-  "4️⃣",
-  "5️⃣",
-  "6️⃣",
-  "7️⃣",
-  "8️⃣",
-  "9️⃣",
-  "🔟",
-  "🕚",
-  "🕛",
-  "🕐",
-  "🕑",
-  "🕒",
-  "🕓",
-  "🕔",
-  "🕕",
-  "🕖",
-  "🕗",
-];
 client const vibrate = (pattern: number | number[]) =>
   navigator.vibrate?.(pattern);
 
 <lazy-english-dictionary/words/>
 
 <const/day=requestDay($global.request)>
-<const/today=day.toDateString()>
+<const/today=day.toLocaleDateString("en-US", {
+  month: "numeric",
+  day: "numeric",
+  year: "2-digit",
+})>
+<const/fullDate=day.toLocaleDateString("en-US", { dateStyle: "long" })>
 
 <let/looseLetters=dailyLetters(day, 20).map((char, id) => ({
   char,
@@ -92,42 +74,39 @@ client const vibrate = (pattern: number | number[]) =>
   }
 }>
 
+<let/helpOpen=false>
+<let/resultsOpen=false>
+
 <header class=styles.header>
   <button
     class=styles.btn
     title="help"
-    onclick="this.nextElementSibling.showModal()"
+    onClick() {
+      helpOpen = true;
+    }
   >
     ?
   </button>
-  <dialog closedby="any">
-    <div class=styles.dialogHeading>
-      <h3>Welcome to Reduce!</h3>
-      <form method="dialog">
-        <button class=styles.btn aria-label="close dialog">×</button>
-      </form>
-    </div>
-    <p>Match letters to make words</p>
-    <p>Every word and loose letter counts as a point</p>
-    <p>Your goal is to <em>minimize</em> points</p>
-  </dialog>
-  <strong>${points}</strong>
+  <strong>${points}<span class=styles.srOnly>${" "}points</span></strong>
   <button
     class=styles.btn
     title="shuffle loose letters"
     onClick() {
       document.startViewTransition(() => {
-        looseLetters = looseLetters.toSorted((a, b) => {
-          // if (!a) return 1;
-          // if (!b) return -1;
-          return Math.random() - 0.5;
-        });
+        looseLetters = looseLetters.toSorted(() => Math.random() - 0.5);
       });
     }
   >
     ⇆
   </button>
 </header>
+
+<game-dialog open:=helpOpen>
+  <@heading>Welcome to Reduce!</@heading>
+  <p>Match letters to make words</p>
+  <p>Every word and loose letter counts as a point</p>
+  <p>Your goal is to <em>minimize</em> points</p>
+</game-dialog>
 
 <div class=styles.looseLetters>
   <for|letter, i| of=looseLetters>
@@ -151,46 +130,13 @@ client const vibrate = (pattern: number | number[]) =>
     class=[styles.btn, styles.openSubmit]
     hidden=looseLetters.some(Boolean)
     title="share score"
-    onclick="this.nextElementSibling.showModal()"
     onClick() {
       submitWord();
+      resultsOpen = true;
     }
   >
     ⇪
   </button>
-  <dialog closedby="any">
-    <div class=styles.dialogHeading>
-      <h3>Lowest you can get?</h3>
-      <form method="dialog">
-        <button class=styles.btn aria-label="close dialog">×</button>
-      </form>
-    </div>
-    <hr>
-    <const/message=(
-      `I got down to ${pendingWord.length + looseLetters.filter(Boolean).length + submittedWords.length} points in REDUCE
-${today}
-
-${submittedWords.map((word) => EmojiNumbers[word.length]).join("")}
-${"1️⃣".repeat(pendingWord.length + looseLetters.filter(Boolean).length)}
-https://lavalva.dev/game/reduce`
-    )>
-    <pre>${message}</pre>
-    <hr>
-    <button
-      class=styles.share
-      onClick() {
-        if (navigator.share) {
-          navigator.share({ text: message });
-        } else if (navigator.clipboard) {
-          navigator.clipboard.writeText(message).then(() => {
-            alert("Copied to clipboard!");
-          });
-        }
-      }
-    >
-      Share with Friends
-    </button>
-  </dialog>
 </div>
 
 <div class=styles.pendingWord>
@@ -262,6 +208,40 @@ https://lavalva.dev/game/reduce`
     </button>
   </for>
 </div>
+
+<const/loose=[
+  ...looseLetters.filter((letter) => letter !== null),
+  ...pendingWord,
+]>
+<const/score=submittedWords.length + loose.length>
+
+<game-dialog open:=resultsOpen>
+  <@heading>${fullDate}</@heading>
+  <p class=styles.stat>${score}</p>
+  <p class=styles.caption>${score === 1 ? "point" : "points"}</p>
+
+  <div class=styles.receipt>
+    <for|word| of=submittedWords>
+      <div class=styles.receiptWord>
+        <for|letter| of=word><span class=styles.tile>${letter.char}</span></for>
+      </div>
+    </for>
+    <for|letter| of=loose>
+      <div class=[styles.receiptWord, styles.loose]>
+        <span class=styles.tile>${letter.char}</span>
+      </div>
+    </for>
+  </div>
+
+  <share-button text=(
+    `Reduce ${today}: ${score} ${score === 1 ? "point" : "points"}
+
+${[
+  ...submittedWords.map((word) => "🟫".repeat(word.length)),
+  ...loose.map(() => "⬜"),
+].join("\n")}`
+  )/>
+</game-dialog>
 
 <script>
   document.addEventListener(
