@@ -22,11 +22,12 @@ static function stripes(colors: Eval[]) {
       <if=row === 2>
         <button
           class=[styles.key, styles.wideKey]
+          aria-label="enter"
           onClick() {
             input.onKey("Enter");
           }
         >
-          ENTER
+          ⏎
         </button>
       </if>
       <for|letter| of=letters>
@@ -53,7 +54,7 @@ static function stripes(colors: Eval[]) {
             input.onKey("Backspace");
           }
         >
-          DEL
+          ⌫
         </button>
       </if>
     </div>
