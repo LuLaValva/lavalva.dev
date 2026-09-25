@@ -35,22 +35,16 @@ export function dailySolutions(day: Date): string[] {
 }
 
 export function evaluate(guess: string, solution: string): Eval[] {
-  const unspent = solution.split("");
-  const result: Eval[] = Array(guess.length).fill(MISS);
-  for (let i = guess.length - 1; i >= 0; i--) {
-    if (unspent[i] === guess[i]) {
-      unspent.splice(i, 1);
-      result[i] = BULL;
-    }
-  }
-  for (let i = guess.length - 1; i >= 0; i--) {
-    if (result[i] !== BULL) {
-      const found = unspent.indexOf(guess[i]);
-      if (found !== -1) {
-        unspent.splice(found, 1);
-        result[i] = COW;
-      }
-    }
+  const result = [...guess].map((letter, i): Eval =>
+    letter === solution[i] ? BULL : MISS,
+  );
+  const unspent = [...solution].filter((_, i) => result[i] !== BULL);
+  for (let i = 0; i < result.length; i++) {
+    if (result[i] === BULL) continue;
+    const found = unspent.indexOf(guess[i]);
+    if (found === -1) continue;
+    unspent.splice(found, 1);
+    result[i] = COW;
   }
   return result;
 }
