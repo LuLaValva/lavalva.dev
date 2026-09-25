@@ -1,16 +1,22 @@
-const CACHE_NAME = "444dle-v1";
+const GAME = "444dle";
+const CACHE_NAME = `${GAME}-v1`;
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) =>
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k !== CACHE_NAME)
-          .map((k) => caches.delete(k))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          // Only this game's own older caches. Every game on the origin shares
+          // one cache storage, so a bare "not mine" sweep takes theirs too.
+          keys
+            .filter((key) => key !== CACHE_NAME && key.startsWith(`${GAME}-`))
+            .map((key) => caches.delete(key)),
+        ),
       )
-    ).then(() => self.clients.claim())
-  )
+      .then(() => self.clients.claim()),
+  ),
 );
 
 self.addEventListener("fetch", (e) => {
@@ -24,7 +30,7 @@ self.addEventListener("fetch", (e) => {
           return response;
         });
         return cached || fetched;
-      })
-    )
+      }),
+    ),
   );
 });
