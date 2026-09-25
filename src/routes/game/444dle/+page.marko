@@ -28,7 +28,6 @@ client const vibrate = (pattern: number | number[]) =>
 
 <let/guesses=[] as string[]>
 <let/pending="">
-<let/invalid=false>
 
 <const/boards=solutions.map((solution) => {
   const rows = guesses.map((guess) => ({
@@ -100,9 +99,8 @@ ${block([2], "            ")}`
 <const/submit() {
   if (!validWords || pending.length < NUM_LETTERS) return;
   if (!validWords.has(pending)) {
-    invalid = true;
+    for (const board of boardActions) board.shake();
     vibrate([100, 100, 50, 100, 100]);
-    setTimeout(() => (invalid = false), 600);
     return;
   }
   guesses = [...guesses, pending];
@@ -115,10 +113,8 @@ ${block([2], "            ")}`
   if (key === "Enter") {
     submit();
   } else if (key === "Backspace" || key === "Delete") {
-    invalid = false;
     pending = pending.slice(0, -1);
   } else if (/^[a-zA-Z]$/.test(key) && pending.length < NUM_LETTERS) {
-    invalid = false;
     pending += key.toLowerCase();
   }
 }>
@@ -165,12 +161,11 @@ ${block([2], "            ")}`
 
 <div class=styles.boards>
   <for|{ played, wonAt }, i| of=boards>
-    <board
+    <board/boardActions
       index=i
       played=played
       pending=wonAt === undefined ? pending : ""
       pendingAt=guesses.length
-      invalid=invalid
     />
   </for>
 </div>

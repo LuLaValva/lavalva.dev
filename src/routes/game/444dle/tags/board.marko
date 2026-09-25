@@ -17,8 +17,15 @@ export interface Input {
   played: { guess: string; scores: Eval[] }[];
   pending: string;
   pendingAt: number;
-  invalid?: boolean;
 }
+
+<let/shaking=false>
+
+<return=() => ({
+  shake() {
+    shaking = true;
+  },
+})>
 
 <const/cells=Array.from({ length: NUM_GUESSES }, (_, i) => {
   const row = input.played[i];
@@ -50,10 +57,13 @@ static const SKID_WORTH_A_HOP = 1.5;
 <div class=styles.board>
   <span class=styles.srOnly>word ${input.index + 1}</span>
   <for|{ word, evaluation, flipping }, row| of=cells>
-    <div class=[
-      styles.row,
-      input.invalid && row === input.pendingAt && styles.invalid,
-    ]>
+    <div
+      class=[styles.row, shaking && row === input.pendingAt && styles.invalid]
+      onAnimationEnd(e, el) {
+        // Every cell animation bubbles through here; only the row shakes itself.
+        if (e.target === el) shaking = false;
+      }
+    >
       <for|i| until=NUM_LETTERS>
         <div
           class=[
