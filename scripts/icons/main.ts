@@ -29,7 +29,7 @@ const ART: Record<string, Art> = {
         { char: "4", lie: -6, dx: -0.02 },
         { char: "4", lie: 0, dx: 0.06, dy: 0.14 },
       ],
-      [{ char: "4", lie: 4, dx: 0.05, dy: 0.02 }],
+      [{ char: "4", lie: 4, dx: -0.4, dy: 0.02 }],
     ],
   },
 };
