@@ -2,7 +2,7 @@
   touch-action: manipulation;
   font-size: clamp(1rem, 2.6vw, 1.5rem);
 
-  --tile-size: min(6.2vw, 2.4rem);
+  --tile-size: min(6.8vw, 2.4rem);
   --gap: calc(var(--tile-size) * 0.1);
   --half-thickness: calc(var(--tile-size) * 0.095);
   --tile-perspective: calc(var(--tile-size) * 4.6);
@@ -106,8 +106,8 @@ dialog {
 
 .board + .board {
   border-left: 1px solid var(--rule);
-  margin-left: calc(var(--tile-size) * 0.3);
-  padding-left: calc(var(--tile-size) * 0.3);
+  margin-left: calc(var(--tile-size) * 0.2);
+  padding-left: calc(var(--tile-size) * 0.2);
 }
 
 .row {
@@ -220,7 +220,8 @@ strong.eval2 {
 
 .keyboard {
   composes: shading from "../tile.module.css";
-  --tile-size: 2.5rem;
+  /* Ten across a row, so a key is the same width whichever row it is in. */
+  --tile-size: min(2.5rem, (100vw - 3.65rem) / 10);
   position: fixed;
   bottom: 0;
   left: 0;
@@ -242,9 +243,8 @@ strong.eval2 {
 }
 
 .key {
-  flex: 1 1 auto;
-  max-width: var(--tile-size);
-  height: 3.2rem;
+  width: var(--tile-size);
+  height: min(3.2rem, calc(var(--tile-size) * 1.4));
   border: none;
   border-radius: var(--tile-radius);
   background-color: light-dark(rgb(226, 214, 202), rgb(66, 52, 40));
@@ -267,7 +267,7 @@ strong.eval2 {
 }
 
 .key.wideKey {
-  max-width: 4rem;
+  width: calc(var(--tile-size) * 1.5);
   font-size: 0.75rem;
 }
 
