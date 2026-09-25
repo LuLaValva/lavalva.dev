@@ -19,8 +19,6 @@ export interface Input {
   pendingAt: number;
 }
 
-<let/shaking=false>
-
 <const/cells=Array.from({ length: NUM_GUESSES }, (_, i) => {
   const row = input.played[i];
   if (!row) return { word: i === input.pendingAt ? input.pending : "" };
@@ -47,6 +45,8 @@ static const SKID_WORTH_A_HOP = 1.5;
     Math.abs(tilt(row, column, 1) - tilt(row, column, 0)) > SKID_WORTH_A_HOP
   );
 }>
+
+<let/shaking=false>
 
 <div class=styles.board>
   <span class=styles.srOnly>word ${input.index + 1}</span>
