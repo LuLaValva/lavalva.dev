@@ -269,9 +269,19 @@ strong.eval2 {
 
 .key.wideKey {
   width: calc(var(--tile-size) * 1.5);
-  font-family: system-ui;
-  font-size: 0.7rem;
-  font-weight: normal;
+}
+
+/* Drawn rather than typed: no OS ships a font carrying both ⏎ and ⌫, so the
+   two were coming out of whichever pair of fonts the platform fell back to. */
+.keyGlyph {
+  display: block;
+  margin: auto;
+  width: calc(var(--tile-size) * 0.5);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .results {
