@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 import { launch } from "./headless-chrome.mjs";
 
@@ -10,7 +11,7 @@ const APP_ICON_SIZES = [192, 512];
 // survives whatever shape it masks to.
 const SAFE_ZONE = 72 / 108;
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 
 const backgroundOf = async (game) =>
   JSON.parse(
@@ -32,9 +33,7 @@ async function shoot(out, game, size, options) {
   const parameters = new URLSearchParams({ art: game, ...options });
   const url = `http://localhost:${port}/?${parameters}`;
   await writeFile(join(root, out), await chrome.screenshot(url, size));
-  const how = options.background ? "" : ", transparent";
-  const fit = options.hug ? ", hugged" : options.safe ? ", safe zone" : "";
-  console.log(`${out} — ${size}×${size}${how}${fit}`);
+  console.log(`${out} — ${size}×${size}`);
 }
 
 try {

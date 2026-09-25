@@ -28,6 +28,11 @@ export async function launch() {
 
   const page = await connect(await pageSocket(profile));
   await page.send("Page.enable");
+  // Nothing painted behind the page, so art that lays down no background of
+  // its own is captured transparent.
+  await page.send("Emulation.setDefaultBackgroundColorOverride", {
+    color: { r: 0, g: 0, b: 0, a: 0 },
+  });
 
   return {
     async screenshot(url, size) {
@@ -36,9 +41,6 @@ export async function launch() {
         height: size,
         deviceScaleFactor: 1,
         mobile: false,
-      });
-      await page.send("Emulation.setDefaultBackgroundColorOverride", {
-        color: { r: 0, g: 0, b: 0, a: 0 },
       });
       const loaded = page.once("Page.loadEventFired");
       await page.send("Page.navigate", { url });
@@ -83,18 +85,18 @@ async function connect(url) {
   });
 
   const calls = new Map();
-  const listeners = new Map();
+  const waiting = new Map();
   let lastId = 0;
 
   socket.addEventListener("message", ({ data }) => {
     const { id, error, result, method, params } = JSON.parse(data);
     if (id === undefined) {
-      listeners.get(method)?.forEach((resolve) => resolve(params));
-      listeners.delete(method);
+      waiting.get(method)?.(params);
+      waiting.delete(method);
     } else {
       const { resolve, reject } = calls.get(id);
       calls.delete(id);
-      if (error) reject(new Error(`${error.message} (${method})`));
+      if (error) reject(error);
       else resolve(result);
     }
   });
@@ -103,13 +105,13 @@ async function connect(url) {
     send: (method, params) =>
       new Promise((resolve, reject) => {
         const id = ++lastId;
-        calls.set(id, { resolve, reject });
+        calls.set(id, {
+          resolve,
+          reject: ({ message }) => reject(new Error(`${method}: ${message}`)),
+        });
         socket.send(JSON.stringify({ id, method, params }));
       }),
-    once: (method) =>
-      new Promise((resolve) =>
-        listeners.set(method, [...(listeners.get(method) ?? []), resolve]),
-      ),
+    once: (method) => new Promise((resolve) => waiting.set(method, resolve)),
     close: () => socket.close(),
   };
 }
