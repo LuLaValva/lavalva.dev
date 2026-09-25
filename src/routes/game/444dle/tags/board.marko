@@ -21,12 +21,6 @@ export interface Input {
 
 <let/shaking=false>
 
-<return=() => ({
-  shake() {
-    shaking = true;
-  },
-})>
-
 <const/cells=Array.from({ length: NUM_GUESSES }, (_, i) => {
   const row = input.played[i];
   if (!row) return { word: i === input.pendingAt ? input.pending : "" };
@@ -60,7 +54,6 @@ static const SKID_WORTH_A_HOP = 1.5;
     <div
       class=[styles.row, shaking && row === input.pendingAt && styles.invalid]
       onAnimationEnd(e, el) {
-        // Every cell animation bubbles through here; only the row shakes itself.
         if (e.target === el) shaking = false;
       }
     >
@@ -97,3 +90,9 @@ static const SKID_WORTH_A_HOP = 1.5;
     </div>
   </for>
 </div>
+
+<return=() => ({
+  shake() {
+    shaking = true;
+  },
+})>
