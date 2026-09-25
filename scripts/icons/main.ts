@@ -22,14 +22,14 @@ const ART: Record<string, Art> = {
     rows: [[{ char: "r", lie: -5 }]],
   },
   "444dle": {
-    tile: 0.347,
-    gap: 0.22,
+    tile: 0.39,
+    gap: 0.2,
     rows: [
       [
-        { char: "4", lie: -6, dx: -0.08, dy: 0.04 },
-        { char: "4", lie: 0, dy: -0.05 },
+        { char: "4", lie: -6, dx: -0.02 },
+        { char: "4", lie: 0, dx: 0.06, dy: 0.14 },
       ],
-      [{ char: "4", lie: 4, dx: 0.09, dy: 0.02 }],
+      [{ char: "4", lie: 4, dx: 0.05, dy: 0.02 }],
     ],
   },
 };
