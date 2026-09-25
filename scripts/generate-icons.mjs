@@ -6,6 +6,9 @@ import { launch } from "./headless-chrome.mjs";
 const GAMES = ["reduce", "444dle"];
 const FAVICON_SIZE = 32;
 const APP_ICON_SIZES = [192, 512];
+// Android hands the launcher a 108dp icon and only promises the middle 72dp
+// survives whatever shape it masks to.
+const SAFE_ZONE = 72 / 108;
 
 const root = new URL("..", import.meta.url).pathname;
 
@@ -30,7 +33,8 @@ async function shoot(out, game, size, options) {
   const url = `http://localhost:${port}/?${parameters}`;
   await writeFile(join(root, out), await chrome.screenshot(url, size));
   const how = options.background ? "" : ", transparent";
-  console.log(`${out} — ${size}×${size}${how}${options.hug ? ", hugged" : ""}`);
+  const fit = options.hug ? ", hugged" : options.safe ? ", safe zone" : "";
+  console.log(`${out} — ${size}×${size}${how}${fit}`);
 }
 
 try {
@@ -46,6 +50,10 @@ try {
     for (const size of APP_ICON_SIZES) {
       await shoot(`public/game/${game}/icon-${size}.png`, game, size, {
         background,
+      });
+      await shoot(`public/game/${game}/icon-maskable-${size}.png`, game, size, {
+        background,
+        safe: SAFE_ZONE,
       });
     }
   }

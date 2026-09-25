@@ -1,6 +1,8 @@
+/* On body, not the canvas: the canvas gets scaled to fit, and a background
+   that scaled with it would leave a maskable icon transparent at the corners. */
 :global(body) {
   margin: 0;
-  background-color: transparent;
+  background-color: var(--background, transparent);
 }
 
 .canvas {
@@ -11,7 +13,6 @@
   gap: var(--gap);
   width: 100vw;
   height: 100vh;
-  background-color: var(--background);
 }
 
 .row {

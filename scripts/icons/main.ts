@@ -43,7 +43,7 @@ const canvas = document.createElement("div");
 canvas.className = styles.canvas;
 canvas.style.setProperty("--tile-size", `${art.tile * 100}vmin`);
 canvas.style.setProperty("--gap", `calc(var(--tile-size) * ${art.gap ?? 0})`);
-canvas.style.setProperty(
+document.body.style.setProperty(
   "--background",
   parameters.get("background") ?? "transparent",
 );
@@ -66,20 +66,38 @@ for (const row of art.rows) {
 
 document.body.append(canvas);
 
-if (parameters.has("hug")) {
+const safeZone = Number(parameters.get("safe"));
+
+if (parameters.has("hug") || safeZone) {
   // Measured rather than declared, so the art can move without the margin it
   // leaves behind having to be worked out again by hand.
-  const bounds = tiles.map((tile) => tile.getBoundingClientRect());
-  const left = Math.min(...bounds.map(({ left }) => left));
-  const right = Math.max(...bounds.map(({ right }) => right));
-  const top = Math.min(...bounds.map(({ top }) => top));
-  const bottom = Math.max(...bounds.map(({ bottom }) => bottom));
-  const scale = Math.min(
-    innerWidth / (right - left),
-    innerHeight / (bottom - top),
+  const boxes = tiles.map((tile) => ({
+    rect: tile.getBoundingClientRect(),
+    // Every corner of a square sits on this circle, whatever its angle.
+    corners: tile.offsetWidth * Math.SQRT1_2,
+  }));
+  const left = Math.min(...boxes.map(({ rect }) => rect.left));
+  const right = Math.max(...boxes.map(({ rect }) => rect.right));
+  const top = Math.min(...boxes.map(({ rect }) => rect.top));
+  const bottom = Math.max(...boxes.map(({ rect }) => rect.bottom));
+  const midX = (left + right) / 2;
+  const midY = (top + bottom) / 2;
+  // A launcher masks to any shape inside its safe circle, so the mark clears
+  // it once every tile's corner circle does.
+  const reach = Math.max(
+    ...boxes.map(
+      ({ rect, corners }) =>
+        Math.hypot(
+          (rect.left + rect.right) / 2 - midX,
+          (rect.top + rect.bottom) / 2 - midY,
+        ) + corners,
+    ),
   );
+  const scale = safeZone
+    ? (safeZone * Math.min(innerWidth, innerHeight)) / 2 / reach
+    : Math.min(innerWidth / (right - left), innerHeight / (bottom - top));
   canvas.style.transformOrigin = "0 0";
   canvas.style.transform =
-    `translate(${innerWidth / 2 - (scale * (left + right)) / 2}px, ` +
-    `${innerHeight / 2 - (scale * (top + bottom)) / 2}px) scale(${scale})`;
+    `translate(${innerWidth / 2 - scale * midX}px, ` +
+    `${innerHeight / 2 - scale * midY}px) scale(${scale})`;
 }
