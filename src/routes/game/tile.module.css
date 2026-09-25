@@ -13,7 +13,7 @@
   width: var(--tile-size);
   height: var(--tile-size);
   line-height: var(--tile-size);
-  font-size: calc(var(--tile-size) * 0.7);
+  font-size: calc(var(--tile-size) * 0.55);
   border-radius: var(--tile-radius);
   text-align: center;
   font-family: monospace;
