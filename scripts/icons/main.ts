@@ -48,18 +48,38 @@ canvas.style.setProperty(
   parameters.get("background") ?? "transparent",
 );
 
-for (const tiles of art.rows) {
-  const row = document.createElement("div");
-  row.className = styles.row;
-  for (const { char, lie, dx, dy } of tiles) {
+const tiles: HTMLElement[] = [];
+for (const row of art.rows) {
+  const line = document.createElement("div");
+  line.className = styles.row;
+  for (const { char, lie, dx, dy } of row) {
     const tile = document.createElement("div");
     tile.className = styles.tile;
     tile.style.setProperty("--lie", `${lie}deg`);
     tile.style.translate = `${(dx ?? 0) * 100}% ${(dy ?? 0) * 100}%`;
     tile.textContent = char;
-    row.append(tile);
+    line.append(tile);
+    tiles.push(tile);
   }
-  canvas.append(row);
+  canvas.append(line);
 }
 
 document.body.append(canvas);
+
+if (parameters.has("hug")) {
+  // Measured rather than declared, so the art can move without the margin it
+  // leaves behind having to be worked out again by hand.
+  const bounds = tiles.map((tile) => tile.getBoundingClientRect());
+  const left = Math.min(...bounds.map(({ left }) => left));
+  const right = Math.max(...bounds.map(({ right }) => right));
+  const top = Math.min(...bounds.map(({ top }) => top));
+  const bottom = Math.max(...bounds.map(({ bottom }) => bottom));
+  const scale = Math.min(
+    innerWidth / (right - left),
+    innerHeight / (bottom - top),
+  );
+  canvas.style.transformOrigin = "0 0";
+  canvas.style.transform =
+    `translate(${innerWidth / 2 - (scale * (left + right)) / 2}px, ` +
+    `${innerHeight / 2 - (scale * (top + bottom)) / 2}px) scale(${scale})`;
+}
