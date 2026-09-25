@@ -1,13 +1,13 @@
 import listUrl from "../../words/valid.json?url";
 
-<let/words=null as null | string[]>
+<let/words=null as null | Set<string>>
 
 <link rel="preload" href=listUrl as="fetch">
 
 <script>
   fetch(listUrl)
     .then((res) => res.json())
-    .then((list) => (words = list));
+    .then((list) => (words = new Set<string>(list)));
 </script>
 
 <return=words>

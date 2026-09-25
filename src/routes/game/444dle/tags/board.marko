@@ -1,15 +1,14 @@
 import { COLORS, type Eval, NUM_GUESSES, NUM_LETTERS } from "../utils";
 import styles from "../444dle.module.css";
 
-static const COLUMNS = Array.from({ length: NUM_LETTERS }, (_, i) => i);
-
 static const SLICES = 12;
 static const BODY = Array.from({ length: SLICES }, (_, i) => {
   const angle = Math.PI * (i / (SLICES - 1) - 0.5);
+  const through = Math.sin(angle);
   return {
-    z: Math.sin(angle) * 0.98,
+    z: through * 0.98,
     out: Math.cos(angle).toFixed(4),
-    mix: `${Math.round((Math.sin(angle) + 1) * 50)}%`,
+    mix: `${Math.round((through + 1) * 50)}%`,
   };
 });
 
@@ -55,7 +54,7 @@ static const SKID_WORTH_A_HOP = 1.5;
       styles.row,
       input.invalid && row === input.pendingAt && styles.invalid,
     ]>
-      <for|i| of=COLUMNS>
+      <for|i| until=NUM_LETTERS>
         <div
           class=[
             styles.cell,

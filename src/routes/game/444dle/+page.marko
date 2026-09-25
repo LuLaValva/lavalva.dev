@@ -51,21 +51,23 @@ client const vibrate = (pattern: number | number[]) =>
 <const/keyColors=Object.fromEntries(
   [...new Set(guesses.join(""))].map((letter) => [
     letter,
-    boards.map(({ played }) =>
-      played
-        .flatMap(({ guess, scores }) =>
-          scores.filter((_, i) => guess[i] === letter),
-        )
-        .reduce<Eval>((best, score) => (score > best ? score : best), MISS),
+    boards.map(
+      ({ played }) =>
+        Math.max(
+          MISS,
+          ...played.flatMap(({ guess, scores }) =>
+            scores.filter((_, i) => guess[i] === letter),
+          ),
+        ) as Eval,
     ),
   ]),
 )>
 
 <const/score=(
   boards
-    .map(({ wonAt }) => (wonAt === undefined ? Infinity : wonAt + 1))
+    .map(({ wonAt }) => wonAt ?? Infinity)
     .sort((a, b) => b - a)
-    .map((count) => (count === Infinity ? "X" : count))
+    .map((wonAt) => (wonAt === Infinity ? "X" : wonAt + 1))
     .join("")
 )>
 
@@ -97,26 +99,15 @@ ${block([2], "            ")}`
 
 <const/submit() {
   if (!validWords || pending.length < NUM_LETTERS) return;
-  if (!validWords.includes(pending)) {
+  if (!validWords.has(pending)) {
     invalid = true;
     vibrate([100, 100, 50, 100, 100]);
     setTimeout(() => (invalid = false), 600);
     return;
   }
-  // Asked of `next` rather than read off `finished`, which still describes the
-  // guess before this one until the render queue flushes.
-  const next = [...guesses, pending];
-  const over =
-    next.length >= NUM_GUESSES ||
-    solutions.every((solution) => next.includes(solution));
-  guesses = next;
+  guesses = [...guesses, pending];
   pending = "";
   vibrate(50);
-  if (over) {
-    // 300ms is the per-column stagger in the stylesheet; the rest is one turn
-    // plus a beat, so the results do not cut the reveal off.
-    setTimeout(() => results().showModal(), (NUM_LETTERS - 1) * 300 + 800);
-  }
 }>
 
 <const/type(key: string) {
@@ -214,6 +205,18 @@ ${block([2], "            ")}`
     Share with Friends
   </button>
 </dialog>
+
+<script>
+  if (finished) {
+    // 300ms is the per-column stagger in the stylesheet; the rest is one turn
+    // plus a beat, so the results do not cut the reveal off.
+    const reveal = setTimeout(
+      () => results().showModal(),
+      (NUM_LETTERS - 1) * 300 + 800,
+    );
+    $signal.onabort = () => clearTimeout(reveal);
+  }
+</script>
 
 <script>
   document.addEventListener(
