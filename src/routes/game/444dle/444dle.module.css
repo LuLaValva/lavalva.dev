@@ -269,7 +269,7 @@ strong.eval2 {
 
 .key.wideKey {
   width: calc(var(--tile-size) * 1.5);
-  font-family: sans-serif;
+  font-family: system-ui;
   font-size: 0.7rem;
   font-weight: normal;
 }
