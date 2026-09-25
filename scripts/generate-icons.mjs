@@ -4,7 +4,7 @@ import { createServer } from "vite";
 import { launch } from "./headless-chrome.mjs";
 
 const GAMES = ["reduce", "444dle"];
-const FAVICON_SIZE = 96;
+const FAVICON_SIZE = 32;
 const APP_ICON_SIZES = [192, 512];
 
 const root = new URL("..", import.meta.url).pathname;
