@@ -3,6 +3,9 @@ import styles from "./icons.module.css";
 interface Tile {
   char: string;
   lie: number;
+  /** Nudge off the grid, as a fraction of one tile. */
+  dx?: number;
+  dy?: number;
 }
 
 interface Art {
@@ -23,10 +26,10 @@ const ART: Record<string, Art> = {
     gap: 0.22,
     rows: [
       [
-        { char: "4", lie: -5 },
-        { char: "4", lie: -1 },
+        { char: "4", lie: -6, dx: -0.08, dy: 0.04 },
+        { char: "4", lie: 0, dy: -0.05 },
       ],
-      [{ char: "4", lie: 3 }],
+      [{ char: "4", lie: 4, dx: 0.09, dy: 0.02 }],
     ],
   },
 };
@@ -48,10 +51,11 @@ canvas.style.setProperty(
 for (const tiles of art.rows) {
   const row = document.createElement("div");
   row.className = styles.row;
-  for (const { char, lie } of tiles) {
+  for (const { char, lie, dx, dy } of tiles) {
     const tile = document.createElement("div");
     tile.className = styles.tile;
     tile.style.setProperty("--lie", `${lie}deg`);
+    tile.style.translate = `${(dx ?? 0) * 100}% ${(dy ?? 0) * 100}%`;
     tile.textContent = char;
     row.append(tile);
   }

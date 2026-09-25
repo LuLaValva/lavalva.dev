@@ -2,7 +2,7 @@
   --tile-shade: calc(var(--tile-size) / 40);
   --tile-radius: calc(var(--tile-size) / 12);
   --tile-bevel: var(--tile-shade) calc(var(--tile-shade) * -2)
-    calc(var(--tile-shade) * 5) inset black;
+    calc(var(--tile-shade) * 5) inset rgb(0 0 0 / 0.65);
   --tile-wood: rgb(200, 174, 121);
   --tile-face: var(--tile-wood);
 }
