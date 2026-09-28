@@ -10,6 +10,8 @@
 .tile {
   composes: shading;
   all: unset;
+  outline: revert;
+  outline-offset: 2.5px;
   width: var(--tile-size);
   height: var(--tile-size);
   line-height: var(--tile-size);
