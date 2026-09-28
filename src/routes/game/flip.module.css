@@ -1,14 +1,8 @@
-/* A tile that .flipping tosses over from --flip-from (the plain base colour if
-   unset) to --tile-face about --flip-axis, turning it from --tilt to
-   --tilt-after-flip on the way. The toss plays when the class goes on and the
-   tile rests on its new face after, so give it a fresh element to flip it
-   again. Needs a .slice per TILE_BODY entry inside for the edge. */
 .tile {
   composes: tile from "./tile.module.css";
 }
 
 .flipping {
-  /* The bottom edge comes up first; any x, y, 0 tips it over another way. */
   --flip-axis: 1, 0, 0;
   --half-thickness: calc(var(--tile-size) * 0.095);
   --tile-perspective: calc(var(--tile-size) * 4.6);
@@ -35,7 +29,6 @@
   animation-delay: var(--flip-delay, 0s);
 }
 
-/* Lands with a hop, for a tile that turns far enough to skid. */
 .tile.flipping.bounces {
   /* 0.64 is where flip-bounce puts the landing; keep the two in step. */
   --turn: calc(var(--toss) / 0.64);
