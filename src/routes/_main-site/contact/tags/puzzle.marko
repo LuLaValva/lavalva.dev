@@ -99,9 +99,9 @@ div class=styles.grid style={ "--size": size }
                 styles.flipping,
                 n % 2 ? styles.back : styles.fromBack,
               ]
-              // The edge nearest the press goes down first, with the corners a
-              // beat behind.
-              ,style=`--tilt:${tilt(i, j, n - 1)}deg; --tilt-after-flip:${tilt(i, j, n)}deg; --flip-axis:${di}, ${-dj}, 0; --flip-delay:${di && dj ? 60 : 0}ms`
+              // The edge nearest the press goes down first. Rows above and below
+              // tip over as one, and only the tiles beside it turn sideways.
+              ,style=`--tilt:${tilt(i, j, n - 1)}deg; --tilt-after-flip:${tilt(i, j, n)}deg; --flip-axis:${di ? `${di}, 0` : `0, ${-dj}`}, 0`
               for|{ z, out, mix }| of=TILE_BODY
                 span class=styles.slice style=`--z:${z}; --out:${out}; --mix:${mix}`
           else
