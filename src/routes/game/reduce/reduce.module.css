@@ -47,8 +47,8 @@ body {
   > .tile {
     --tile-size: var(--big);
 
-    &:focus-visible {
-      background-color: rgb(83, 203, 115);
+    &:hover {
+      filter: brightness(1.2);
     }
   }
 
@@ -61,12 +61,10 @@ body {
     width: 3rem;
     height: 3rem;
     transition: opacity 0.5s;
+    view-transition-name: open-submit;
 
-    &[hidden] {
-      transition: opacity 0.2s;
+    @starting-style {
       opacity: 0;
-      pointer-events: none;
-      user-select: none;
     }
   }
 }
@@ -79,6 +77,8 @@ body {
 
   > .pendingLetters {
     all: unset;
+    outline: revert;
+    outline-offset: 2.5px;
     display: flex;
     gap: 0.1rem;
     overflow-x: scroll;
@@ -88,9 +88,9 @@ body {
       animation: global(pop) 0.15s;
     }
 
-    &:focus-visible {
+    &:hover {
       > span {
-        background-color: rgb(203, 87, 83);
+        filter: brightness(1.2);
       }
     }
   }
@@ -115,13 +115,15 @@ body {
 
   > button {
     all: unset;
+    outline: revert;
+    outline-offset: 2.5px;
     width: fit-content;
     display: flex;
     gap: 0.1rem;
 
-    &:focus-visible {
+    &:hover {
       > span {
-        background-color: rgb(203, 87, 83);
+        filter: brightness(1.2);
       }
     }
   }

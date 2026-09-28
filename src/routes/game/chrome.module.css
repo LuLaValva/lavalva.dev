@@ -58,6 +58,10 @@
     box-shadow: inset -1.5px 3px 4.5px #0003;
   }
 
+  &:hover::before {
+    background-color: light-dark(#0003, #fff1);
+  }
+
   &:active::before {
     scale: 1.15;
   }
@@ -76,10 +80,15 @@
   font-weight: bold;
   text-align: center;
   cursor: pointer;
+  outline-offset: 2.5px;
   box-shadow:
     inset -1px 2px 2px rgb(255 255 255 / 0.25),
     inset 1px -2px 5px rgb(0 0 0 / 0.2),
     -0.1rem 0.2rem 0.3rem -0.1rem rgb(0 0 0 / 0.45);
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--accent), white 20%);
+  }
 
   &:active {
     scale: 0.98;

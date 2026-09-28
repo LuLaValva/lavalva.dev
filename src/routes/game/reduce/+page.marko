@@ -1,5 +1,5 @@
 import styles from "./reduce.module.css";
-import { binarySearch, dailyLetters } from "./utils";
+import { binarySearch, dailyLetters, navigate } from "./utils";
 import { requestDay, vibrate } from "../utils";
 static interface Letter {
   char: string;
@@ -38,6 +38,14 @@ static const EmojiNumbers = [
   id,
 })) as (Letter | null)[]>
 
+<let/_tabStop=0>
+<let/tabStop=looseLetters[_tabStop] ? _tabStop : looseLetters.findIndex(Boolean)
+  valueChange(slot) {
+    _tabStop = slot;
+    [...$tile][slot].focus();
+  }
+>
+
 <let/pendingWord=[] as Letter[]>
 <let/submittedWords=[] as Letter[][]>
 
@@ -73,7 +81,8 @@ static const EmojiNumbers = [
     clearPrevious();
     incorrectGuess = false;
   });
-  (document.activeElement as HTMLButtonElement)?.blur?.();
+  const active = document.activeElement as HTMLButtonElement;
+  if (![...$tile].includes(active)) active?.blur?.();
 }>
 
 <const/submitWord() {
@@ -127,10 +136,20 @@ static const EmojiNumbers = [
 <div class=styles.looseLetters>
   <for|letter, i| of=looseLetters>
     <if=letter>
-      <button
+      <button/$tile
         class=styles.tile
+        tabindex=i === tabStop ? 0 : -1
         onClick() {
+          const next = navigate(looseLetters, i, "ArrowRight")!;
+          tabStop = next === i ? navigate(looseLetters, i, "ArrowLeft")! : next;
           addLetter(i);
+        }
+        onKeyDown(e) {
+          const slot = navigate(looseLetters, i, e.key);
+          if (slot !== undefined) {
+            e.preventDefault();
+            tabStop = slot;
+          }
         }
         style={
           "view-transition-name": `letter-${letter.id}`,
@@ -142,17 +161,18 @@ static const EmojiNumbers = [
     </if>
     <else><span/></else>
   </for>
-  <button
-    class=[styles.iconButton, styles.openSubmit]
-    hidden=looseLetters.some(Boolean)
-    title="share score"
-    onClick() {
-      submitWord();
-      resultsOpen = true;
-    }
-  >
-    ⇪
-  </button>
+  <show=!looseLetters.some(Boolean)>
+    <button
+      class=[styles.iconButton, styles.openSubmit]
+      title="share score"
+      onClick() {
+        submitWord();
+        resultsOpen = true;
+      }
+    >
+      ⇪
+    </button>
+  </show>
 </div>
 
 <div class=styles.pendingWord>
