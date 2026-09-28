@@ -50,12 +50,13 @@ body {
   composes: flipping from "../../game/flip.module.css";
 }
 
-.bounces {
-  composes: bounces from "../../game/flip.module.css";
-}
-
 .slice {
   composes: slice from "../../game/flip.module.css";
+}
+
+/* Snappier than 444dle's, since the puzzle is nothing but flips. */
+.tile.flipping {
+  --toss: 0.26s;
 }
 
 .tile.back {
