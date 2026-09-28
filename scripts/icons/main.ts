@@ -23,9 +23,9 @@ const ART: Record<string, Art> = {
   "444dle": {
     tile: 0.37,
     tiles: [
-      { char: "4", tilt: -6, x: -0.62, y: -0.6 },
-      { char: "4", tilt: 0, x: 0.66, y: -0.46 },
-      { char: "4", tilt: 4, x: -0.15, y: 0.62 },
+      { char: "4", tilt: -6, x: -0.62, y: -0.53 },
+      { char: "4", tilt: 0, x: 0.66, y: -0.39 },
+      { char: "4", tilt: 4, x: -0.15, y: 0.69 },
     ],
   },
 };
@@ -49,6 +49,7 @@ const canvas = document.createElement("div");
 canvas.className = styles.canvas;
 canvas.style.setProperty("--tile-size", `${art.tile * 100}vmin`);
 canvas.append(...tiles);
+document.body.style.backgroundColor = parameters.get("background") ?? "";
 document.body.append(canvas);
 
 const safeZone = Number(parameters.get("safe"));

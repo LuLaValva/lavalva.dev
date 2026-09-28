@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
@@ -33,12 +33,19 @@ async function shoot(out, game, size, options = {}) {
 
 try {
   for (const game of GAMES) {
+    const manifest = JSON.parse(
+      await readFile(join(root, `public/game/${game}/manifest.json`), "utf8"),
+    );
+    const background = manifest.background_color;
     await shoot(`src/routes/game/${game}/favicon.png`, game, FAVICON_SIZE, {
       hug: "1",
     });
     for (const size of APP_ICON_SIZES) {
-      await shoot(`public/game/${game}/icon-${size}.png`, game, size);
+      await shoot(`public/game/${game}/icon-${size}.png`, game, size, {
+        background,
+      });
       await shoot(`public/game/${game}/icon-maskable-${size}.png`, game, size, {
+        background,
         safe: SAFE_ZONE,
       });
     }
