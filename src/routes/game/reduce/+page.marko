@@ -161,17 +161,18 @@ static const EmojiNumbers = [
     </if>
     <else><span/></else>
   </for>
-  <button
-    class=[styles.iconButton, styles.openSubmit]
-    hidden=looseLetters.some(Boolean)
-    title="share score"
-    onClick() {
-      submitWord();
-      resultsOpen = true;
-    }
-  >
-    ⇪
-  </button>
+  <show=!looseLetters.some(Boolean)>
+    <button
+      class=[styles.iconButton, styles.openSubmit]
+      title="share score"
+      onClick() {
+        submitWord();
+        resultsOpen = true;
+      }
+    >
+      ⇪
+    </button>
+  </show>
 </div>
 
 <div class=styles.pendingWord>
