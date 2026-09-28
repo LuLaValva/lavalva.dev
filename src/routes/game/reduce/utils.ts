@@ -34,3 +34,48 @@ export function binarySearch(list: string[], word: string) {
   }
   return false;
 }
+
+const COLUMNS = 4;
+
+export function navigate(slots: readonly unknown[], from: number, key: string) {
+  let to: number;
+  switch (key) {
+    case "ArrowLeft":
+      to = slots.findLastIndex((letter, i) => letter && i < from);
+      break;
+    case "ArrowRight":
+      to = slots.findIndex((letter, i) => letter && i > from);
+      break;
+    case "ArrowUp":
+      to = nearestInRow(slots, from, -COLUMNS);
+      break;
+    case "ArrowDown":
+      to = nearestInRow(slots, from, COLUMNS);
+      break;
+    case "Home":
+      to = slots.findIndex(Boolean);
+      break;
+    case "End":
+      to = slots.findLastIndex(Boolean);
+      break;
+    default:
+      return;
+  }
+  return to === -1 ? from : to;
+}
+
+function nearestInRow(slots: readonly unknown[], from: number, step: number) {
+  const column = from % COLUMNS;
+  for (
+    let row = from - column + step;
+    row >= 0 && row < slots.length;
+    row += step
+  ) {
+    for (let d = 0; d < COLUMNS; d++) {
+      for (const c of [column - d, column + d]) {
+        if (c >= 0 && c < COLUMNS && slots[row + c]) return row + c;
+      }
+    }
+  }
+  return -1;
+}
