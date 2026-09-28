@@ -87,21 +87,24 @@ div class=styles.grid style={ "--size": size }
         }
         ,aria-label=`${i} ${j}`
         ,aria-pressed=flips % 2 ? "true" : "false"
-        // Keyed by the count, so every flip mounts a fresh tile to toss.
-        for|n| of=[flips] by=String
-          if=n
-            span
-              ,class=[
-                styles.tile,
-                styles.flipping,
-                n % 2 ? styles.back : styles.fromBack,
-              ]
-              ,style=`--tilt:${tilt(i, j, n - 1)}deg; --tilt-after-flip:${tilt(i, j, n)}deg; --flip-axis:${di && dj !== di ? `${di}, 0` : `0, ${-dj}`}, 0`
-              for|{ z, out, mix }| of=TILE_BODY
-                span class=styles.slice style=`--z:${z}; --out:${out}; --mix:${mix}`
-          else
-            span
-              ,class=[styles.tile, styles.faceUp]
-              ,style=`--tilt:${tilt(i, j, 0)}deg`
+        span
+          ,class=[
+            styles.tile,
+            flips
+              ? [styles.flipping, flips % 2 ? styles.back : styles.fromBack]
+              : styles.faceUp,
+          ]
+          ,style=`--tilt:${tilt(i, j, flips - 1)}deg; --tilt-after-flip:${tilt(i, j, flips)}deg; --flip-axis:${di && dj !== di ? `${di}, 0` : `0, ${-dj}`}, 0`
+          if=flips
+            for|{ z, out, mix }| of=TILE_BODY
+              span class=styles.slice style=`--z:${z}; --out:${out}; --mix:${mix}`
+
+      <script>
+        if (flips) {
+          for (const animation of $cell().getAnimations({ subtree: true })) {
+            animation.currentTime = 0;
+          }
+        }
+      </script>
 
 return=BigInt("0b" + tiles.map(row => row.map(({ flips }) => flips % 2).join('')).join(''))
