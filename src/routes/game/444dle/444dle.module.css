@@ -18,7 +18,8 @@
 body {
   max-width: 34rem;
   margin: auto;
-  padding: 0 0.5rem 12rem;
+  padding: env(safe-area-inset-top) 0.5rem
+    calc(12rem + env(safe-area-inset-bottom));
 }
 
 .header {
@@ -200,11 +201,9 @@ strong.bull {
   font-weight: bold;
   font-size: 1rem;
   user-select: none;
-  transition: background-color 0.4s ease;
 
   &:active {
     scale: 0.94;
-    transition: background-color 0.05s;
   }
 }
 
