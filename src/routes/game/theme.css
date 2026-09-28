@@ -1,0 +1,25 @@
+@import "../../theme.css";
+
+:root {
+  touch-action: manipulation;
+}
+
+@keyframes shake {
+  10%,
+  50% {
+    translate: -3px 0;
+  }
+  30%,
+  70% {
+    translate: 3px 0;
+  }
+  90% {
+    translate: -1px 0;
+  }
+}
+
+@keyframes pop {
+  30% {
+    scale: 1.1;
+  }
+}

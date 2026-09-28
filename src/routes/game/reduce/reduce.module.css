@@ -1,6 +1,5 @@
 :root {
   view-transition-name: none;
-  touch-action: manipulation;
 }
 
 ::view-transition {
@@ -12,42 +11,17 @@ body {
   margin: auto;
 }
 
-.btn {
-  background-color: #8884;
-  border-radius: 0.75rem;
-  height: 1.75rem;
-  width: 1.75rem;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: light-dark(black, white);
-
-  &:active {
-    scale: 1.15;
-  }
+.iconButton {
+  composes: iconButton from "../chrome.module.css";
 }
 
-.share {
-  margin: auto;
-  display: block;
-  margin-top: 1rem;
+.srOnly {
+  composes: srOnly from "../chrome.module.css";
 }
 
 .tile {
-  --size: 2rem;
-  all: unset;
-  width: var(--size);
-  height: var(--size);
-  line-height: var(--size);
-  border-radius: 0.2rem;
-  text-align: center;
-  background-color: rgb(200, 174, 121);
-  color: black;
-  font-family: monospace;
-  font-weight: bold;
-  box-shadow: 0.05rem -0.1rem 0.25rem inset;
-  user-select: none;
+  composes: tile faceUp from "../tile.module.css";
+  --tile-size: 2rem;
 }
 
 .header {
@@ -55,32 +29,6 @@ body {
   justify-content: space-between;
   max-width: 18rem;
   margin: 1rem auto;
-}
-
-dialog {
-  border-radius: 1rem;
-  padding: 1rem;
-  border: 1px solid light-dark(black, white);
-  background-color: var(--background);
-
-  &::backdrop {
-    background-color: #0008;
-  }
-
-  & > :last-child {
-    margin-bottom: 0;
-  }
-
-  .dialogHeading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-
-    h3 {
-      margin: 0;
-    }
-  }
 }
 
 .looseLetters {
@@ -97,8 +45,7 @@ dialog {
     height: var(--big);
   }
   > .tile {
-    --size: var(--big);
-    font-size: 2rem;
+    --tile-size: var(--big);
 
     &:focus-visible {
       background-color: rgb(83, 203, 115);
@@ -138,10 +85,7 @@ dialog {
     scrollbar-width: none;
 
     > * {
-      width: 2rem;
-      height: 2rem;
-      line-height: 2rem;
-      animation: grow 0.1s;
+      animation: global(pop) 0.15s;
     }
 
     &:focus-visible {
@@ -152,7 +96,7 @@ dialog {
   }
 
   .incorrectGuess {
-    animation: shake 0.5s;
+    animation: global(shake) 0.5s;
   }
 }
 
@@ -183,51 +127,22 @@ dialog {
   }
 }
 
+.stat {
+  composes: stat from "../chrome.module.css";
+}
+
+.caption {
+  margin: 0 0 1.25rem;
+  text-align: center;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+
 @keyframes grow {
   from {
     scale: 0.5;
     opacity: 0;
-  }
-}
-
-@keyframes fade {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes shake {
-  0% {
-    translate: 0 0;
-  }
-  10% {
-    translate: -2px 0;
-  }
-  20% {
-    translate: 2px 0;
-  }
-  30% {
-    translate: -3px 0;
-  }
-  40% {
-    translate: 3px 0;
-  }
-  50% {
-    translate: -2px 0;
-  }
-  60% {
-    translate: 2px 0;
-  }
-  70% {
-    translate: -1px 0;
-  }
-  80% {
-    translate: 1px 0;
-  }
-  90% {
-    translate: 0.5px 0;
-  }
-  100% {
-    translate: 0 0;
   }
 }

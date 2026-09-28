@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*", "adapter/**/*", "vite.config.ts"],
+  "include": ["src/**/*", "adapter/**/*", "scripts/**/*", "vite.config.ts"],
   "compilerOptions": {
     "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,

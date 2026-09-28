@@ -1,0 +1,65 @@
+import { COLORS, type Eval, NUM_WORDS } from "../utils";
+import styles from "../444dle.module.css";
+
+export interface Input {
+  keyColors: Record<string, Eval[]>;
+}
+
+static const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+
+static function stripes(colors: Eval[]) {
+  const width = 100 / NUM_WORDS;
+  const stops = colors.map(
+    (score, i) => `var(--score-${score}) ${width * i}% ${width * (i + 1)}%`,
+  );
+  return `background-image:linear-gradient(to right, ${stops.join(",")})`;
+}
+
+<const/press(key: string) {
+  document.dispatchEvent(new KeyboardEvent("keydown", { key }));
+}>
+
+<div class=styles.keyboard>
+  <for|letters, row| of=ROWS>
+    <div class=styles.keyboardRow>
+      <if=row === 2>
+        <button
+          class=[styles.key, styles.wideKey]
+          aria-label="enter"
+          onClick() {
+            press("Enter");
+          }
+        >
+          ⏎
+        </button>
+      </if>
+      <for|letter| of=letters>
+        <const/colors=(input.keyColors[letter])>
+        <button
+          class=[styles.key, colors && styles.tinted]
+          style=colors && stripes(colors)
+          aria-label=(
+            colors &&
+            `${letter}, ${colors.map((score) => COLORS[score]).join(" ")}`
+          )
+          onClick() {
+            press(letter);
+          }
+        >
+          ${letter}
+        </button>
+      </for>
+      <if=row === 2>
+        <button
+          class=[styles.key, styles.wideKey]
+          aria-label="delete"
+          onClick() {
+            press("Backspace");
+          }
+        >
+          ⌫
+        </button>
+      </if>
+    </div>
+  </for>
+</div>

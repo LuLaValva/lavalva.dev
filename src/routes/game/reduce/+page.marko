@@ -1,5 +1,6 @@
 import styles from "./reduce.module.css";
-import { binarySearch, dailyLetters, requestDay } from "./utils";
+import { binarySearch, dailyLetters } from "./utils";
+import { requestDay, vibrate } from "../utils";
 static interface Letter {
   char: string;
   id: number;
@@ -27,30 +28,22 @@ static const EmojiNumbers = [
   "🕖",
   "🕗",
 ];
-client const vibrate = (
-  typeof navigator.vibrate === "function"
-    ? (...args: Parameters<typeof navigator.vibrate>) =>
-        navigator.vibrate(...args)
-    : () => {}
-);
 
 <lazy-english-dictionary/words/>
 
 <const/day=requestDay($global.request)>
-<const/today=day.toDateString()>
 
-<let/looseLetters=(
-  dailyLetters(day, 20).map((char, id) => ({ char, id })) as (Letter | null)[]
-)>
+<let/looseLetters=dailyLetters(day, 20).map((char, id) => ({
+  char,
+  id,
+})) as (Letter | null)[]>
 
-<let/pendingWord=([] as Letter[])>
-<let/submittedWords=([] as Letter[][])>
+<let/pendingWord=[] as Letter[]>
+<let/submittedWords=[] as Letter[][]>
 
 <let/incorrectGuess=false>
 
-<script>
-  if (incorrectGuess) vibrate([100, 100, 50, 100, 100]);
-</script>
+<script>if (incorrectGuess) vibrate([100, 100, 50, 100, 100]);</script>
 
 <const/points=(
   looseLetters.filter(Boolean).length +
@@ -97,46 +90,39 @@ client const vibrate = (
   }
 }>
 
+<let/helpOpen=false>
+<let/resultsOpen=false>
+
 <header class=styles.header>
   <button
-    class=styles.btn
+    class=styles.iconButton
     title="help"
-    onclick="this.nextElementSibling.showModal()">
+    onClick() {
+      helpOpen = true;
+    }
+  >
     ?
   </button>
-  <dialog closedby="any">
-    <div class=styles.dialogHeading>
-      <h3>Welcome to Reduce!</h3>
-      <form method="dialog">
-        <button class=styles.btn aria-label="close dialog">
-          ×
-        </button>
-      </form>
-    </div>
-    <p>Match letters to make words</p>
-    <p>Every word and loose letter counts as a point</p>
-    <p>
-      Your goal is to${" "}
-      <em>minimize</em>
-      ${" "}points
-    </p>
-  </dialog>
-  <strong>${points}</strong>
+  <strong>${points}<span class=styles.srOnly>${" "}points</span></strong>
   <button
-    class=styles.btn
+    class=styles.iconButton
     title="shuffle loose letters"
     onClick() {
       document.startViewTransition(() => {
-        looseLetters = looseLetters.toSorted((a, b) => {
-          // if (!a) return 1;
-          // if (!b) return -1;
-          return Math.random() - 0.5;
-        });
+        looseLetters = looseLetters.toSorted(() => Math.random() - 0.5);
       });
-    }>
+    }
+  >
     ⇆
   </button>
 </header>
+
+<game-dialog open:=helpOpen>
+  <@heading>Welcome to Reduce!</@heading>
+  <p>Match letters to make words</p>
+  <p>Every word and loose letter counts as a point</p>
+  <p>Your goal is to <em>minimize</em> points</p>
+</game-dialog>
 
 <div class=styles.looseLetters>
   <for|letter, i| of=looseLetters>
@@ -149,56 +135,24 @@ client const vibrate = (
         style={
           "view-transition-name": `letter-${letter.id}`,
           rotate: `${(Math.random() - 0.5) * 5}deg`,
-        }>
+        }
+      >
         ${letter.char}
       </button>
     </if>
-    <else>
-      <span/>
-    </else>
+    <else><span/></else>
   </for>
   <button
-    class=[styles.btn, styles.openSubmit]
+    class=[styles.iconButton, styles.openSubmit]
     hidden=looseLetters.some(Boolean)
     title="share score"
-    onclick="this.nextElementSibling.showModal()"
     onClick() {
       submitWord();
-    }>
+      resultsOpen = true;
+    }
+  >
     ⇪
   </button>
-  <dialog closedby="any">
-    <div class=styles.dialogHeading>
-      <h3>Lowest you can get?</h3>
-      <form method="dialog">
-        <button class=styles.btn aria-label="close dialog">
-          ×
-        </button>
-      </form>
-    </div>
-    <hr>
-    <const/message=`I got down to ${pendingWord.length + looseLetters.filter(Boolean).length + submittedWords.length} points in REDUCE
-${today}
-
-${submittedWords.map((word) => EmojiNumbers[word.length]).join("")}
-${"1️⃣".repeat(pendingWord.length + looseLetters.filter(Boolean).length)}
-https://lavalva.dev/game/reduce`>
-    <pre>${message}</pre>
-    <hr>
-    <button
-      class=styles.share
-      onClick() {
-        if (navigator.share) {
-          navigator.share({ text: message });
-        } else if (navigator.clipboard) {
-          navigator.clipboard.writeText(message).then(() => {
-            alert("Copied to clipboard!");
-          });
-        }
-      }>
-      Share with Friends
-    </button>
-  </dialog>
 </div>
 
 <div class=styles.pendingWord>
@@ -207,37 +161,41 @@ https://lavalva.dev/game/reduce`>
       class=[styles.pendingLetters, incorrectGuess && styles.incorrectGuess]
       onClick() {
         revertLetters(pendingWord, () => (pendingWord = []));
-      }>
+      }
+    >
       <for|letter| of=pendingWord>
         <span
           class=styles.tile
           style={
             "view-transition-name": `letter-${letter.id}`,
             rotate: `${(Math.random() - 0.5) * 2}deg`,
-          }>
+          }
+        >
           ${letter.char}
         </span>
       </for>
     </button>
     <span class=styles.actions>
       <button
-        class=styles.btn
+        class=styles.iconButton
         aria-label="delete last letter"
         onClick() {
           revertLetters(
             [pendingWord.at(-1)!],
             () => (pendingWord = pendingWord.toSpliced(-1)),
           );
-        }>
+        }
+      >
         ⌫
       </button>
       <button
-        class=styles.btn
+        class=styles.iconButton
         aria-label="submit"
         disabled=!words
         onClick() {
           submitWord();
-        }>
+        }
+      >
         ⏎
       </button>
     </span>
@@ -246,27 +204,52 @@ https://lavalva.dev/game/reduce`>
 
 <div class=styles.words>
   <for|word, i| of=submittedWords>
-    <button
-      class=styles.word
-      onClick() {
-        revertLetters(
-          word,
-          () => (submittedWords = submittedWords.toSpliced(i, 1)),
-        );
-      }>
+    <button onClick() {
+      revertLetters(
+        word,
+        () => (submittedWords = submittedWords.toSpliced(i, 1)),
+      );
+    }>
       <for|letter| of=word>
         <span
           class=styles.tile
           style={
             "view-transition-name": `letter-${letter.id}`,
             rotate: `${(Math.random() - 0.5) * 3}deg`,
-          }>
+          }
+        >
           ${letter.char}
         </span>
       </for>
     </button>
   </for>
 </div>
+
+<const/loose=[
+  ...looseLetters.filter((letter) => letter !== null),
+  ...pendingWord,
+]>
+<const/score=submittedWords.length + loose.length>
+
+<game-dialog open:=resultsOpen>
+  <@heading>
+    ${day.toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" })}
+  </@heading>
+  <p class=styles.stat>${score}</p>
+  <p class=styles.caption>${score === 1 ? "point" : "points"}</p>
+
+  <share-button text=(
+    `Reduce ${day.toLocaleDateString("en-US", {
+      month: "numeric",
+      day: "numeric",
+      year: "2-digit",
+      timeZone: "UTC",
+    })}: ${score} ${score === 1 ? "point" : "points"}
+
+${submittedWords.map((word) => EmojiNumbers[word.length]).join("")}
+${"1️⃣".repeat(loose.length)}`
+  )/>
+</game-dialog>
 
 <script>
   document.addEventListener(

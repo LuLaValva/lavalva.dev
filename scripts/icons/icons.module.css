@@ -1,0 +1,24 @@
+:global(body) {
+  margin: 0;
+}
+
+.canvas {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+.tile {
+  composes: tile faceUp from "../../src/routes/game/tile.module.css";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: calc(var(--tile-size) * var(--x) - 50%)
+    calc(var(--tile-size) * var(--y) - 50%);
+  rotate: var(--tilt);
+  font-size: calc(var(--tile-size) * 0.85);
+  filter: drop-shadow(
+    0 calc(var(--tile-size) * 0.025) calc(var(--tile-size) * 0.055)
+      rgb(0 0 0 / 0.5)
+  );
+}

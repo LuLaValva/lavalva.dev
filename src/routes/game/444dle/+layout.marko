@@ -8,7 +8,11 @@ export interface Input {
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Luke LaValva's Website">
+    <meta name="description" content="Guess three four-letter words at once!">
+    <link rel="manifest" href="/game/444dle/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="444dle">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta
       name="theme-color"
       media="(prefers-color-scheme: light)"
@@ -19,9 +23,15 @@ export interface Input {
       media="(prefers-color-scheme: dark)"
       content="#271C13"
     >
-    <title>Luke LaValva</title>
+    <link rel="apple-touch-icon" href="/game/444dle/icon-192.png">
+    <title>444dle</title>
   </head>
   <body>
     <${input.content}/>
   </body>
 </html>
+
+<script>
+  if ("serviceWorker" in navigator)
+    navigator.serviceWorker.register("/game/444dle/sw.js");
+</script>

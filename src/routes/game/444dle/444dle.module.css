@@ -1,0 +1,341 @@
+:root {
+  font-size: clamp(1rem, 2.6vw, 1.5rem);
+
+  --tile-size: min(6.8vw, 2.4rem);
+  --gap: calc(var(--tile-size) * 0.1);
+  --half-thickness: calc(var(--tile-size) * 0.095);
+  --tile-perspective: calc(var(--tile-size) * 4.6);
+  --bevel-cut: calc(var(--tile-size) * 0.045);
+  --toss: 0.38s;
+  --toss-height: 0.76;
+  --hop-height: 0.28;
+  --score-miss: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
+  --score-cow: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
+  --score-bull: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
+  --rule: light-dark(rgb(228, 216, 204), rgb(62, 49, 38));
+}
+
+body {
+  max-width: 34rem;
+  margin: auto;
+  padding: 0 0.5rem 12rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.5rem 0.5rem 1.5rem;
+
+  h1 {
+    font-size: 1.5rem;
+    margin: 0;
+  }
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.boards {
+  display: flex;
+  justify-content: center;
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.board + .board {
+  border-left: 1px solid var(--rule);
+  margin-left: calc(var(--tile-size) * 0.2);
+  padding-left: calc(var(--tile-size) * 0.2);
+}
+
+.row {
+  display: flex;
+  gap: var(--gap);
+}
+
+.row.invalid {
+  animation: global(shake) 0.5s;
+}
+
+.cell {
+  composes: tile from "../tile.module.css";
+  rotate: var(--tilt);
+}
+
+.filled {
+  composes: faceUp from "../tile.module.css";
+  animation: global(pop) 0.15s;
+}
+
+.scored {
+  composes: faceUp from "../tile.module.css";
+  rotate: var(--tilt-after-flip);
+}
+
+.cell.miss {
+  --tile-face: var(--score-miss);
+}
+.cell.cow {
+  --tile-face: var(--score-cow);
+}
+.cell.bull {
+  --tile-face: var(--score-bull);
+}
+
+.cell.flipping {
+  position: relative;
+  rotate: none;
+  transform-style: preserve-3d;
+  background-color: transparent;
+  box-shadow: none;
+  color: transparent;
+  scale: calc(1 - var(--half-thickness) / var(--tile-perspective));
+  --turn: var(--toss);
+  animation-name: flip-settle;
+  animation-duration: var(--turn);
+  /* Linear because nothing torques the tile once it is out of the hand. */
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  animation-delay: calc(var(--i) * 0.3s);
+}
+
+.cell.flipping.bounces {
+  /* 0.64 is where flip-bounce puts the landing; keep the two in step. */
+  --turn: calc(var(--toss) / 0.64);
+  animation-name: flip-bounce;
+}
+
+.cell.flipping::before,
+.cell.flipping::after {
+  content: attr(data-letter);
+  /* Empty alt text, or both faces read the letter out again. Declared twice so
+     a browser without the alt syntax still gets a letter. */
+  content: attr(data-letter) / "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--tile-radius);
+  box-shadow: var(--tile-bevel);
+  backface-visibility: hidden;
+  color: black;
+}
+
+.cell.flipping::before {
+  background-color: var(--tile-base-color);
+  transform: translateZ(var(--half-thickness));
+}
+
+.cell.flipping::after {
+  background-color: var(--tile-face);
+  transform: translateZ(calc(var(--half-thickness) * -1)) rotateX(180deg);
+}
+
+.slice {
+  position: absolute;
+  inset: calc((1 - var(--out)) * var(--bevel-cut));
+  border-radius: calc(var(--tile-radius) - (1 - var(--out)) * var(--bevel-cut));
+  transform: translateZ(calc(var(--z) * var(--half-thickness)));
+  background-color: color-mix(
+    in srgb,
+    var(--tile-base-color) var(--mix),
+    var(--tile-face)
+  );
+  box-shadow: var(--tile-bevel);
+  /* Looks like dead code. It is not: a row keeps .flipping until the next
+     guess, and Chrome leaves paint around slices left live in the compositor. */
+  animation-name: tile-body;
+  animation-duration: var(--turn);
+  animation-timing-function: step-end;
+  animation-fill-mode: both;
+  animation-delay: calc(var(--i) * 0.3s);
+}
+
+strong.cow {
+  color: var(--score-cow);
+}
+strong.bull {
+  color: var(--score-bull);
+}
+
+.keyboard {
+  composes: shading from "../tile.module.css";
+  --key-gap: 0.175rem;
+  /* Ten across a row, so a key is the same width whichever row it is in. */
+  --tile-size: min(2.5rem, (100vw - 0.5rem - 9 * var(--key-gap)) / 10);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--key-gap);
+  padding: 0.5rem 0.25rem calc(0.5rem + env(safe-area-inset-bottom));
+  background-color: var(--background);
+}
+
+.keyboardRow {
+  display: flex;
+  gap: var(--key-gap);
+  justify-content: center;
+  width: 100%;
+  max-width: 34rem;
+}
+
+.key {
+  width: var(--tile-size);
+  height: min(3.2rem, calc(var(--tile-size) * 1.4));
+  border: none;
+  border-radius: var(--tile-radius);
+  background-color: light-dark(rgb(226, 214, 202), rgb(66, 52, 40));
+  box-shadow: var(--tile-bevel);
+  color: light-dark(black, white);
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 1rem;
+  user-select: none;
+  transition: background-color 0.4s ease;
+
+  &:active {
+    scale: 0.94;
+    transition: background-color 0.05s;
+  }
+}
+
+.key.tinted {
+  color: black;
+}
+
+.key.wideKey {
+  width: calc(var(--tile-size) * 1.5);
+  font-family: system-ui;
+  font-size: 0.9rem;
+  font-weight: normal;
+}
+
+.iconButton {
+  composes: iconButton from "../chrome.module.css";
+}
+
+.srOnly {
+  composes: srOnly from "../chrome.module.css";
+}
+
+.stat {
+  composes: stat from "../chrome.module.css";
+}
+
+.answers {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1.5rem;
+  font-weight: bold;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+@keyframes flip-settle {
+  from {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt)) rotateX(0deg);
+    z-index: 0;
+  }
+  25% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.75 + var(--tilt-after-flip) * 0.25))
+      rotateX(45deg);
+    z-index: 10;
+  }
+  50% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height)))
+      rotateZ(calc(var(--tilt) * 0.5 + var(--tilt-after-flip) * 0.5))
+      rotateX(90deg);
+  }
+  75% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.25 + var(--tilt-after-flip) * 0.75))
+      rotateX(135deg);
+    z-index: 10;
+  }
+  to {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt-after-flip)) rotateX(180deg);
+    z-index: 0;
+  }
+}
+
+@keyframes flip-bounce {
+  from {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt)) rotateX(0deg);
+    z-index: 0;
+  }
+  16% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(var(--tilt)) rotateX(45deg);
+    z-index: 10;
+  }
+  32% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height)))
+      rotateZ(var(--tilt)) rotateX(90deg);
+  }
+  48% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(var(--tilt)) rotateX(135deg);
+  }
+  64% {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt)) rotateX(180deg);
+  }
+  73% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--hop-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.45 + var(--tilt-after-flip) * 0.55))
+      rotateX(180deg);
+  }
+  82% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--hop-height)))
+      rotateZ(calc(var(--tilt) * 0.18 + var(--tilt-after-flip) * 0.82))
+      rotateX(180deg);
+  }
+  91% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--hop-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.05 + var(--tilt-after-flip) * 0.95))
+      rotateX(180deg);
+    z-index: 10;
+  }
+  to {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt-after-flip)) rotateX(180deg);
+    z-index: 0;
+  }
+}
+
+@keyframes tile-body {
+  from {
+    visibility: hidden;
+  }
+  4%,
+  96% {
+    visibility: visible;
+  }
+  97%,
+  to {
+    visibility: hidden;
+  }
+}

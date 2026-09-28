@@ -1,4 +1,4 @@
-const GAME = "reduce";
+const GAME = "444dle";
 const CACHE_NAME = `${GAME}-v1`;
 
 self.addEventListener("install", () => self.skipWaiting());

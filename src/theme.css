@@ -1,0 +1,9 @@
+:root {
+  color-scheme: light dark;
+  --background: light-dark(#f1decd, #271c13);
+  --accent: light-dark(rgb(21, 96, 218), rgb(171, 212, 250));
+  /* Legible on top of --accent. */
+  --accent-contrast: light-dark(white, black);
+  background-color: var(--background);
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}

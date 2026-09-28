@@ -1,0 +1,98 @@
+import { COLORS, type Eval, NUM_GUESSES, NUM_LETTERS } from "../utils";
+import styles from "../444dle.module.css";
+
+static const SLICES = 12;
+static const BODY = Array.from({ length: SLICES }, (_, i) => {
+  const angle = Math.PI * (i / (SLICES - 1) - 0.5);
+  const through = Math.sin(angle);
+  return {
+    z: through * 0.98,
+    out: Math.cos(angle).toFixed(4),
+    mix: `${Math.round((through + 1) * 50)}%`,
+  };
+});
+
+export interface Input {
+  index: number;
+  played: { guess: string; scores: Eval[] }[];
+  pending: string;
+  pendingAt: number;
+}
+
+<const/cells=Array.from({ length: NUM_GUESSES }, (_, i) => {
+  const row = input.played[i];
+  if (!row) return { word: i === input.pendingAt ? input.pending : "" };
+  return {
+    word: row.guess,
+    evaluation: row.scores,
+    flipping: i === input.pendingAt - 1,
+  };
+})>
+
+// A hash rather than Math.random, so the server and client agree on the tilt.
+<const/tilt(row: number, column: number, settled: number) {
+  const n =
+    Math.sin(
+      input.index * 12.9898 + row * 78.233 + column * 37.719 + settled * 55.137,
+    ) * 43758.5;
+  return (n - Math.floor(n) - 0.5) * 4;
+}>
+
+static const SKID_WORTH_A_HOP = 2;
+
+<const/bounces(row: number, column: number) {
+  return (
+    Math.abs(tilt(row, column, 1) - tilt(row, column, 0)) > SKID_WORTH_A_HOP
+  );
+}>
+
+<let/shaking=false>
+
+<div class=styles.board>
+  <span class=styles.srOnly>word ${input.index + 1}</span>
+  <for|{ word, evaluation, flipping }, row| of=cells>
+    <div
+      class=[styles.row, shaking && row === input.pendingAt && styles.invalid]
+      onAnimationEnd(e, el) {
+        if (e.target === el) shaking = false;
+      }
+    >
+      <for|i| until=NUM_LETTERS>
+        <div
+          class=[
+            styles.cell,
+            evaluation
+              ? [
+                  styles.scored,
+                  styles[evaluation[i]],
+                  flipping && styles.flipping,
+                  flipping && bounces(row, i) && styles.bounces,
+                ]
+              : word[i] && styles.filled,
+          ]
+          style=`--i:${i}; --tilt:${tilt(row, i, 0)}deg; --tilt-after-flip:${tilt(row, i, 1)}deg`
+          data-letter=word[i]
+        >
+          <if=flipping>
+            <for|{ z, out, mix }| of=BODY>
+              <span
+                class=styles.slice
+                style=`--z:${z}; --out:${out}; --mix:${mix}`
+              />
+            </for>
+          </if>
+          ${word[i]}
+          <if=evaluation>
+            <span class=styles.srOnly>, ${COLORS[evaluation[i]]}</span>
+          </if>
+        </div>
+      </for>
+    </div>
+  </for>
+</div>
+
+<return=() => ({
+  shake() {
+    shaking = true;
+  },
+})>

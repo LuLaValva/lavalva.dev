@@ -1,0 +1,28 @@
+.shading {
+  --tile-shade: calc(var(--tile-size) / 40);
+  --tile-radius: calc(var(--tile-size) / 12);
+  --tile-bevel: var(--tile-shade) calc(var(--tile-shade) * -2)
+    calc(var(--tile-shade) * 5) inset rgb(0 0 0 / 0.65);
+  --tile-base-color: rgb(200, 174, 121);
+  --tile-face: var(--tile-base-color);
+}
+
+.tile {
+  composes: shading;
+  all: unset;
+  width: var(--tile-size);
+  height: var(--tile-size);
+  line-height: var(--tile-size);
+  font-size: calc(var(--tile-size) * 0.55);
+  border-radius: var(--tile-radius);
+  text-align: center;
+  font-family: monospace;
+  font-weight: bold;
+  color: black;
+  user-select: none;
+}
+
+.faceUp {
+  background-color: var(--tile-face);
+  box-shadow: var(--tile-bevel);
+}

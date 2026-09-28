@@ -1,0 +1,28 @@
+import styles from "../chrome.module.css";
+
+export interface Input {
+  text: string;
+}
+
+<let/copied=false>
+
+<button
+  class=styles.primary
+  onClick() {
+    const text = `${input.text}\n\n${location.origin}${location.pathname}`;
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text).then(() => (copied = true));
+    }
+  }
+>
+  ${copied ? "Copied to clipboard" : "Share with friends"}
+</button>
+
+<script>
+  if (copied) {
+    const settle = setTimeout(() => (copied = false), 2000);
+    $signal.onabort = () => clearTimeout(settle);
+  }
+</script>
