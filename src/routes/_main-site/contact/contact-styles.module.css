@@ -69,7 +69,7 @@ body {
 
 .hashes {
   composes: shading from "../../game/tile.module.css";
-  --tile-size: 0.6em;
+  --tile-size: 1.1em;
   display: flex;
   flex-direction: column;
   font-family: monospace;
@@ -83,25 +83,41 @@ body {
     align-items: center;
     gap: 0.5rem;
 
+    /* A tile with the solved board inlaid in walnut, --inlay rings in from
+       the edge of the six. */
     > span {
-      display: inline-block;
+      position: relative;
+      flex: none;
       width: var(--tile-size);
       height: var(--tile-size);
-      box-sizing: border-box;
-      border: solid var(--tile-base-color);
       border-radius: var(--tile-radius);
-      background-color: var(--tile-back);
+      background-color: var(--tile-base-color);
+      box-shadow: var(--tile-bevel);
+
+      &::after {
+        content: "";
+        position: absolute;
+        inset: calc(var(--tile-size) * var(--inlay) / 6);
+        border-radius: calc(var(--tile-radius) / 2);
+        background-color: var(--tile-back);
+        box-shadow: inset 0 calc(var(--tile-shade) * 2)
+          calc(var(--tile-shade) * 3) rgb(0 0 0 / 0.45);
+      }
 
       &.small {
-        border-width: 0.2em;
+        --inlay: 2;
       }
 
       &.medium {
-        border-width: 0.1em;
+        --inlay: 1;
       }
 
       &.large {
-        border-width: 0;
+        background-color: var(--tile-back);
+
+        &::after {
+          content: none;
+        }
       }
     }
   }
