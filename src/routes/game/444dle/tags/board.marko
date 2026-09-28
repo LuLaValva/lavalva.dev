@@ -1,16 +1,6 @@
 import { COLORS, type Eval, NUM_GUESSES, NUM_LETTERS } from "../utils";
+import { TILE_BODY } from "../../flip";
 import styles from "../444dle.module.css";
-
-static const SLICES = 12;
-static const BODY = Array.from({ length: SLICES }, (_, i) => {
-  const angle = Math.PI * (i / (SLICES - 1) - 0.5);
-  const through = Math.sin(angle);
-  return {
-    z: through * 0.98,
-    out: Math.cos(angle).toFixed(4),
-    mix: `${Math.round((through + 1) * 50)}%`,
-  };
-});
 
 export interface Input {
   index: number;
@@ -74,7 +64,7 @@ static const SKID_WORTH_A_HOP = 2;
           data-letter=word[i]
         >
           <if=flipping>
-            <for|{ z, out, mix }| of=BODY>
+            <for|{ z, out, mix }| of=TILE_BODY>
               <span
                 class=styles.slice
                 style=`--z:${z}; --out:${out}; --mix:${mix}`

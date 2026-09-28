@@ -1,6 +1,5 @@
 :root {
-  --tile-color: light-dark(rgb(229, 203, 168), rgb(151, 98, 46));
-  --tile-color-pressed: light-dark(rgb(151, 98, 46), rgb(229, 203, 168));
+  --tile-back: rgb(140, 92, 50);
 }
 
 body {
@@ -10,28 +9,66 @@ body {
 }
 
 .grid {
+  --tile-size: 2.5rem;
   display: grid;
-  grid-template-columns: repeat(var(--size), 2em);
-  grid-template-rows: repeat(var(--size), 2em);
-  gap: 0.5px;
+  grid-template-columns: repeat(var(--size), var(--tile-size));
+  gap: calc(var(--tile-size) * 0.1);
+}
 
-  button {
-    border: none;
-    background-color: var(--tile-color);
-    touch-action: manipulation;
-    transition: background-color 0.05s;
+.cell {
+  composes: shading from "../../game/tile.module.css";
+  all: unset;
+  display: grid;
+  outline: revert;
+  outline-offset: 2.5px;
+  border-radius: var(--tile-radius);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 
-    &[aria-pressed="true"] {
-      background-color: var(--tile-color-pressed);
-    }
+  &:active {
+    scale: 0.94;
+  }
 
-    &:focus {
-      z-index: 1;
+  @media (hover: hover) {
+    &:hover {
+      filter: brightness(1.1);
     }
   }
 }
 
+.tile {
+  composes: tile from "../../game/flip.module.css";
+  rotate: var(--tilt);
+}
+
+.faceUp {
+  composes: faceUp from "../../game/tile.module.css";
+}
+
+.flipping {
+  composes: flipping from "../../game/flip.module.css";
+}
+
+.bounces {
+  composes: bounces from "../../game/flip.module.css";
+}
+
+.slice {
+  composes: slice from "../../game/flip.module.css";
+}
+
+.tile.back {
+  --tile-face: var(--tile-back);
+}
+
+.tile.fromBack {
+  --flip-from: var(--tile-back);
+}
+
 .hashes {
+  composes: shading from "../../game/tile.module.css";
+  --tile-size: 0.6em;
   display: flex;
   flex-direction: column;
   font-family: monospace;
@@ -47,11 +84,12 @@ body {
 
     > span {
       display: inline-block;
-      width: 0.6em;
-      height: 0.6em;
+      width: var(--tile-size);
+      height: var(--tile-size);
       box-sizing: border-box;
-      border: solid var(--tile-color);
-      background-color: var(--tile-color-pressed);
+      border: solid var(--tile-base-color);
+      border-radius: var(--tile-radius);
+      background-color: var(--tile-back);
 
       &.small {
         border-width: 0.2em;

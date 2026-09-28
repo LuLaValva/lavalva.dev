@@ -1,0 +1,187 @@
+/* A tile that .flipping tosses over from --flip-from (the plain base colour if
+   unset) to --tile-face about --flip-axis, turning it from --tilt to
+   --tilt-after-flip on the way. The toss plays when the class goes on and the
+   tile rests on its new face after, so give it a fresh element to flip it
+   again. Needs a .slice per TILE_BODY entry inside for the edge. */
+.tile {
+  composes: tile from "./tile.module.css";
+}
+
+.flipping {
+  /* The bottom edge comes up first; any x, y, 0 tips it over another way. */
+  --flip-axis: 1, 0, 0;
+  --half-thickness: calc(var(--tile-size) * 0.095);
+  --tile-perspective: calc(var(--tile-size) * 4.6);
+  --bevel-cut: calc(var(--tile-size) * 0.045);
+  --toss: 0.38s;
+  --toss-height: 0.76;
+  --hop-height: 0.28;
+}
+
+.tile.flipping {
+  position: relative;
+  rotate: none;
+  transform-style: preserve-3d;
+  background-color: transparent;
+  box-shadow: none;
+  color: transparent;
+  scale: calc(1 - var(--half-thickness) / var(--tile-perspective));
+  --turn: var(--toss);
+  animation-name: flip-settle;
+  animation-duration: var(--turn);
+  /* Linear because nothing torques the tile once it is out of the hand. */
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  animation-delay: var(--flip-delay, 0s);
+}
+
+/* Lands with a hop, for a tile that turns far enough to skid. */
+.tile.flipping.bounces {
+  /* 0.64 is where flip-bounce puts the landing; keep the two in step. */
+  --turn: calc(var(--toss) / 0.64);
+  animation-name: flip-bounce;
+}
+
+.tile.flipping::before,
+.tile.flipping::after {
+  content: attr(data-letter);
+  /* Empty alt text, or both faces read the letter out again. Declared twice so
+     a browser without the alt syntax still gets a letter. */
+  content: attr(data-letter) / "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--tile-radius);
+  box-shadow: var(--tile-bevel);
+  backface-visibility: hidden;
+  color: black;
+}
+
+.tile.flipping::before {
+  background-color: var(--flip-from, var(--tile-base-color));
+  transform: translateZ(var(--half-thickness));
+}
+
+.tile.flipping::after {
+  background-color: var(--tile-face);
+  transform: translateZ(calc(var(--half-thickness) * -1))
+    rotate3d(var(--flip-axis), 180deg);
+}
+
+.slice {
+  position: absolute;
+  inset: calc((1 - var(--out)) * var(--bevel-cut));
+  border-radius: calc(var(--tile-radius) - (1 - var(--out)) * var(--bevel-cut));
+  transform: translateZ(calc(var(--z) * var(--half-thickness)));
+  background-color: color-mix(
+    in srgb,
+    var(--flip-from, var(--tile-base-color)) var(--mix),
+    var(--tile-face)
+  );
+  box-shadow: var(--tile-bevel);
+  /* Looks like dead code. It is not: a tile keeps .flipping after it lands,
+     and Chrome leaves paint around slices left live in the compositor. */
+  animation-name: tile-body;
+  animation-duration: var(--turn);
+  animation-timing-function: step-end;
+  animation-fill-mode: both;
+  animation-delay: var(--flip-delay, 0s);
+}
+
+@keyframes flip-settle {
+  from {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt)) rotate3d(var(--flip-axis), 0deg);
+    z-index: 0;
+  }
+  25% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.75 + var(--tilt-after-flip) * 0.25))
+      rotate3d(var(--flip-axis), 45deg);
+    z-index: 10;
+  }
+  50% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height)))
+      rotateZ(calc(var(--tilt) * 0.5 + var(--tilt-after-flip) * 0.5))
+      rotate3d(var(--flip-axis), 90deg);
+  }
+  75% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.25 + var(--tilt-after-flip) * 0.75))
+      rotate3d(var(--flip-axis), 135deg);
+    z-index: 10;
+  }
+  to {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt-after-flip)) rotate3d(var(--flip-axis), 180deg);
+    z-index: 0;
+  }
+}
+
+@keyframes flip-bounce {
+  from {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt)) rotate3d(var(--flip-axis), 0deg);
+    z-index: 0;
+  }
+  16% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(var(--tilt)) rotate3d(var(--flip-axis), 45deg);
+    z-index: 10;
+  }
+  32% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height)))
+      rotateZ(var(--tilt)) rotate3d(var(--flip-axis), 90deg);
+  }
+  48% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(var(--tilt)) rotate3d(var(--flip-axis), 135deg);
+  }
+  64% {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt)) rotate3d(var(--flip-axis), 180deg);
+  }
+  73% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--hop-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.45 + var(--tilt-after-flip) * 0.55))
+      rotate3d(var(--flip-axis), 180deg);
+  }
+  82% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--hop-height)))
+      rotateZ(calc(var(--tilt) * 0.18 + var(--tilt-after-flip) * 0.82))
+      rotate3d(var(--flip-axis), 180deg);
+  }
+  91% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--hop-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.05 + var(--tilt-after-flip) * 0.95))
+      rotate3d(var(--flip-axis), 180deg);
+    z-index: 10;
+  }
+  to {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt-after-flip)) rotate3d(var(--flip-axis), 180deg);
+    z-index: 0;
+  }
+}
+
+@keyframes tile-body {
+  from {
+    visibility: hidden;
+  }
+  4%,
+  96% {
+    visibility: visible;
+  }
+  97%,
+  to {
+    visibility: hidden;
+  }
+}
