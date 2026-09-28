@@ -9,12 +9,9 @@ import {
   NUM_GUESSES,
   NUM_LETTERS,
   NUM_WORDS,
-  requestDay,
   SOLVED_EMOJI,
 } from "./utils";
-
-client const vibrate = (pattern: number | number[]) =>
-  navigator.vibrate?.(pattern);
+import { requestDay, vibrate } from "../utils";
 
 <lazy-word-list/validWords/>
 
@@ -138,8 +135,12 @@ client const vibrate = (pattern: number | number[]) =>
   month: "numeric",
   day: "numeric",
   year: "2-digit",
+  timeZone: "UTC",
 })>
-<const/fullDate=day.toLocaleDateString("en-US", { dateStyle: "long" })>
+<const/fullDate=day.toLocaleDateString("en-US", {
+  dateStyle: "long",
+  timeZone: "UTC",
+})>
 <const/score=(
   boards
     .map(({ wonAt }) => wonAt ?? Infinity)

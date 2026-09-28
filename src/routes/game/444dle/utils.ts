@@ -1,3 +1,4 @@
+import { dailyPicker } from "../utils.ts";
 import common from "./words/common.ts";
 
 export const NUM_WORDS = 3;
@@ -13,22 +14,11 @@ export const EMOJIS = ["⚪", "🟠", "🟢"];
 export const COLORS = ["grey", "orange", "green"];
 export const SOLVED_EMOJI = "⚫";
 
-export function requestDay(request: Request) {
-  const timeZone = (request as { cf?: { timezone?: string } }).cf?.timezone;
-  return new Date(
-    `${new Date().toLocaleDateString("en-CA", { timeZone })}T00:00`,
-  );
-}
-
 export function dailySolutions(day: Date): string[] {
-  let seed = Math.floor(+day / 100000);
-  const draw = () => {
-    seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
-    return common[Math.floor((seed / 0x100000000) * common.length)];
-  };
+  const pick = dailyPicker(day);
   const solutions: string[] = [];
   while (solutions.length < NUM_WORDS) {
-    const word = draw();
+    const word = pick(common);
     if (!solutions.includes(word)) solutions.push(word);
   }
   return solutions;

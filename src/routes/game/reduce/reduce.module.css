@@ -1,6 +1,5 @@
 :root {
   view-transition-name: none;
-  touch-action: manipulation;
 }
 
 ::view-transition {
@@ -97,7 +96,7 @@ body {
   }
 
   .incorrectGuess {
-    animation: shake 0.5s;
+    animation: global(shake) 0.5s;
   }
 }
 
@@ -129,11 +128,7 @@ body {
 }
 
 .stat {
-  margin: 1.25rem 0 0;
-  font-family: monospace;
-  font-size: 3rem;
-  font-weight: bold;
-  text-align: center;
+  composes: stat from "../chrome.module.css";
 }
 
 .caption {
@@ -171,41 +166,5 @@ body {
   from {
     scale: 0.5;
     opacity: 0;
-  }
-}
-
-@keyframes shake {
-  0% {
-    translate: 0 0;
-  }
-  10% {
-    translate: -2px 0;
-  }
-  20% {
-    translate: 2px 0;
-  }
-  30% {
-    translate: -3px 0;
-  }
-  40% {
-    translate: 3px 0;
-  }
-  50% {
-    translate: -2px 0;
-  }
-  60% {
-    translate: 2px 0;
-  }
-  70% {
-    translate: -1px 0;
-  }
-  80% {
-    translate: 1px 0;
-  }
-  90% {
-    translate: 0.5px 0;
-  }
-  100% {
-    translate: 0 0;
   }
 }

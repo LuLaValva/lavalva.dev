@@ -1,5 +1,4 @@
 :root {
-  touch-action: manipulation;
   font-size: clamp(1rem, 2.6vw, 1.5rem);
 
   --tile-size: min(6.8vw, 2.4rem);
@@ -62,7 +61,7 @@ body {
 }
 
 .row.invalid {
-  animation: shake 0.5s;
+  animation: global(shake) 0.5s;
 }
 
 .cell {
@@ -229,11 +228,7 @@ strong.eval2 {
 }
 
 .stat {
-  margin: 1.5rem 0 0;
-  font-family: monospace;
-  font-size: 3rem;
-  font-weight: bold;
-  text-align: center;
+  composes: stat from "../chrome.module.css";
 }
 
 .answers {
@@ -347,19 +342,5 @@ strong.eval2 {
   97%,
   to {
     visibility: hidden;
-  }
-}
-
-@keyframes shake {
-  10%,
-  50% {
-    translate: -3px 0;
-  }
-  30%,
-  70% {
-    translate: 3px 0;
-  }
-  90% {
-    translate: -1px 0;
   }
 }

@@ -1,11 +1,10 @@
 import styles from "./reduce.module.css";
-import { binarySearch, dailyLetters, requestDay } from "./utils";
+import { binarySearch, dailyLetters } from "./utils";
+import { requestDay, vibrate } from "../utils";
 static interface Letter {
   char: string;
   id: number;
 }
-client const vibrate = (pattern: number | number[]) =>
-  navigator.vibrate?.(pattern);
 
 <lazy-english-dictionary/words/>
 
@@ -14,8 +13,12 @@ client const vibrate = (pattern: number | number[]) =>
   month: "numeric",
   day: "numeric",
   year: "2-digit",
+  timeZone: "UTC",
 })>
-<const/fullDate=day.toLocaleDateString("en-US", { dateStyle: "long" })>
+<const/fullDate=day.toLocaleDateString("en-US", {
+  dateStyle: "long",
+  timeZone: "UTC",
+})>
 
 <let/looseLetters=dailyLetters(day, 20).map((char, id) => ({
   char,
