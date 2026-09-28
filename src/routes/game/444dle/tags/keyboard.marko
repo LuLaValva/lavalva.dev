@@ -3,7 +3,6 @@ import styles from "../444dle.module.css";
 
 export interface Input {
   keyColors: Record<string, Eval[]>;
-  onKey: (key: string) => void;
 }
 
 static const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
@@ -11,10 +10,14 @@ static const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 static function stripes(colors: Eval[]) {
   const width = 100 / NUM_WORDS;
   const stops = colors.map(
-    (score, i) => `var(--eval-${score}) ${width * i}% ${width * (i + 1)}%`,
+    (score, i) => `var(--score-${score}) ${width * i}% ${width * (i + 1)}%`,
   );
   return `background-image:linear-gradient(to right, ${stops.join(",")})`;
 }
+
+<const/press(key: string) {
+  document.dispatchEvent(new KeyboardEvent("keydown", { key }));
+}>
 
 <div class=styles.keyboard>
   <for|letters, row| of=ROWS>
@@ -24,7 +27,7 @@ static function stripes(colors: Eval[]) {
           class=[styles.key, styles.wideKey]
           aria-label="enter"
           onClick() {
-            input.onKey("Enter");
+            press("Enter");
           }
         >
           ⏎
@@ -40,7 +43,7 @@ static function stripes(colors: Eval[]) {
             `${letter}, ${colors.map((score) => COLORS[score]).join(" ")}`
           )
           onClick() {
-            input.onKey(letter);
+            press(letter);
           }
         >
           ${letter}
@@ -51,7 +54,7 @@ static function stripes(colors: Eval[]) {
           class=[styles.key, styles.wideKey]
           aria-label="delete"
           onClick() {
-            input.onKey("Backspace");
+            press("Backspace");
           }
         >
           ⌫

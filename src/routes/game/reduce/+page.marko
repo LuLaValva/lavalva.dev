@@ -5,20 +5,33 @@ static interface Letter {
   char: string;
   id: number;
 }
+static const EmojiNumbers = [
+  "0️⃣",
+  "1️⃣",
+  "2️⃣",
+  "3️⃣",
+  "4️⃣",
+  "5️⃣",
+  "6️⃣",
+  "7️⃣",
+  "8️⃣",
+  "9️⃣",
+  "🔟",
+  "🕚",
+  "🕛",
+  "🕐",
+  "🕑",
+  "🕒",
+  "🕓",
+  "🕔",
+  "🕕",
+  "🕖",
+  "🕗",
+];
 
 <lazy-english-dictionary/words/>
 
 <const/day=requestDay($global.request)>
-<const/today=day.toLocaleDateString("en-US", {
-  month: "numeric",
-  day: "numeric",
-  year: "2-digit",
-  timeZone: "UTC",
-})>
-<const/fullDate=day.toLocaleDateString("en-US", {
-  dateStyle: "long",
-  timeZone: "UTC",
-})>
 
 <let/looseLetters=dailyLetters(day, 20).map((char, id) => ({
   char,
@@ -82,7 +95,7 @@ static interface Letter {
 
 <header class=styles.header>
   <button
-    class=styles.btn
+    class=styles.iconButton
     title="help"
     onClick() {
       helpOpen = true;
@@ -92,7 +105,7 @@ static interface Letter {
   </button>
   <strong>${points}<span class=styles.srOnly>${" "}points</span></strong>
   <button
-    class=styles.btn
+    class=styles.iconButton
     title="shuffle loose letters"
     onClick() {
       document.startViewTransition(() => {
@@ -130,7 +143,7 @@ static interface Letter {
     <else><span/></else>
   </for>
   <button
-    class=[styles.btn, styles.openSubmit]
+    class=[styles.iconButton, styles.openSubmit]
     hidden=looseLetters.some(Boolean)
     title="share score"
     onClick() {
@@ -164,7 +177,7 @@ static interface Letter {
     </button>
     <span class=styles.actions>
       <button
-        class=styles.btn
+        class=styles.iconButton
         aria-label="delete last letter"
         onClick() {
           revertLetters(
@@ -176,7 +189,7 @@ static interface Letter {
         ⌫
       </button>
       <button
-        class=styles.btn
+        class=styles.iconButton
         aria-label="submit"
         disabled=!words
         onClick() {
@@ -219,30 +232,22 @@ static interface Letter {
 <const/score=submittedWords.length + loose.length>
 
 <game-dialog open:=resultsOpen>
-  <@heading>${fullDate}</@heading>
+  <@heading>
+    ${day.toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" })}
+  </@heading>
   <p class=styles.stat>${score}</p>
   <p class=styles.caption>${score === 1 ? "point" : "points"}</p>
 
-  <div class=styles.receipt>
-    <for|word| of=submittedWords>
-      <div class=styles.receiptWord>
-        <for|letter| of=word><span class=styles.tile>${letter.char}</span></for>
-      </div>
-    </for>
-    <for|letter| of=loose>
-      <div class=[styles.receiptWord, styles.loose]>
-        <span class=styles.tile>${letter.char}</span>
-      </div>
-    </for>
-  </div>
-
   <share-button text=(
-    `Reduce ${today}: ${score} ${score === 1 ? "point" : "points"}
+    `Reduce ${day.toLocaleDateString("en-US", {
+      month: "numeric",
+      day: "numeric",
+      year: "2-digit",
+      timeZone: "UTC",
+    })}: ${score} ${score === 1 ? "point" : "points"}
 
-${[
-  ...submittedWords.map((word) => "🟫".repeat(word.length)),
-  ...loose.map(() => "⬜"),
-].join("\n")}`
+${submittedWords.map((word) => EmojiNumbers[word.length]).join("")}
+${"1️⃣".repeat(loose.length)}`
   )/>
 </game-dialog>
 

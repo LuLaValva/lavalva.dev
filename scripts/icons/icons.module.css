@@ -1,28 +1,21 @@
-/* On body, not the canvas: the canvas gets scaled to fit, and a background
-   that scaled with it would leave a maskable icon transparent at the corners. */
 :global(body) {
   margin: 0;
-  background-color: var(--background, transparent);
 }
 
 .canvas {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--gap);
+  position: relative;
   width: 100vw;
   height: 100vh;
 }
 
-.row {
-  display: flex;
-  gap: var(--gap);
-}
-
 .tile {
   composes: tile faceUp from "../../src/routes/game/tile.module.css";
-  rotate: var(--lie);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: calc(var(--tile-size) * var(--x) - 50%)
+    calc(var(--tile-size) * var(--y) - 50%);
+  rotate: var(--tilt);
   font-size: calc(var(--tile-size) * 0.85);
   filter: drop-shadow(
     0 calc(var(--tile-size) * 0.025) calc(var(--tile-size) * 0.055)

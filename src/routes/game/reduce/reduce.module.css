@@ -11,8 +11,8 @@ body {
   margin: auto;
 }
 
-.btn {
-  composes: btn from "../chrome.module.css";
+.iconButton {
+  composes: iconButton from "../chrome.module.css";
 }
 
 .srOnly {
@@ -85,7 +85,7 @@ body {
     scrollbar-width: none;
 
     > * {
-      animation: grow 0.1s;
+      animation: global(pop) 0.15s;
     }
 
     &:focus-visible {
@@ -138,28 +138,6 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   opacity: 0.6;
-}
-
-.receipt {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  margin: 0 0 1.25rem;
-}
-
-.receiptWord {
-  display: flex;
-  gap: 0.1rem;
-
-  .tile {
-    --tile-size: 1.4rem;
-  }
-}
-
-.loose .tile {
-  --tile-face: light-dark(rgb(228, 216, 204), rgb(62, 49, 38));
-  color: light-dark(black, white);
 }
 
 @keyframes grow {

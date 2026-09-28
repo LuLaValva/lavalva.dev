@@ -38,7 +38,7 @@ export interface Input {
   return (n - Math.floor(n) - 0.5) * 4;
 }>
 
-static const SKID_WORTH_A_HOP = 1.5;
+static const SKID_WORTH_A_HOP = 2;
 
 <const/bounces(row: number, column: number) {
   return (
@@ -64,13 +64,13 @@ static const SKID_WORTH_A_HOP = 1.5;
             evaluation
               ? [
                   styles.scored,
-                  styles[`eval${evaluation[i]}`],
+                  styles[evaluation[i]],
                   flipping && styles.flipping,
                   flipping && bounces(row, i) && styles.bounces,
                 ]
               : word[i] && styles.filled,
           ]
-          style=`--i:${i}; --lie:${tilt(row, i, 0)}deg; --lie-settled:${tilt(row, i, 1)}deg`
+          style=`--i:${i}; --tilt:${tilt(row, i, 0)}deg; --tilt-after-flip:${tilt(row, i, 1)}deg`
           data-letter=word[i]
         >
           <if=flipping>
@@ -83,7 +83,7 @@ static const SKID_WORTH_A_HOP = 1.5;
           </if>
           ${word[i]}
           <if=evaluation>
-            <span class=styles.srOnly>${`, ${COLORS[evaluation[i]]}`}</span>
+            <span class=styles.srOnly>, ${COLORS[evaluation[i]]}</span>
           </if>
         </div>
       </for>

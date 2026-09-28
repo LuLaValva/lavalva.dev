@@ -9,9 +9,9 @@
   --toss: 0.38s;
   --toss-height: 0.76;
   --hop-height: 0.28;
-  --eval-0: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
-  --eval-1: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
-  --eval-2: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
+  --score-miss: light-dark(rgb(186, 174, 160), rgb(128, 114, 100));
+  --score-cow: light-dark(rgb(230, 170, 70), rgb(212, 150, 55));
+  --score-bull: light-dark(rgb(104, 190, 120), rgb(83, 173, 105));
   --rule: light-dark(rgb(228, 216, 204), rgb(62, 49, 38));
 }
 
@@ -66,27 +66,27 @@ body {
 
 .cell {
   composes: tile from "../tile.module.css";
-  rotate: var(--lie);
+  rotate: var(--tilt);
 }
 
 .filled {
   composes: faceUp from "../tile.module.css";
-  animation: pop 0.15s;
+  animation: global(pop) 0.15s;
 }
 
 .scored {
   composes: faceUp from "../tile.module.css";
-  rotate: var(--lie-settled);
+  rotate: var(--tilt-after-flip);
 }
 
-.cell.eval0 {
-  --tile-face: var(--eval-0);
+.cell.miss {
+  --tile-face: var(--score-miss);
 }
-.cell.eval1 {
-  --tile-face: var(--eval-1);
+.cell.cow {
+  --tile-face: var(--score-cow);
 }
-.cell.eval2 {
-  --tile-face: var(--eval-2);
+.cell.bull {
+  --tile-face: var(--score-bull);
 }
 
 .cell.flipping {
@@ -127,7 +127,7 @@ body {
 }
 
 .cell.flipping::before {
-  background-color: var(--tile-wood);
+  background-color: var(--tile-base-color);
   transform: translateZ(var(--half-thickness));
 }
 
@@ -143,7 +143,7 @@ body {
   transform: translateZ(calc(var(--z) * var(--half-thickness)));
   background-color: color-mix(
     in srgb,
-    var(--tile-wood) var(--mix),
+    var(--tile-base-color) var(--mix),
     var(--tile-face)
   );
   box-shadow: var(--tile-bevel);
@@ -156,11 +156,11 @@ body {
   animation-delay: calc(var(--i) * 0.3s);
 }
 
-strong.eval1 {
-  color: var(--eval-1);
+strong.cow {
+  color: var(--score-cow);
 }
-strong.eval2 {
-  color: var(--eval-2);
+strong.bull {
+  color: var(--score-bull);
 }
 
 .keyboard {
@@ -219,8 +219,8 @@ strong.eval2 {
   font-weight: normal;
 }
 
-.btn {
-  composes: btn from "../chrome.module.css";
+.iconButton {
+  composes: iconButton from "../chrome.module.css";
 }
 
 .srOnly {
@@ -241,40 +241,35 @@ strong.eval2 {
   letter-spacing: 0.1em;
 }
 
-@keyframes pop {
-  30% {
-    scale: 1.1;
-  }
-}
-
 @keyframes flip-settle {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
-      rotateZ(var(--lie)) rotateX(0deg);
+      rotateZ(var(--tilt)) rotateX(0deg);
     z-index: 0;
   }
   25% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
-      rotateZ(calc(var(--lie) * 0.75 + var(--lie-settled) * 0.25))
+      rotateZ(calc(var(--tilt) * 0.75 + var(--tilt-after-flip) * 0.25))
       rotateX(45deg);
     z-index: 10;
   }
   50% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--tile-size) * var(--toss-height)))
-      rotateZ(calc(var(--lie) * 0.5 + var(--lie-settled) * 0.5)) rotateX(90deg);
+      rotateZ(calc(var(--tilt) * 0.5 + var(--tilt-after-flip) * 0.5))
+      rotateX(90deg);
   }
   75% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
-      rotateZ(calc(var(--lie) * 0.25 + var(--lie-settled) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.25 + var(--tilt-after-flip) * 0.75))
       rotateX(135deg);
     z-index: 10;
   }
   to {
     transform: perspective(var(--tile-perspective)) translateZ(0)
-      rotateZ(var(--lie-settled)) rotateX(180deg);
+      rotateZ(var(--tilt-after-flip)) rotateX(180deg);
     z-index: 0;
   }
 }
@@ -282,51 +277,51 @@ strong.eval2 {
 @keyframes flip-bounce {
   from {
     transform: perspective(var(--tile-perspective)) translateZ(0)
-      rotateZ(var(--lie)) rotateX(0deg);
+      rotateZ(var(--tilt)) rotateX(0deg);
     z-index: 0;
   }
   16% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
-      rotateZ(var(--lie)) rotateX(45deg);
+      rotateZ(var(--tilt)) rotateX(45deg);
     z-index: 10;
   }
   32% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--tile-size) * var(--toss-height)))
-      rotateZ(var(--lie)) rotateX(90deg);
+      rotateZ(var(--tilt)) rotateX(90deg);
   }
   48% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
-      rotateZ(var(--lie)) rotateX(135deg);
+      rotateZ(var(--tilt)) rotateX(135deg);
   }
   64% {
     transform: perspective(var(--tile-perspective)) translateZ(0)
-      rotateZ(var(--lie)) rotateX(180deg);
+      rotateZ(var(--tilt)) rotateX(180deg);
   }
   73% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--tile-size) * var(--hop-height) * 0.75))
-      rotateZ(calc(var(--lie) * 0.45 + var(--lie-settled) * 0.55))
+      rotateZ(calc(var(--tilt) * 0.45 + var(--tilt-after-flip) * 0.55))
       rotateX(180deg);
   }
   82% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--tile-size) * var(--hop-height)))
-      rotateZ(calc(var(--lie) * 0.18 + var(--lie-settled) * 0.82))
+      rotateZ(calc(var(--tilt) * 0.18 + var(--tilt-after-flip) * 0.82))
       rotateX(180deg);
   }
   91% {
     transform: perspective(var(--tile-perspective))
       translateZ(calc(var(--tile-size) * var(--hop-height) * 0.75))
-      rotateZ(calc(var(--lie) * 0.05 + var(--lie-settled) * 0.95))
+      rotateZ(calc(var(--tilt) * 0.05 + var(--tilt-after-flip) * 0.95))
       rotateX(180deg);
     z-index: 10;
   }
   to {
     transform: perspective(var(--tile-perspective)) translateZ(0)
-      rotateZ(var(--lie-settled)) rotateX(180deg);
+      rotateZ(var(--tilt-after-flip)) rotateX(180deg);
     z-index: 0;
   }
 }

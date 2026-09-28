@@ -2,34 +2,30 @@ import styles from "./icons.module.css";
 
 interface Tile {
   char: string;
-  lie: number;
-  /** Nudge off the grid, as a fraction of one tile. */
-  dx?: number;
-  dy?: number;
+  /** Degrees clockwise. */
+  tilt: number;
+  /** Offset from the centre of the canvas, as a fraction of one tile. */
+  x: number;
+  y: number;
 }
 
 interface Art {
   /** Tile edge, as a fraction of the canvas. */
   tile: number;
-  /** Space between tiles, as a fraction of one tile. */
-  gap?: number;
-  rows: Tile[][];
+  tiles: Tile[];
 }
 
 const ART: Record<string, Art> = {
   reduce: {
     tile: 0.72,
-    rows: [[{ char: "r", lie: -5 }]],
+    tiles: [{ char: "r", tilt: -5, x: 0, y: 0 }],
   },
   "444dle": {
     tile: 0.37,
-    gap: 0.2,
-    rows: [
-      [
-        { char: "4", lie: -6, dx: -0.02 },
-        { char: "4", lie: 0, dx: 0.06, dy: 0.14 },
-      ],
-      [{ char: "4", lie: 4, dx: -0.15, dy: 0.02 }],
+    tiles: [
+      { char: "4", tilt: -6, x: -0.62, y: -0.6 },
+      { char: "4", tilt: 0, x: 0.66, y: -0.46 },
+      { char: "4", tilt: 4, x: -0.15, y: 0.62 },
     ],
   },
 };
@@ -39,37 +35,21 @@ const name = parameters.get("art")!;
 const art = ART[name];
 if (!art) throw new Error(`No icon art named ${JSON.stringify(name)}`);
 
-function draw({ char, lie, dx = 0, dy = 0 }: Tile) {
+const tiles = art.tiles.map(({ char, tilt, x, y }) => {
   const tile = document.createElement("div");
   tile.className = styles.tile;
-  tile.style.setProperty("--lie", `${lie}deg`);
-  tile.style.translate = `${dx * 100}% ${dy * 100}%`;
+  tile.style.setProperty("--tilt", `${tilt}deg`);
+  tile.style.setProperty("--x", `${x}`);
+  tile.style.setProperty("--y", `${y}`);
   tile.textContent = char;
   return tile;
-}
-
-const rows = art.rows.map((row) => row.map(draw));
+});
 
 const canvas = document.createElement("div");
 canvas.className = styles.canvas;
 canvas.style.setProperty("--tile-size", `${art.tile * 100}vmin`);
-canvas.style.setProperty("--gap", `calc(var(--tile-size) * ${art.gap ?? 0})`);
-canvas.append(
-  ...rows.map((row) => {
-    const line = document.createElement("div");
-    line.className = styles.row;
-    line.append(...row);
-    return line;
-  }),
-);
-
-document.body.style.setProperty(
-  "--background",
-  parameters.get("background") ?? "transparent",
-);
+canvas.append(...tiles);
 document.body.append(canvas);
-
-const tiles = rows.flat();
 
 const safeZone = Number(parameters.get("safe"));
 

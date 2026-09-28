@@ -5,14 +5,25 @@ export const NUM_WORDS = 3;
 export const NUM_LETTERS = 4;
 export const NUM_GUESSES = 9;
 
-export type Eval = 0 | 1 | 2;
-export const MISS = 0;
-export const COW = 1;
-export const BULL = 2;
+const EVALS = ["miss", "cow", "bull"] as const;
+export type Eval = (typeof EVALS)[number];
 
-export const EMOJIS = ["⚪", "🟠", "🟢"];
-export const COLORS = ["grey", "orange", "green"];
+export const EMOJIS: Record<Eval, string> = {
+  miss: "⚪",
+  cow: "🟠",
+  bull: "🟢",
+};
+
+export const COLORS: Record<Eval, string> = {
+  miss: "grey",
+  cow: "orange",
+  bull: "green",
+};
+
 export const SOLVED_EMOJI = "⚫";
+
+export const bestEval = (scores: Eval[]) =>
+  EVALS[Math.max(0, ...scores.map((score) => EVALS.indexOf(score)))];
 
 export function dailySolutions(day: Date): string[] {
   const pick = dailyPicker(day);
@@ -26,15 +37,15 @@ export function dailySolutions(day: Date): string[] {
 
 export function evaluate(guess: string, solution: string): Eval[] {
   const result = [...guess].map((letter, i): Eval =>
-    letter === solution[i] ? BULL : MISS,
+    letter === solution[i] ? "bull" : "miss",
   );
-  const unspent = [...solution].filter((_, i) => result[i] !== BULL);
+  const unspent = [...solution].filter((_, i) => result[i] !== "bull");
   for (let i = 0; i < result.length; i++) {
-    if (result[i] === BULL) continue;
+    if (result[i] === "bull") continue;
     const found = unspent.indexOf(guess[i]);
     if (found === -1) continue;
     unspent.splice(found, 1);
-    result[i] = COW;
+    result[i] = "cow";
   }
   return result;
 }

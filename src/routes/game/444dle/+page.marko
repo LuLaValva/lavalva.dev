@@ -1,11 +1,9 @@
 import styles from "./444dle.module.css";
 import {
-  BULL,
+  bestEval,
   dailySolutions,
   EMOJIS,
-  type Eval,
   evaluate,
-  MISS,
   NUM_GUESSES,
   NUM_LETTERS,
   NUM_WORDS,
@@ -27,7 +25,7 @@ import { requestDay, vibrate } from "../utils";
     scores: evaluate(guess, solution),
   }));
   const wonAt = rows.findIndex(({ scores }) =>
-    scores.every((score) => score === BULL),
+    scores.every((score) => score === "bull"),
   );
   return {
     solution,
@@ -46,7 +44,7 @@ import { requestDay, vibrate } from "../utils";
   <h1>444dle</h1>
   <span class=styles.headerActions>
     <button
-      class=styles.btn
+      class=styles.iconButton
       title="help"
       onClick() {
         helpOpen = true;
@@ -56,7 +54,7 @@ import { requestDay, vibrate } from "../utils";
     </button>
     <if=finished>
       <button
-        class=styles.btn
+        class=styles.iconButton
         title="show results"
         onClick() {
           resultsOpen = true;
@@ -72,9 +70,9 @@ import { requestDay, vibrate } from "../utils";
   <@heading>Three words, one keyboard</@heading>
   <p>Every guess is played against all three words at once.</p>
   <p>
-    <strong class=styles.eval2>Green</strong> is the right letter in the right
-    spot, <strong class=styles.eval1>orange</strong> is the right letter
-    somewhere else, grey is not in the word at all.
+    <strong class=styles.bull>Green</strong> is the right letter in the right
+    spot, <strong class=styles.cow>orange</strong> is the right letter somewhere
+    else, grey is not in the word at all.
   </p>
   <p>A key is striped with its colour for each word, in order.</p>
   <p>You get ${NUM_GUESSES} guesses for all ${NUM_WORDS} words.</p>
@@ -103,44 +101,21 @@ import { requestDay, vibrate } from "../utils";
   vibrate(50);
 }>
 
-<const/type(key: string) {
-  if (finished) return;
-  if (key === "Enter") {
-    submit();
-  } else if (key === "Backspace" || key === "Delete") {
-    pending = pending.slice(0, -1);
-  } else if (/^[a-zA-Z]$/.test(key) && pending.length < NUM_LETTERS) {
-    pending += key.toLowerCase();
-  }
-}>
-
 <const/keyColors=Object.fromEntries(
   [...new Set(guesses.join(""))].map((letter) => [
     letter,
-    boards.map(
-      ({ played }) =>
-        Math.max(
-          MISS,
-          ...played.flatMap(({ guess, scores }) =>
-            scores.filter((_, i) => guess[i] === letter),
-          ),
-        ) as Eval,
+    boards.map(({ played }) =>
+      bestEval(
+        played.flatMap(({ guess, scores }) =>
+          scores.filter((_, i) => guess[i] === letter),
+        ),
+      ),
     ),
   ]),
 )>
 
-<keyboard keyColors=keyColors onKey=type/>
+<keyboard keyColors=keyColors/>
 
-<const/today=day.toLocaleDateString("en-US", {
-  month: "numeric",
-  day: "numeric",
-  year: "2-digit",
-  timeZone: "UTC",
-})>
-<const/fullDate=day.toLocaleDateString("en-US", {
-  dateStyle: "long",
-  timeZone: "UTC",
-})>
 <const/score=(
   boards
     .map(({ wonAt }) => wonAt ?? Infinity)
@@ -150,7 +125,9 @@ import { requestDay, vibrate } from "../utils";
 )>
 
 <game-dialog open:=resultsOpen>
-  <@heading>${fullDate}</@heading>
+  <@heading>
+    ${day.toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" })}
+  </@heading>
   <p class=styles.stat>${[...score].join(" ")}</p>
   <p class=styles.answers>
     <span class=styles.srOnly>Answers:</span>
@@ -173,13 +150,17 @@ import { requestDay, vibrate } from "../utils";
           .join("  "),
     ).join("\n");
   }>
-  // The indent was set by eye against how imessage lays emoji out.
   <share-button text=(
-    `444dle ${today}: ${score}
+    `444dle ${day.toLocaleDateString("en-US", {
+      month: "numeric",
+      day: "numeric",
+      year: "2-digit",
+      timeZone: "UTC",
+    })}: ${score}
 
 ${block([0, 1])}
 
-${block([2], "            ")}`
+${block([2], "           ")}`
   )/>
 </game-dialog>
 
@@ -199,11 +180,17 @@ ${block([2], "            ")}`
   document.addEventListener(
     "keydown",
     (e) => {
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (finished || e.altKey || e.ctrlKey || e.metaKey) return;
       if (!/^(Enter|Backspace|[a-zA-Z])$/.test(e.key)) return;
       if (document.querySelector("dialog[open]")) return;
       e.preventDefault();
-      type(e.key);
+      if (e.key === "Enter") {
+        submit();
+      } else if (e.key === "Backspace") {
+        pending = pending.slice(0, -1);
+      } else if (pending.length < NUM_LETTERS) {
+        pending += e.key.toLowerCase();
+      }
     },
     { signal: $signal },
   );

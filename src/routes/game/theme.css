@@ -21,3 +21,9 @@
     translate: -1px 0;
   }
 }
+
+@keyframes pop {
+  30% {
+    scale: 1.1;
+  }
+}
