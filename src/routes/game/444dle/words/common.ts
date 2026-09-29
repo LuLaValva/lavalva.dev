@@ -371,7 +371,6 @@ export default [
   "sell",
   "send",
   "ship",
-  "shit",
   "shoe",
   "shop",
   "shot",
