@@ -34,33 +34,65 @@ body {
   }
 }
 
-.tile {
-  composes: tile from "../../game/flip.module.css";
+.faceUp {
+  composes: tile faceUp from "../../game/tile.module.css";
   rotate: var(--tilt-after-flip);
 }
 
-.faceUp {
-  composes: faceUp from "../../game/tile.module.css";
+.flipping {
+  composes: tile from "../../game/tile.module.css";
+  --half-thickness: calc(var(--tile-size) * 0.095);
+  --tile-perspective: calc(var(--tile-size) * 4.6);
+  --bevel-cut: calc(var(--tile-size) * 0.045);
+  --toss: 0.26s;
+  --toss-height: 0.76;
+  position: relative;
+  transform-style: preserve-3d;
+  scale: calc(1 - var(--half-thickness) / var(--tile-perspective));
+  animation: flip var(--toss) linear both;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--tile-radius);
+    box-shadow: var(--tile-bevel);
+    backface-visibility: hidden;
+  }
+
+  &::before {
+    background-color: var(--from);
+    transform: translateZ(var(--half-thickness));
+  }
+
+  &::after {
+    background-color: var(--to);
+    transform: translateZ(calc(var(--half-thickness) * -1))
+      rotate3d(var(--flip-axis), 180deg);
+  }
 }
 
-.flipping {
-  composes: flipping from "../../game/flip.module.css";
+.toBack {
+  --from: var(--tile-base-color);
+  --to: var(--tile-back);
+}
+
+.toFront {
+  --from: var(--tile-back);
+  --to: var(--tile-base-color);
 }
 
 .slice {
-  composes: slice from "../../game/flip.module.css";
-}
-
-.tile.flipping {
-  --toss: 0.26s;
-}
-
-.tile.back {
-  --tile-face: var(--tile-back);
-}
-
-.tile.fromBack {
-  --flip-from: var(--tile-back);
+  position: absolute;
+  inset: calc((1 - var(--out)) * var(--bevel-cut));
+  border-radius: calc(var(--tile-radius) - (1 - var(--out)) * var(--bevel-cut));
+  transform: translateZ(calc(var(--z) * var(--half-thickness)));
+  background-color: color-mix(in srgb, var(--from) var(--mix), var(--to));
+  box-shadow: var(--tile-bevel);
+  /* Looks like dead code. It is not: a tile keeps .flipping after it lands,
+     and Chrome leaves paint around slices left live in the compositor. */
+  animation: tile-body var(--toss) step-end both;
 }
 
 .hashes {
@@ -114,5 +146,52 @@ body {
         }
       }
     }
+  }
+}
+
+@keyframes flip {
+  from {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt)) rotate3d(var(--flip-axis), 0deg);
+    z-index: 0;
+  }
+  25% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.75 + var(--tilt-after-flip) * 0.25))
+      rotate3d(var(--flip-axis), 45deg);
+    z-index: 10;
+  }
+  50% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height)))
+      rotateZ(calc(var(--tilt) * 0.5 + var(--tilt-after-flip) * 0.5))
+      rotate3d(var(--flip-axis), 90deg);
+  }
+  75% {
+    transform: perspective(var(--tile-perspective))
+      translateZ(calc(var(--tile-size) * var(--toss-height) * 0.75))
+      rotateZ(calc(var(--tilt) * 0.25 + var(--tilt-after-flip) * 0.75))
+      rotate3d(var(--flip-axis), 135deg);
+    z-index: 10;
+  }
+  to {
+    transform: perspective(var(--tile-perspective)) translateZ(0)
+      rotateZ(var(--tilt-after-flip)) rotate3d(var(--flip-axis), 180deg);
+    z-index: 0;
+  }
+}
+
+@keyframes tile-body {
+  from {
+    visibility: hidden;
+  }
+  4%,
+  96% {
+    visibility: visible;
+  }
+  97%,
+  to {
+    visibility: hidden;
   }
 }

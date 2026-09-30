@@ -1,5 +1,4 @@
 import { produce } from "immer"
-import { TILE_BODY } from "../../../game/flip"
 import styles from "../contact-styles.module.css"
 
 export interface Input {
@@ -20,6 +19,17 @@ static function tilt(i: number, j: number, flips: number) {
   const n = Math.sin(i * 78.233 + j * 37.719 + flips * 55.137) * 43758.5;
   return (n - Math.floor(n) - 0.5) * 2;
 }
+
+static const SLICES = 12;
+static const BODY = Array.from({ length: SLICES }, (_, i) => {
+  const angle = Math.PI * (i / (SLICES - 1) - 0.5);
+  const through = Math.sin(angle);
+  return {
+    z: through * 0.98,
+    out: Math.cos(angle).toFixed(4),
+    mix: `${Math.round((through + 1) * 50)}%`,
+  };
+});
 
 const/{ size }=input
 
@@ -88,15 +98,14 @@ div class=styles.grid style={ "--size": size }
         ,aria-label=`${i} ${j}`
         ,aria-pressed=flips % 2 ? "true" : "false"
         span
-          ,class=[
-            styles.tile,
+          ,class=(
             flips
-              ? [styles.flipping, flips % 2 ? styles.back : styles.fromBack]
-              : styles.faceUp,
-          ]
+              ? [styles.flipping, flips % 2 ? styles.toBack : styles.toFront]
+              : styles.faceUp
+          )
           ,style=`--tilt:${tilt(i, j, flips - 1)}deg; --tilt-after-flip:${tilt(i, j, flips)}deg; --flip-axis:${di && dj !== di ? `${di}, 0` : `0, ${-dj}`}, 0`
           if=flips
-            for|{ z, out, mix }| of=TILE_BODY
+            for|{ z, out, mix }| of=BODY
               span class=styles.slice style=`--z:${z}; --out:${out}; --mix:${mix}`
 
       <script>
