@@ -10,7 +10,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "preview": "marko-run preview",
     "start": "node --enable-source-maps ./dist/index.mjs",
-    "deploy": "marko-run build && wrangler deploy"
+    "deploy": "marko-run build && wrangler deploy",
+    "words": "node scripts/generate-444dle-words.mjs"
   },
   "dependencies": {
     "immer": "^11.1.18",
@@ -24,6 +25,7 @@
     "prettier": "^3.9.6",
     "prettier-plugin-marko": "^4.1.0",
     "prettier-plugin-packagejson": "^3.0.2",
+    "read-excel-file": "^9.3.10",
     "wrangler": "^4.129.0"
   }
 }
