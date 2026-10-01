@@ -10,7 +10,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "preview": "marko-run preview",
     "start": "node --enable-source-maps ./dist/index.mjs",
-    "deploy": "marko-run build && wrangler deploy"
+    "deploy": "marko-run build && wrangler deploy",
+    "words": "node scripts/generate-444dle-words.mjs"
   },
   "dependencies": {
     "immer": "^11.1.18",
