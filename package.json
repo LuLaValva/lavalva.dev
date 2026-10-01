@@ -25,6 +25,7 @@
     "prettier": "^3.9.6",
     "prettier-plugin-marko": "^4.1.0",
     "prettier-plugin-packagejson": "^3.0.2",
+    "read-excel-file": "^9.3.10",
     "wrangler": "^4.129.0"
   }
 }
