@@ -26,40 +26,19 @@ const ALSO_COMMON = [
   "oops",
   "ours",
 ];
-const NOT_COMMON = [
+const OFFENSIVE = [
   "anal",
-  "anus",
-  "boob",
-  "butt",
   "cock",
-  "coke",
-  "crap",
   "cunt",
-  "damn",
   "dick",
-  "dope",
   "dyke",
-  "fart",
   "fuck",
-  "john",
-  "kink",
-  "lube",
-  "lust",
-  "nude",
   "orgy",
-  "pimp",
   "piss",
-  "poop",
   "porn",
-  "puke",
-  "puss",
   "rape",
-  "sexy",
-  "shag",
   "shit",
   "slut",
-  "snot",
-  "suck",
 ];
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -86,7 +65,7 @@ const sorted = (words) => [...new Set(words)].sort();
 const guesses = [...dictionary].filter((word) => word.length === NUM_LETTERS);
 const common = sorted([
   ...guesses.filter(
-    (word) => known.has(word) && !isPlural(word) && !NOT_COMMON.includes(word),
+    (word) => known.has(word) && !isPlural(word) && !OFFENSIVE.includes(word),
   ),
   ...ALSO_COMMON,
 ]);
