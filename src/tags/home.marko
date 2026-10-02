@@ -6,7 +6,12 @@
     a {
       text-decoration: none;
       color: light-dark(rgb(203, 167, 138), rgb(109, 72, 42));
-      :is(&:hover, &:focus) > span {
+      @media (hover: hover) {
+        &:hover > span {
+          text-decoration: underline;
+        }
+      }
+      &:focus > span {
         text-decoration: underline;
       }
     }

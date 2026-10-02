@@ -202,8 +202,10 @@ strong.bull {
   font-size: 1rem;
   user-select: none;
 
-  &:hover {
-    background-color: light-dark(rgb(245, 238, 231), rgb(92, 76, 62));
+  @media (hover: hover) {
+    &:hover {
+      background-color: light-dark(rgb(245, 238, 231), rgb(92, 76, 62));
+    }
   }
 
   &:active {
@@ -214,8 +216,10 @@ strong.bull {
 .key.tinted {
   color: black;
 
-  &:hover {
-    filter: brightness(1.15);
+  @media (hover: hover) {
+    &:hover {
+      filter: brightness(1.15);
+    }
   }
 }
 

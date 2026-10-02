@@ -29,8 +29,10 @@ body {
     scale: 0.94;
   }
 
-  &:hover {
-    filter: brightness(1.1);
+  @media (hover: hover) {
+    &:hover {
+      filter: brightness(1.1);
+    }
   }
 }
 

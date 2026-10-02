@@ -47,8 +47,10 @@ body {
   > .tile {
     --tile-size: var(--big);
 
-    &:hover {
-      filter: brightness(1.2);
+    @media (hover: hover) {
+      &:hover {
+        filter: brightness(1.2);
+      }
     }
   }
 
@@ -88,9 +90,11 @@ body {
       animation: global(pop) 0.15s;
     }
 
-    &:hover {
-      > span {
-        filter: brightness(1.2);
+    @media (hover: hover) {
+      &:hover {
+        > span {
+          filter: brightness(1.2);
+        }
       }
     }
   }
@@ -121,9 +125,11 @@ body {
     display: flex;
     gap: 0.1rem;
 
-    &:hover {
-      > span {
-        filter: brightness(1.2);
+    @media (hover: hover) {
+      &:hover {
+        > span {
+          filter: brightness(1.2);
+        }
       }
     }
   }
