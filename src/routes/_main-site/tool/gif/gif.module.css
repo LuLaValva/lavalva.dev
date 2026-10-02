@@ -62,7 +62,12 @@ body {
     cursor: pointer;
   }
 
-  &:hover span,
+  @media (hover: hover) {
+    &:hover span {
+      background-color: light-dark(#0002, #fff3);
+    }
+  }
+
   &:focus-within span {
     background-color: light-dark(#0002, #fff3);
   }
@@ -259,8 +264,10 @@ body {
   background-color: light-dark(#0001, #fff2);
   cursor: pointer;
 
-  &:hover {
-    background-color: light-dark(#0002, #fff3);
+  @media (hover: hover) {
+    &:hover {
+      background-color: light-dark(#0002, #fff3);
+    }
   }
 }
 
@@ -291,8 +298,10 @@ body {
     border: 1px solid transparent;
   }
 
-  &:hover span {
-    background-color: light-dark(#0002, #fff2);
+  @media (hover: hover) {
+    &:hover span {
+      background-color: light-dark(#0002, #fff2);
+    }
   }
 
   input:checked + span {
