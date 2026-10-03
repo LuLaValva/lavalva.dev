@@ -17,19 +17,19 @@ declare module "@marko/run" {
 	interface App extends $.DefineRoutes<{
 		"/": [L1, P1];
 		"/about": [L1, P2];
-		"/app": [L1, P3];
-		"/app/kbd": [L1, P4];
-		"/app/kbd/privacy": [L1, P5];
-		"/blog": [L1, L2, P6];
-		"/blog/airline-food": [L1, L2, P7];
+		"/app": [L1, L2, P3];
+		"/app/kbd": [L1, L2, P4];
+		"/app/kbd/privacy": [L1, L2, P5];
+		"/blog": [L1, L3, P6];
+		"/blog/airline-food": [L1, L3, P7];
 		"/bucket-list": [L1, P8];
 		"/contact": [L1, P9];
 		"/fireplace": [L1, P10];
 		"/game": [L1, P11];
 		"/tool": [L1, P12];
 		"/tool/gif": [L1, P13];
-		"/game/444dle": [L3, P14];
-		"/game/reduce": [L4, P15];
+		"/game/444dle": [L4, P14];
+		"/game/reduce": [L5, P15];
 	}> {}
 }
 
@@ -69,12 +69,48 @@ declare module "../src/routes/_main-site/+layout.marko" {
   }
 }
 
-type L2 = $.Template<"L2", typeof import("../src/routes/_main-site/blog/+layout.marko")>;
-declare module "../src/routes/_main-site/blog/+layout.marko" {
+type L2 = $.Template<"L2", typeof import("../src/routes/_main-site/app/+layout.marko")>;
+declare module "../src/routes/_main-site/app/+layout.marko" {
   interface Input extends $.LayoutInput<L2> {}
   const Run: $.Namespace<L2>;
   namespace Run {
     type Context = $.ContextForFile<L2> & Marko.Global;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    /** @deprecated use the `Run` namespace instead */
+    export type Route = $.Routes["/app" | "/app/kbd" | "/app/kbd/privacy"];
+    /** @deprecated use `Run.Context` instead */
+    export type Context = Run.Context;
+    /** @deprecated define handlers with `Run.GET(...)`, `Run.POST(...)`, etc. instead */
+    export type Handler = $.HandlerLike<Route>;
+    /** @deprecated define handlers with `Run.GET(...)` instead */
+    export type GET = $.HandlerLike<Route, "GET">;
+    /** @deprecated define handlers with `Run.HEAD(...)` instead */
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    /** @deprecated define handlers with `Run.POST(...)` instead */
+    export type POST = $.HandlerLike<Route, "POST">;
+    /** @deprecated define handlers with `Run.PUT(...)` instead */
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    /** @deprecated define handlers with `Run.DELETE(...)` instead */
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    /** @deprecated define handlers with `Run.PATCH(...)` instead */
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    /** @deprecated define handlers with `Run.OPTIONS(...)` instead */
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+    /** @deprecated define handlers with `Run.QUERY(...)` instead */
+    export type QUERY = $.HandlerLike<Route, "QUERY">;
+  }
+}
+
+type L3 = $.Template<"L3", typeof import("../src/routes/_main-site/blog/+layout.marko")>;
+declare module "../src/routes/_main-site/blog/+layout.marko" {
+  interface Input extends $.LayoutInput<L3> {}
+  const Run: $.Namespace<L3>;
+  namespace Run {
+    type Context = $.ContextForFile<L3> & Marko.Global;
   }
 
   /** @deprecated use `Run` namespace instead */
@@ -105,12 +141,12 @@ declare module "../src/routes/_main-site/blog/+layout.marko" {
   }
 }
 
-type L3 = $.Template<"L3", typeof import("../src/routes/game/444dle/+layout.marko")>;
+type L4 = $.Template<"L4", typeof import("../src/routes/game/444dle/+layout.marko")>;
 declare module "../src/routes/game/444dle/+layout.marko" {
-  interface Input extends $.LayoutInput<L3> {}
-  const Run: $.Namespace<L3>;
+  interface Input extends $.LayoutInput<L4> {}
+  const Run: $.Namespace<L4>;
   namespace Run {
-    type Context = $.ContextForFile<L3> & Marko.Global;
+    type Context = $.ContextForFile<L4> & Marko.Global;
   }
 
   /** @deprecated use `Run` namespace instead */
@@ -141,12 +177,12 @@ declare module "../src/routes/game/444dle/+layout.marko" {
   }
 }
 
-type L4 = $.Template<"L4", typeof import("../src/routes/game/reduce/+layout.marko")>;
+type L5 = $.Template<"L5", typeof import("../src/routes/game/reduce/+layout.marko")>;
 declare module "../src/routes/game/reduce/+layout.marko" {
-  interface Input extends $.LayoutInput<L4> {}
-  const Run: $.Namespace<L4>;
+  interface Input extends $.LayoutInput<L5> {}
+  const Run: $.Namespace<L5>;
   namespace Run {
-    type Context = $.ContextForFile<L4> & Marko.Global;
+    type Context = $.ContextForFile<L5> & Marko.Global;
   }
 
   /** @deprecated use `Run` namespace instead */
