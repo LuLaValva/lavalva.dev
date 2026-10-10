@@ -18,7 +18,7 @@
 body {
   max-width: 34rem;
   margin: auto;
-  padding: env(safe-area-inset-top) 0.5rem
+  padding: var(--inset-top) 0.5rem
     calc(12rem + env(safe-area-inset-bottom));
 }
 

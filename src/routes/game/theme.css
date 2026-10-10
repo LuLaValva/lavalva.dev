@@ -2,6 +2,22 @@
 
 :root {
   touch-action: manipulation;
+
+  /* Space to keep content clear of the status bar. */
+  --inset-top: env(safe-area-inset-top, 0px);
+}
+
+/*
+ * iOS 26 draws a system "scroll edge" blur over the top of installed web
+ * apps, extending ~40pt past env(safe-area-inset-top). No CSS value exposes
+ * its height, so add clearance for it.
+ */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) and (orientation: portrait) {
+    :root {
+      --inset-top: calc(env(safe-area-inset-top, 0px) + 2.5rem);
+    }
+  }
 }
 
 @keyframes shake {

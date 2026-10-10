@@ -9,6 +9,7 @@
 body {
   max-width: 40rem;
   margin: auto;
+  padding-top: var(--inset-top);
 }
 
 .iconButton {
