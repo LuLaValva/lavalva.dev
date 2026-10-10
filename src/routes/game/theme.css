@@ -2,6 +2,17 @@
 
 :root {
   touch-action: manipulation;
+
+  --inset-top: env(safe-area-inset-top, 0px);
+}
+
+/* iOS 26 blurs ~40pt below the safe area in installed apps. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) and (orientation: portrait) {
+    :root {
+      --inset-top: calc(env(safe-area-inset-top, 0px) + 2.5rem);
+    }
+  }
 }
 
 @keyframes shake {
