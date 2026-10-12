@@ -10,7 +10,17 @@ const Submission = v.object({
       v.object({
         id: v.string(),
         mode: v.picklist(["accept", "live"]),
-        grip: v.picklist(["right-thumb", "left-thumb", "two-thumbs", "finger"]),
+        fingers: v.pipe(
+          v.array(
+            v.picklist([
+              "left-thumb",
+              "right-thumb",
+              "left-index",
+              "right-index",
+            ]),
+          ),
+          v.minLength(1),
+        ),
         setting: v.picklist(["sitting", "standing", "walking", "transit"]),
         app: v.string(),
         device: v.string(),
