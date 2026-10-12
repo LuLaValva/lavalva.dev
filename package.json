@@ -6,12 +6,11 @@
   "type": "module",
   "scripts": {
     "build": "marko-run build",
-    "deploy": "marko-run build && wrangler deploy",
     "dev": "marko-run",
     "icons": "node scripts/generate-icons.mjs",
-    "kbd-training": "node scripts/kbd-training/pull.mjs",
     "preview": "marko-run preview",
     "start": "node --enable-source-maps ./dist/index.mjs",
+    "deploy": "marko-run build && wrangler deploy",
     "words": "node scripts/generate-444dle-words.mjs"
   },
   "dependencies": {

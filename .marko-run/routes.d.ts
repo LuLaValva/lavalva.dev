@@ -28,10 +28,45 @@ declare module "@marko/run" {
 		"/game": [L1, P11];
 		"/tool": [L1, P12];
 		"/tool/gif": [L1, P13];
-		"/app/kbd/training/$token": [H1];
+		"/app/kbd/training/$token": [M1, H1];
 		"/game/444dle": [L4, P14];
 		"/game/reduce": [L5, P15];
 	}> {}
+}
+
+type M1 = $.Middleware<"M1", typeof import("../src/routes/app/kbd/training/$token/+middleware")>;
+declare module "../src/routes/app/kbd/training/$token/+middleware" {
+  const Run: $.Namespace<M1>;
+  namespace Run {
+    type Context = $.ContextForFile<M1>;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    /** @deprecated use the `Run` namespace instead */
+    export type Route = $.Routes["/app/kbd/training/$token"];
+    /** @deprecated use `Run.Context` instead */
+    export type Context = $.MultiRouteContext<Route>;
+    /** @deprecated define handlers with `Run.GET(...)`, `Run.POST(...)`, etc. instead */
+    export type Handler = $.HandlerLike<Route>;
+    /** @deprecated define handlers with `Run.GET(...)` instead */
+    export type GET = $.HandlerLike<Route, "GET">;
+    /** @deprecated define handlers with `Run.HEAD(...)` instead */
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    /** @deprecated define handlers with `Run.POST(...)` instead */
+    export type POST = $.HandlerLike<Route, "POST">;
+    /** @deprecated define handlers with `Run.PUT(...)` instead */
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    /** @deprecated define handlers with `Run.DELETE(...)` instead */
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    /** @deprecated define handlers with `Run.PATCH(...)` instead */
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    /** @deprecated define handlers with `Run.OPTIONS(...)` instead */
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+    /** @deprecated define handlers with `Run.QUERY(...)` instead */
+    export type QUERY = $.HandlerLike<Route, "QUERY">;
+  }
 }
 
 type H1 = $.Handler<"H1", typeof import("../src/routes/app/kbd/training/$token/+handler")>;
