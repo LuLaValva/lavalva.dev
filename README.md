@@ -12,3 +12,7 @@ twelve calls a minute (`KBD_TRAINING_LIMIT`).
 
 One-time setup: `npx wrangler r2 bucket create kbd-training`. To try the routes locally, `npm run build`
 then `npx wrangler dev --local` (R2 is simulated).
+
+`npm run kbd-training -- <folder>` mirrors the bucket into a folder through this machine's `wrangler login`,
+removing what has since been deleted from it (`--local`: what `wrangler dev --local` has taken). kbd's
+`swift run kbd donated <folder>` turns that into files for its evals.

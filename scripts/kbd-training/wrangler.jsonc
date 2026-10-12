@@ -1,0 +1,13 @@
+{
+  // Never deployed: it only gives `pull.mjs` the bucket the site's worker writes to.
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "kbd-training-pull",
+  "compatibility_date": "2026-09-01",
+  "r2_buckets": [
+    {
+      "binding": "KBD_TRAINING",
+      "bucket_name": "kbd-training",
+      "remote": true,
+    },
+  ],
+}
