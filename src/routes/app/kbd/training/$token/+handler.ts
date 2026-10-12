@@ -9,7 +9,6 @@ const Submission = v.object({
     v.array(
       v.object({
         id: v.string(),
-        mode: v.picklist(["accept", "live"]),
         fingers: v.pipe(
           v.array(
             v.picklist([
