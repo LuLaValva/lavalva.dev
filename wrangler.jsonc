@@ -13,4 +13,12 @@
       "bucket_name": "kbd-training",
     },
   ],
+  "ratelimits": [
+    {
+      // A whole evening's sets go up in ten calls: more than that in a minute is no one swiping.
+      "name": "KBD_TRAINING_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 12, "period": 60 },
+    },
+  ],
 }

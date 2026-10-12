@@ -4,7 +4,8 @@ import { MAX_BODY_BYTES, parseSubmission } from "../submission.ts";
  * Swipes donated from the kbd app's "help me train" screen, held in R2 until a public release.
  *
  * A token is 128 random bits the app makes and keeps: it names a person's donations without a name,
- * and holding it is the only way to delete them. Nothing here logs the caller.
+ * and holding it is the only way to delete them. Nothing here logs the caller: its address is counted
+ * against a limit where the call lands, and kept nowhere.
  */
 
 const TOKEN = /^[0-9a-f]{32}$/;
@@ -14,9 +15,24 @@ function reply(body: unknown, status: number) {
   return Response.json(body, { status, headers });
 }
 
+/** Whether the caller has called more in the last minute than anyone swiping would. */
+async function isFlooding(context: Run.Context) {
+  const key = context.request.headers.get("cf-connecting-ip") ?? "unknown";
+  return !(await context.platform.env.KBD_TRAINING_LIMIT.limit({ key }))
+    .success;
+}
+
+function slowDown() {
+  return Response.json(
+    { error: "slow down" },
+    { status: 429, headers: { ...headers, "retry-after": "60" } },
+  );
+}
+
 export const POST = Run.POST(async (context) => {
   const { token } = context.params;
   if (!TOKEN.test(token)) return reply({ error: "bad token" }, 400);
+  if (await isFlooding(context)) return slowDown();
   if (
     !context.request.headers.get("content-type")?.startsWith("application/json")
   ) {
@@ -47,6 +63,7 @@ export const POST = Run.POST(async (context) => {
 export const DELETE = Run.DELETE(async (context) => {
   const { token } = context.params;
   if (!TOKEN.test(token)) return reply({ error: "bad token" }, 400);
+  if (await isFlooding(context)) return slowDown();
   const bucket = context.platform.env.KBD_TRAINING;
   let deleted = 0;
   let cursor: string | undefined;
