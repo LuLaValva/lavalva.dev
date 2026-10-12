@@ -1,9 +1,45 @@
+import * as v from "valibot";
+
+const count = v.pipe(v.number(), v.integer(), v.minValue(0));
+
+/** What the app sends, as kbd's `TrainingSubmission` encodes it: a change to one is a change to both. */
+const Submission = v.object({
+  v: v.literal(1),
+  sets: v.pipe(
+    v.array(
+      v.object({
+        id: v.string(),
+        mode: v.picklist(["accept", "live"]),
+        grip: v.picklist(["right-thumb", "left-thumb", "two-thumbs", "finger"]),
+        setting: v.picklist(["sitting", "standing", "walking", "transit"]),
+        app: v.string(),
+        device: v.string(),
+        screen: v.tuple([v.number(), v.number()]),
+        sentences: v.array(v.string()),
+        swipes: v.array(
+          v.object({
+            word: v.string(),
+            sentence: count,
+            index: count,
+            attempt: count,
+            gate: v.boolean(),
+            samples: v.array(v.tuple([v.number(), v.number(), v.number()])),
+          }),
+        ),
+      }),
+    ),
+    v.minLength(1),
+  ),
+});
+
 export const POST = Run.POST(
-  { json: (value: unknown) => value },
+  { json: Submission },
   async ({ params, body, platform }) => {
+    const [submission, issues] = await body;
+    if (issues) return new Response(null, { status: 422 });
     await platform.env.KBD_TRAINING.put(
       `submissions/${params.token}/${crypto.randomUUID()}.json`,
-      JSON.stringify(await body),
+      JSON.stringify(submission),
     );
     return new Response(null, { status: 201 });
   },
