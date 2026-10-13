@@ -9,17 +9,12 @@ const Submission = v.object({
     v.array(
       v.object({
         id: v.string(),
-        fingers: v.pipe(
-          v.array(
-            v.picklist([
-              "left-thumb",
-              "right-thumb",
-              "left-index",
-              "right-index",
-            ]),
-          ),
-          v.minLength(1),
-        ),
+        finger: v.picklist([
+          "left-thumb",
+          "right-thumb",
+          "left-index",
+          "right-index",
+        ]),
         setting: v.picklist(["sitting", "standing", "walking", "transit"]),
         app: v.string(),
         device: v.string(),
