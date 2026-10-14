@@ -4,11 +4,9 @@ export interface CloudflarePlatformInfo {
     KBD_TRAINING: {
       put(key: string, value: string): Promise<unknown>;
       get(key: string): Promise<{ body: ReadableStream<Uint8Array> } | null>;
-      list(options: { prefix: string; cursor?: string }): Promise<{
-        objects: { key: string; uploaded: Date }[];
-        truncated: boolean;
-        cursor?: string;
-      }>;
+      list(options: {
+        prefix: string;
+      }): Promise<{ objects: { key: string }[]; truncated: boolean }>;
       delete(keys: string[]): Promise<void>;
     };
     KBD_TRAINING_LIMIT: {
