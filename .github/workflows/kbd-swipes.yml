@@ -1,0 +1,36 @@
+name: Release kbd's donated swipes
+
+# The dataset app/kbd/training serves: each set held 30 days, under its ID's hash, as kbd's `make donated`
+# names it, since an ID deletes what it sent. `gh workflow run kbd-swipes.yml` releases it at once.
+on:
+  schedule:
+    - cron: "0 12 1 * *"
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      # A public repo's schedule stops after 60 days without a commit, and with it deletions leaving the dataset.
+      - run: gh workflow enable kbd-swipes.yml --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: sudo apt-get update && sudo apt-get install -y rclone
+      # Of an R2 API token that can read and write only kbd-training, each set by `gh secret set <name>`.
+      - run: rclone config create r2 s3 provider=Cloudflare no_check_bucket=true access_key_id="$ID" secret_access_key="$KEY" endpoint="$ENDPOINT"
+        env:
+          ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      # Dated by when R2 stored each, which the privacy policy's 30 days count from.
+      - run: rclone copy --use-server-modtime --min-age 30d r2:kbd-training/submissions submissions
+      - run: |
+          shopt -s nullglob
+          for set in submissions/*/*.json; do
+            participant=$(basename "$(dirname "$set")" | tr -d '\n' | sha256sum | cut -c 1-12)
+            printf '{"participant":"%s","submission":%s}\n' "$participant" "$(cat "$set")"
+          done > swipes.jsonl
+      # Written even when empty, so that nothing deleted outlives a release.
+      - run: rclone copyto swipes.jsonl r2:kbd-training/release/swipes.jsonl
