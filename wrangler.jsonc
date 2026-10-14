@@ -7,4 +7,17 @@
     "directory": "./dist/public",
     "binding": "ASSETS",
   },
+  "r2_buckets": [
+    {
+      "binding": "KBD_TRAINING",
+      "bucket_name": "kbd-training",
+    },
+  ],
+  "ratelimits": [
+    {
+      "name": "KBD_TRAINING_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 12, "period": 60 },
+    },
+  ],
 }

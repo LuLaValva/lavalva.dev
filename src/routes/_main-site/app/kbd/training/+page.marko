@@ -1,0 +1,40 @@
+h1 -- Train swipes
+
+p
+  -- Right now swipe typing is powered by${" "}
+  a href="https://huggingface.co/futo-org/futo-swipe" -- FUTO Swipe
+  -- , but eventually I want to train my own model.
+
+p --
+  If you want to help out, you can! kbd has no way of recording or tracking your
+  everyday swipes, but if you're ever bored and wishing for a more accurate
+  swipe model, open the app and donate a minute or two of your time!
+
+h2 -- Download the dataset
+
+p
+  --
+  Released each month: every set sent at least 30 days before, one per line:${" "}
+  --
+  a href="/app/kbd/training/swipes.jsonl" download -- swipes.jsonl
+
+p
+  -- Free for anyone to use, for anything:${" "}
+  a href="https://creativecommons.org/publicdomain/zero/1.0/" -- CC0
+
+h2 -- Delete your swipes
+
+form method="post"
+  label for="token" -- ID from Train swipes
+  p
+    input#token
+      ,name="token"
+      ,size=32
+      ,required
+      ,autocomplete="off"
+      ,autocapitalize="off"
+      ,spellcheck="false"
+  button -- Delete
+
+if="isDeleted" in $global.data
+  p -- ${$global.data.isDeleted ? "Deleted." : "Nothing under that ID."}

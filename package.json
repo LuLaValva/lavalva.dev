@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "immer": "^11.1.18",
-    "marko": "^6.3.45"
+    "marko": "^6.3.45",
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@marko/run": "^0.11.12",
