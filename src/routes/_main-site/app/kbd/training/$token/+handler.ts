@@ -3,14 +3,18 @@ import * as v from "valibot";
 import { Token } from "../token";
 
 const count = v.pipe(v.number(), v.integer(), v.minValue(0));
+const matching = (pattern: RegExp) => v.pipe(v.string(), v.regex(pattern));
 
-/** What the app sends, as kbd's `TrainingSubmission` encodes it: a change to one is a change to both. */
+/**
+ * What the app sends, as kbd's `TrainingSubmission` encodes it: a change to one is a change to both.
+ * Published as sent, so each text takes only what the app writes there, and never a link or an address.
+ */
 const Submission = v.object({
   v: v.literal(1),
   sets: v.pipe(
     v.array(
       v.object({
-        id: v.string(),
+        id: matching(/^[0-9a-f]{32}$/),
         finger: v.picklist([
           "left-thumb",
           "right-thumb",
@@ -18,13 +22,16 @@ const Submission = v.object({
           "right-index",
         ]),
         setting: v.picklist(["sitting", "standing", "walking", "transit"]),
-        app: v.string(),
-        device: v.string(),
+        app: matching(/^[\d.]{1,16}$/),
+        device: matching(/^[\w,]{1,32}$/),
         screen: v.tuple([v.number(), v.number()]),
-        sentences: v.array(v.string()),
+        sentences: v.pipe(
+          v.array(matching(/^[A-Za-z ',.?!]{1,200}$/)),
+          v.maxLength(20),
+        ),
         swipes: v.array(
           v.object({
-            word: v.string(),
+            word: matching(/^[a-z]{1,40}$/),
             sentence: count,
             index: count,
             attempt: count,
