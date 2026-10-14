@@ -1,0 +1,21 @@
+h1 -- Delete swipes you sent to kbd
+
+p --
+  Swipes you sent from Train swipes in the kbd app are kept under the ID shown
+  on that screen. Deleting them takes them off this server and out of every
+  later release, but can't recall a copy already published.
+
+form method="post"
+  label for="token" -- Your ID
+  p
+    input#token
+      ,name="token"
+      ,size=32
+      ,required
+      ,autocomplete="off"
+      ,autocapitalize="off"
+      ,spellcheck="false"
+  button -- Delete
+
+if="isDeleted" in $global.data
+  p -- ${$global.data.isDeleted ? "Deleted." : "Nothing is kept under that ID."}
