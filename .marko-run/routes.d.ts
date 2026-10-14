@@ -21,7 +21,8 @@ declare module "@marko/run" {
 		"/app/kbd": [L1, L2, P4];
 		"/app/kbd/privacy": [L1, L2, P5];
 		"/app/kbd/training": [M1, H1, L1, L2, P6];
-		"/app/kbd/training/$token": [M1, H2];
+		"/app/kbd/training/swipes.jsonl": [M1, H2];
+		"/app/kbd/training/$token": [M1, H3];
 		"/blog": [L1, L3, P7];
 		"/blog/airline-food": [L1, L3, P8];
 		"/bucket-list": [L1, P9];
@@ -46,7 +47,7 @@ declare module "../src/routes/_main-site/app/kbd/training/+middleware" {
   namespace MarkoRun {
     export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
     /** @deprecated use the `Run` namespace instead */
-    export type Route = $.Routes["/app/kbd/training" | "/app/kbd/training/$token"];
+    export type Route = $.Routes["/app/kbd/training" | "/app/kbd/training/swipes.jsonl" | "/app/kbd/training/$token"];
     /** @deprecated use `Run.Context` instead */
     export type Context = $.MultiRouteContext<Route>;
     /** @deprecated define handlers with `Run.GET(...)`, `Run.POST(...)`, etc. instead */
@@ -105,11 +106,46 @@ declare module "../src/routes/_main-site/app/kbd/training/+handler" {
   }
 }
 
-type H2 = $.Handler<"H2", typeof import("../src/routes/_main-site/app/kbd/training/$token/+handler")>;
-declare module "../src/routes/_main-site/app/kbd/training/$token/+handler" {
+type H2 = $.Handler<"H2", typeof import("../src/routes/_main-site/app/kbd/training/`swipes.jsonl`+handler")>;
+declare module "../src/routes/_main-site/app/kbd/training/`swipes.jsonl`+handler" {
   const Run: $.Namespace<H2>;
   namespace Run {
     type Context = $.ContextForFile<H2>;
+  }
+
+  /** @deprecated use `Run` namespace instead */
+  namespace MarkoRun {
+    export { NotHandled, NotMatched, GetPaths, PostPaths, GetablePath, GetableHref, PostablePath, PostableHref, Platform };
+    /** @deprecated use the `Run` namespace instead */
+    export type Route = $.Routes["/app/kbd/training/swipes.jsonl"];
+    /** @deprecated use `Run.Context` instead */
+    export type Context = $.MultiRouteContext<Route>;
+    /** @deprecated define handlers with `Run.GET(...)`, `Run.POST(...)`, etc. instead */
+    export type Handler = $.HandlerLike<Route>;
+    /** @deprecated define handlers with `Run.GET(...)` instead */
+    export type GET = $.HandlerLike<Route, "GET">;
+    /** @deprecated define handlers with `Run.HEAD(...)` instead */
+    export type HEAD = $.HandlerLike<Route, "HEAD">;
+    /** @deprecated define handlers with `Run.POST(...)` instead */
+    export type POST = $.HandlerLike<Route, "POST">;
+    /** @deprecated define handlers with `Run.PUT(...)` instead */
+    export type PUT = $.HandlerLike<Route, "PUT">;
+    /** @deprecated define handlers with `Run.DELETE(...)` instead */
+    export type DELETE = $.HandlerLike<Route, "DELETE">;
+    /** @deprecated define handlers with `Run.PATCH(...)` instead */
+    export type PATCH = $.HandlerLike<Route, "PATCH">;
+    /** @deprecated define handlers with `Run.OPTIONS(...)` instead */
+    export type OPTIONS = $.HandlerLike<Route, "OPTIONS">;
+    /** @deprecated define handlers with `Run.QUERY(...)` instead */
+    export type QUERY = $.HandlerLike<Route, "QUERY">;
+  }
+}
+
+type H3 = $.Handler<"H3", typeof import("../src/routes/_main-site/app/kbd/training/$token/+handler")>;
+declare module "../src/routes/_main-site/app/kbd/training/$token/+handler" {
+  const Run: $.Namespace<H3>;
+  namespace Run {
+    type Context = $.ContextForFile<H3>;
   }
 
   /** @deprecated use `Run` namespace instead */
